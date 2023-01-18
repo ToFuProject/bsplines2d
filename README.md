@@ -1,2 +1,2 @@
-# bsplines2d
-Toolbox for handling multi-dimensional bsplines on various meshes
+# bsplines
+Toolbox for creating and using multi-dimension bsplines, with multiple meshes
