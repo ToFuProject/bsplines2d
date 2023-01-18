@@ -59,7 +59,7 @@ class Test00_check_routines():
 
 #######################################################
 #
-#     Fixed 1d ad 2d meshes
+#     Fixed meshes (1d, rect and tri, no submesh)
 #
 #######################################################
 
@@ -176,9 +176,9 @@ class Test01_Mesh2D_Fixed():
     def test22_add_bsplines_2d_tri(self):
         test_input._add_bsplines(self.bs, kind='tri')
 
-    # ##############
-    #  add data 1 bs
-    # ##############
+    # ###############
+    #  add data vs bs
+    # ###############
 
     def test23_add_data_1bs_fix_1d(self, remove=True):
         test_input._add_data_1bs_fix(self.bs, nd='1d', kind=None, remove=remove)
@@ -197,10 +197,26 @@ class Test01_Mesh2D_Fixed():
 
     def test28_add_data_1bs_arrays_2d_tri(self, remove=False):
         test_input._add_data_1bs_arrays(self.bs, nd='2d', kind='tri', remove=remove)
+        
+    def test29_add_data_multibs_arrays(self, remove=False):
+        test_input._add_data_multibs_arrays(self.bs, remove=remove)
 
     # ##############
-    #  add data 2 bs
+    # interp bs
     # ##############
+    
+    def test30_interpolate_bsplines_simple(self):
+        pass
+
+    def test31_interpolate_bsplines_multiple(self):
+        pass
+
+    # ##############
+    # binning 1d
+    # ##############
+
+    def test32_binning_1d(self):
+        pass
 
 
 #######################################################

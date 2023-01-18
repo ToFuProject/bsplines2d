@@ -18,6 +18,7 @@ from . import _class01_checks_2d_tri as _checks_2d_tri
 from . import _class01_checks_2d_polar as _checks_2d_polar
 
 from . import _class01_compute as _compute
+from . import _class01_rect_cropping as _cropping
 from . import _class01_select as _select
 from . import _class01_sample as _sample
 from . import _class01_plot as _plot
@@ -311,7 +312,7 @@ class Mesh2D(ds.DataStock):
         If applied on a bspline, cropping is double-checked to make sure
         all remaining bsplines have full support domain
         """
-        crop, key, thresh_in = _compute.crop(
+        crop, key, thresh_in = _cropping.crop(
             coll=self,
             key=key,
             crop=crop,
@@ -320,7 +321,7 @@ class Mesh2D(ds.DataStock):
         )
 
         # add crop data
-        keycrop = f'{key}-crop'
+        keycrop = f'{key}_crop'
         ref = tuple([
             self._ddata[k0]['ref'][0]
             for k0 in self._dobj[self._which_mesh][key]['cents']

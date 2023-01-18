@@ -124,10 +124,12 @@ def _set_data_bsplines(coll=None):
     
     if coll.dobj.get(coll._which_bsplines) is not None:
         
+        wbs = coll._which_bsplines
         for k0, v0 in coll._ddata.items():
             
             lbs = [
-                k1 for k1, v1 in coll.dobj[coll._which_bsplines].items()
+                (v0['ref'].index(v1['ref'][0]), k1) 
+                for k1, v1 in coll.dobj[wbs].items()
                 if v1['ref'] == tuple([
                     rr for rr in v0['ref']
                     if rr in v1['ref']
@@ -137,6 +139,11 @@ def _set_data_bsplines(coll=None):
             if len(lbs) == 0:
                 pass
             else:
+                # re-order
+                ind = np.argsort([bb[0] for bb in lbs])
+                lbs = [lbs[ii][1] for ii in ind]
+                
+                # store
                 coll._ddata[k0]['bsplines'] = tuple(lbs)
 
 

@@ -7,13 +7,14 @@ import copy
 
 # Common
 import numpy as np
-import datastock as ds
 
 
 # local
 from ._class01_Mesh2D import Mesh2D as Previous
 from . import _class02_checks as _checks
 from . import _class02_compute as _compute
+from . import _class01_rect_cropping as _cropping
+from . import _class02_operators as _operators
 
 
 __all__ = ['BSplines2D']
@@ -71,7 +72,7 @@ class BSplines2D(Previous):
             )
         else:
             dref, ddata, dobj = _compute._mesh2Dpolar_bsplines(
-                coll=self, keym=keym, keybs=keybs, deg=deg, angle=angle,
+                coll=self, keym=keym, keybs=keybs, deg=deg, # angle=angle,
             )
 
         # --------------
@@ -79,7 +80,7 @@ class BSplines2D(Previous):
 
         self.update(dobj=dobj, ddata=ddata, dref=dref)
         if mtype == 'rect':
-            _compute.add_cropbs_from_crop(
+            _cropping.add_cropbs_from_crop(
                 coll=self,
                 keybs=keybs,
                 keym=keym,
@@ -124,136 +125,44 @@ class BSplines2D(Previous):
     # crop
     # ------------------
 
-    # def crop(self, key=None, crop=None, thresh_in=None, remove_isolated=None):
-    #     """ Crop a mesh / bspline
+    def crop(self, key=None, crop=None, thresh_in=None, remove_isolated=None):
+        """ Crop a mesh / bspline
 
-    #     Uses:
-    #         - a mask of bool for each mesh elements
-    #         - a 2d (R, Z) closed polygon
+        Uses:
+            - a mask of bool for each mesh elements
+            - a 2d (R, Z) closed polygon
 
-    #     If applied on a bspline, cropping is double-checked to make sure
-    #     all remaining bsplines have full support domain
-    #     """
-    #     super().crop(
-    #         key=key, 
-    #         crop=crop, 
-    #         thresh_in=thresh_in,
-    #         remove_isolated=remove_isolated,
-    #     )
+        If applied on a bspline, cropping is double-checked to make sure
+        all remaining bsplines have full support domain
+        """
+        super().crop(
+            key=key, 
+            crop=crop, 
+            thresh_in=thresh_in,
+            remove_isolated=remove_isolated,
+        )
 
-    #     # also crop bsplines
-    #     for k0 in self.dobj.get('bsplines', {}).keys():
-    #         if self.dobj['bsplines'][k0][self._which_mesh] == key:
-    #             _compute.add_cropbs_from_crop(coll=self, keybs=k0, keym=key)
+        # also crop bsplines
+        for k0 in self.dobj.get(self._which_bsplines, {}).keys():
+            if self.dobj[self._which_bsplines][k0][self._which_mesh] == key:
+                _cropping.add_cropbs_from_crop(coll=self, keybs=k0, keym=key)
 
     # -----------------
     # get data subset
     # ------------------
 
-    def get_profiles2d(self):
+    def get_dict_bsplines(self):
         """ Return dict of profiles2d with associated bsplines as values """
 
         # dict of profiles2d
         dk = {
-            k0: v0['bsplines']
+            k0: v0[self._which_bsplines]
             for k0, v0 in self._ddata.items()
-            if v0['bsplines'] != ''
+            if v0[self._which_bsplines] not in [None, '']
         }
-        dk.update({k0: k0 for k0 in self._dobj['bsplines'].keys()})
+        dk.update({k0: k0 for k0 in self._dobj[self._which_bsplines].keys()})
 
         return dk
-
-    # -------------------
-    # get data time
-    # -------------------
-
-    def get_time(
-        self,
-        key=None,
-        t=None,
-        indt=None,
-        ind_strict=None,
-        dim=None,
-    ):
-        """ Return the time vector or time macthing indices
-
-        hastime, keyt, reft, keyt, val, dind = self.get_time(key='prof0')
-
-        Return
-        ------
-        hastime:    bool
-            flag, True if key has a time dimension
-        keyt:       None /  str
-            if hastime and a time vector exists, the key to that time vector
-        t:          None / np.ndarray
-            if hastime
-        dind:       dict, with:
-            - indt:  None / np.ndarray
-                if indt or t was provided, and keyt exists
-                int indices of nearest matching times
-            - indtu: None / np.ndarray
-                if indt is returned, np.unique(indt)
-            - indtr: None / np.ndarray
-                if indt is returned, a bool (ntu, nt) array
-            - indok: None / np.ndarray
-                if indt is returned, a bool (nt,) array
-
-        """
-
-        if dim is None:
-            dim = 'time'
-
-        return self.get_ref_vector(
-            key=key,
-            values=t,
-            indices=indt,
-            ind_strict=ind_strict,
-            dim=dim,
-        )
-
-    def get_time_common(
-        self,
-        keys=None,
-        t=None,
-        indt=None,
-        ind_strict=None,
-        dim=None,
-    ):
-        """ Return the time vector or time macthing indices
-
-        hastime, hasvect, t, dind = self.get_time_common(
-            keys=['prof0', 'prof1'],
-            t=np.linspace(0, 5, 10),
-        )
-
-        Return
-        ------
-        hastime:        bool
-            flag, True if key has a time dimension
-        keyt:           None /  str
-            if hastime and a time vector exists, the key to that time vector
-        t:              None / np.ndarray
-            if hastime
-        indt:           None / np.ndarray
-            if indt or t was provided, and keyt exists
-            int indices of nearest matching times
-        indtu:          None / np.ndarray
-            if indt is returned, np.unique(indt)
-        indt_reverse:   None / np.ndarray
-            if indt is returned, a bool (ntu, nt) array
-
-        """
-
-        if dim is None:
-            dim = 'time'
-
-        return self.get_ref_vector_common(
-            keys=keys,
-            values=t,
-            indices=indt,
-            ind_strict=ind_strict,
-            dim=dim,
-        )
 
     # -----------------
     # indices
@@ -316,11 +225,8 @@ class BSplines2D(Previous):
 
         """
 
-        (
-            opmat, operator, geometry, dim, ref, crop,
-            store, returnas, key,
-        ) = _compute.get_bsplines_operator(
-            self,
+        return _operators.get_bsplines_operator(
+            coll=self,
             key=key,
             operator=operator,
             geometry=geometry,
@@ -333,112 +239,65 @@ class BSplines2D(Previous):
             returnas_element=returnas_element,
         )
 
-        # store
-        if store is True:
-            if operator == 'D1':
-                name = f'{key}-{operator}-dR'
-                if crop is True:
-                    name = f'{name}-cropped'
-                self.add_data(
-                    key=name,
-                    data=opmat[0],
-                    ref=ref,
-                    units='',
-                    name=operator,
-                    dim=dim,
-                )
-                name = f'{key}-{operator}-dZ'
-                if crop is True:
-                    name = f'{name}-cropped'
-                self.add_data(
-                    key=name,
-                    data=opmat[1],
-                    ref=ref,
-                    units='',
-                    name=operator,
-                    dim=dim,
-                )
+    # -----------------
+    # binning tools
+    # ------------------
 
-            elif operator in ['D0N1', 'D0N2']:
-                name = f'{key}-{operator}-{geometry}'
-                if crop is True:
-                    name = f'{name}-cropped'
-                self.add_data(
-                    key=name,
-                    data=opmat,
-                    ref=ref,
-                    units='',
-                    name=operator,
-                    dim=dim,
-                )
-            elif operator == 'D1N2':
-                name = f'{key}-{operator}-dR-{geometry}'
-                if crop is True:
-                    name = f'{name}-cropped'
-                self.add_data(
-                    key=name,
-                    data=opmat[0],
-                    ref=ref,
-                    units='',
-                    name=operator,
-                    dim=dim,
-                )
-                name = f'{key}-{operator}-dZ-{geometry}'
-                if crop is True:
-                    name = f'{name}-cropped'
-                self.add_data(
-                    key=name,
-                    data=opmat[1],
-                    ref=ref,
-                    units='',
-                    name=operator,
-                    dim=dim,
-                )
-            elif operator == 'D2N2':
-                name = f'{key}-{operator}-d2R-{geometry}'
-                if crop is True:
-                    name = f'{name}-cropped'
-                self.add_data(
-                    key=name,
-                    data=opmat[0],
-                    ref=ref,
-                    units='',
-                    name=operator,
-                    dim=dim,
-                )
-                name = f'{key}-{operator}-d2Z-{geometry}'
-                if crop is True:
-                    name = f'{name}-cropped'
-                self.add_data(
-                    key=name,
-                    data=opmat[1],
-                    ref=ref,
-                    units='',
-                    name=operator,
-                    dim=dim,
-                )
-                name = f'{key}-{operator}-dRZ-{geometry}'
-                if crop is True:
-                    name = f'{name}-cropped'
-                self.add_data(
-                    key=name,
-                    data=opmat[2],
-                    ref=ref,
-                    units='',
-                    name=operator,
-                    dim=dim,
-                )
-            else:
-                msg = "Unknown opmat type!"
-                raise Exception(msg)
-
-        # return
-        if returnas is True:
-            return opmat, operator, geometry, dim, ref, crop
+    def binning(
+        self,
+        keys=None,
+        bins=None,
+        axis=None,
+        key_bs=None,
+    ):
+        """ Return binned data along the desired axis """
+        
+        return _binning.binning(
+            coll=self,
+            keys=keys,
+            bins=bins,
+            axis=axis,
+            key_bs=key_bs,
+        )
+        
 
     # -----------------
     # interp tools
     # ------------------
+
+    def _interpolate_bsplines(
+        self,
+        # interpolation base, 1d or 2d
+        key=None,
+        # external coefs (optional)
+        coefs=None,
+        # interpolation points
+        x0=None,
+        x1=None,
+        grid=None,
+        # time: t or indt
+        t=None,
+        indt=None,
+        indt_strict=None,
+        # bsplines
+        indbs=None,
+        # parameters
+        details=None,
+        reshape=None,
+        res=None,
+        crop=None,
+        nan0=None,
+        val_out=None,
+        imshow=None,
+        return_params=None,
+        # storing
+        store=None,
+        inplace=None,
+    ):
+        
+        
+        
+
 
     """
     def get_sample_bspline(self, key=None, res=None, grid=None, mode=None):

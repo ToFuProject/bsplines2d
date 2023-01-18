@@ -281,7 +281,7 @@ def _get_bs(bs, nd=None, kind=None):
     return [
         k0 for k0, v0 in bs.dobj[bs._which_bsplines].items()
         if nd in [None, bs.dobj[bs._which_mesh][v0[bs._which_mesh]]['nd']]
-        and kind in [None, bs.dobj[bs._which_mesh][v0[bs._which_mesh]]['nd']]
+        and kind in [None, bs.dobj[bs._which_mesh][v0[bs._which_mesh]]['type']]
     ]
 
 
@@ -374,16 +374,21 @@ def _add_data_1bs_fix(bs, nd=None, kind=None, remove=None):
             data=data,
             ref=kb,
         )
+        
+        assert bs.ddata[lkd[-1]][bs._which_bsplines] == (kb,)
+        bsref = bs.dobj[bs._which_bsplines][kb]['ref']
+        assert bs.ddata[lkd[-1]]['ref'] == bsref
     
     if remove:
         for kd in lkd:
             bs.remove_data(kd)
 
+
 def _add_data_1bs_arrays(bs, nd=None, kind=None, remove=None):
     lkb = _get_bs(bs, nd=nd, kind=kind)
     
+    nt, nE = 10, 11
     if 'nt' not in bs.dref.keys():
-        nt, nE = 10, 11
         bs.add_ref(key='nt', size=nt)
         bs.add_ref(key='nE', size=nE)
         
@@ -400,10 +405,64 @@ def _add_data_1bs_arrays(bs, nd=None, kind=None, remove=None):
             ref=['nt', kb, 'nE'],
         )
     
+        assert bs.ddata[lkd[-1]][bs._which_bsplines] == (kb,)
+        bsref = bs.dobj[bs._which_bsplines][kb]['ref']
+        ref = tuple(['nt'] + list(bsref) + ['nE'])
+        assert bs.ddata[lkd[-1]]['ref'] == ref
+    
     if remove:
         for kd in lkd:
             bs.remove_data(kd)
 
+
+def _add_data_multibs_arrays(bs, nd=None, kind=None, remove=None):
+    lkb = _get_bs(bs, nd=nd, kind=kind)
+    
+    nt, nE = 10, 11
+    if 'nt' not in bs.dref.keys():
+        bs.add_ref(key='nt', size=nt)
+        bs.add_ref(key='nE', size=nE)
+    
+    lkd = []
+    for ii, kb in enumerate(lkb):
+        
+        lkd.append(f'{kb}_var')
+        
+        kb2 = lkb[(ii + int(len(lkb)/2)) % len(lkb)]
+        shape = np.r_[
+            nt,
+            bs.dobj[bs._which_bsplines][kb]['shape'],
+            nE,
+            bs.dobj[bs._which_bsplines][kb2]['shape'],
+        ]
+        data = np.random.random(shape)
+
+        bs.add_data(
+            key=lkd[-1],
+            data=data,
+            ref=['nt', kb, 'nE', kb2],
+        )
+    
+        if bs.ddata[lkd[-1]][bs._which_bsplines] != (kb, kb2):
+            msg = (
+                f"Wrong '{bs._which_bsplines}' for ddata['{lkd[-1]}']:\n"
+                f"{bs.ddata[lkd[-1]][bs._which_bsplines]} vs {(kb, kb2)}"
+            )
+            raise Exception(msg)
+            
+        bsref = bs.dobj[bs._which_bsplines][kb]['ref']
+        bsref2 = bs.dobj[bs._which_bsplines][kb2]['ref']
+        ref = tuple(['nt'] + list(bsref) + ['nE'] + list(bsref2))
+        if bs.ddata[lkd[-1]]['ref'] != ref:
+            msg = (
+                f"Wrong '{bs._which_bsplines}' for ddata['{lkd[-1]}']:\n"
+                f"{bs.ddata[lkd[-1]]['ref']} vs {ref}"
+            )
+            raise Exception(msg)
+    
+    if remove:
+        for kd in lkd:
+            bs.remove_data(kd)
 
 
 def _add_data_var(bsplines, key):
