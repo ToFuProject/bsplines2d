@@ -199,42 +199,6 @@ def _check_knotscents(
         raise Exception(msg)
         
     return knots, indices, ntri
-    
-
-def _repeat_data_ntri(
-    ref=None,
-    rbs1=None,
-    refbs=None,
-    data=None,
-    # mesh
-    km=None,
-    dmesh=None,
-    dbsplines=None,
-):
-    """ If triangular mesh with ntri > 1 => repeat data """
-
-    c0 = (
-        dmesh[km]['type'] == 'tri'
-        and dmesh[km]['ntri'] > 1
-    )
-    if c0:
-        ntri = dmesh[km]['ntri']
-        indr = ref.tolist().index(refbs[0])
-        nbs = dbsplines[rbs1]['shape'][0]
-        ndata = data.shape[indr]
-        if ndata == nbs:
-            pass
-        elif ndata == nbs / ntri:
-            data = np.repeat(data, ntri, axis=indr)
-        else:
-            msg = (
-                "Mismatching data shape vs multi-triangular mesh:\n"
-                f"\t- data.shape[tribs] = {ndata}\n"
-                f"\t- expected {nbs} / {ntri} = {nbs / ntri}\n"
-            )
-            raise Exception(msg)
-
-    return data
 
 
 # #############################################################################

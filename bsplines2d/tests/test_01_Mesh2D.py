@@ -176,6 +176,32 @@ class Test01_Mesh2D_Fixed():
     def test22_add_bsplines_2d_tri(self):
         test_input._add_bsplines(self.bs, kind='tri')
 
+    # ##############
+    #  add data 1 bs
+    # ##############
+
+    def test23_add_data_1bs_fix_1d(self, remove=True):
+        test_input._add_data_1bs_fix(self.bs, nd='1d', kind=None, remove=remove)
+        
+    def test24_add_data_1bs_fix_2d_rect(self, remove=True):
+        test_input._add_data_1bs_fix(self.bs, nd='2d', kind='rect', remove=remove)
+
+    def test25_add_data_1bs_fix_2d_tri(self, remove=True):
+        test_input._add_data_1bs_fix(self.bs, nd='2d', kind='tri', remove=remove)
+
+    def test26_add_data_1bs_arrays_1d(self, remove=False):
+        test_input._add_data_1bs_arrays(self.bs, nd='1d', kind=None, remove=remove)
+        
+    def test27_add_data_1bs_arrays_2d_rect(self, remove=False):
+        test_input._add_data_1bs_arrays(self.bs, nd='2d', kind='rect', remove=remove)
+
+    def test28_add_data_1bs_arrays_2d_tri(self, remove=False):
+        test_input._add_data_1bs_arrays(self.bs, nd='2d', kind='tri', remove=remove)
+
+    # ##############
+    #  add data 2 bs
+    # ##############
+
 
 #######################################################
 #

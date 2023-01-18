@@ -34,13 +34,6 @@ __all__ = ['Mesh2D']
 
 class Mesh2D(ds.DataStock):
 
-    _ddef = copy.deepcopy(ds.DataStock._ddef)
-    _ddef['params']['ddata'].update({
-        'bsplines': {'cls': str, 'def': ''},
-    })
-    _ddef['params']['dobj'] = None
-    _ddef['params']['dref'] = None
-
     _show_in_summary = 'all'
     _dshow = dict(ds.DataStock._dshow)
 

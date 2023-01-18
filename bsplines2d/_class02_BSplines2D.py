@@ -29,7 +29,7 @@ class BSplines2D(Previous):
 
     _ddef = copy.deepcopy(Previous._ddef)
     _ddef['params']['ddata'].update({
-        'bsplines': {'cls': str, 'def': ''},
+        'bsplines': {'cls': (tuple, str), 'def': ''},
     })
     _ddef['params']['dobj'] = None
     _ddef['params']['dref'] = None
@@ -89,7 +89,6 @@ class BSplines2D(Previous):
     # add_data
     # ------------------
 
-    """
     def update(
         self,
         dobj=None,
@@ -108,8 +107,6 @@ class BSplines2D(Previous):
                     coll=self,
                     ref=v0['ref'],
                     data=v0['data'],
-                    which_mesh=self._which_mesh,
-                    which_bsplines='bsplines',
                 )
 
         # update
@@ -121,43 +118,8 @@ class BSplines2D(Previous):
         )
 
         # assign bsplines
-        if self._dobj.get('bsplines') is not None:
-            for k0, v0 in self._ddata.items():
-                lbs = [
-                    k1 for k1, v1 in self._dobj['bsplines'].items()
-                    if v1['ref'] == tuple([
-                        rr for rr in v0['ref']
-                        if rr in v1['ref']
-                    ])
-                ]
-                if len(lbs) == 0:
-                    pass
-                elif len(lbs) == 1:
-                    self._ddata[k0]['bsplines'] = lbs[0]
-                else:
-                    msg = f"Multiple nsplines:\n{lbs}"
-                    raise Exception(msg)
-
-        # assign diagnostic
-        if self._dobj.get('camera') is not None:
-            for k0, v0 in self._ddata.items():
-                lcam = [
-                    k1 for k1, v1 in self._dobj['camera'].items()
-                    if v1['dgeom']['ref'] == tuple([
-                        rr for rr in v0['ref']
-                        if rr in v1['dgeom']['ref']
-                    ])
-                ]
-
-                if len(lcam) == 0:
-                    pass
-                elif len(lcam) == 1:
-                    self._ddata[k0]['camera'] = lcam[0]
-                else:
-                    msg = f"Multiple cameras:\n{lcam}"
-                    raise Exception(msg)
-    """
-
+        _checks._set_data_bsplines(coll=self)
+        
     # -----------------
     # crop
     # ------------------

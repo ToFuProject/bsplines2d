@@ -7,7 +7,6 @@ import warnings
 
 # Common
 import numpy as np
-from matplotlib.tri import Triangulation as mplTri
 import datastock as ds
     
 
@@ -21,13 +20,10 @@ def add_data_meshbsplines_ref(
     coll=None,
     ref=None,
     data=None,
-    # ressources
-    which_mesh=None,
-    which_bsplines=None,
 ):
 
-    dmesh = coll._dobj.get(which_mesh)
-    dbsplines = coll._dobj.get(which_bsplines)
+    dmesh = coll._dobj.get(coll._which_mesh)
+    dbsplines = coll._dobj.get(coll._which_bsplines)
     
     if dmesh is None or dbsplines is None:
         return ref, data
@@ -41,139 +37,107 @@ def add_data_meshbsplines_ref(
 
         # ref contains mesh
         rm = [(ii, rr) for ii, rr in enumerate(ref) if rr in dmesh.keys()]
-        if len(rm) > 1:
-            msg = (
-                "ref contains references to several meshes!\n"
-                f"\t- ref: {ref}\n"
-                f"\t- meshes: {rm}\n"
-            )
-            raise Exception(msg)
-
-        elif len(rm) == 1:
+        if len(rm) > 0:
+            
             ref = list(ref)
-            kbs = [
-                k0 for k0, v0 in dbsplines.items()
-                if v0[which_mesh] == rm[0][1]
-            ]
-            if len(kbs) == 1:
-                ref[rm[0][0]] = kbs[0]
-            elif len(kbs) > 1:
-                msg = (
-                    "ref contains reference to mesh with several bsplines!\n"
-                    f"\t- ref: {ref}\n"
-                    f"\t- mesh bsplines: {kbs}\n"
-                )
-                raise Exception(msg)
+            for (ki, km) in rm:
+                kbs = [
+                    k0 for k0, v0 in dbsplines.items()
+                    if v0[coll._which_mesh] == km
+                ]
+                if len(kbs) == 1:
+                    ref[ki] = kbs[0]
+                elif len(kbs) > 1:
+                    msg = (
+                        "ref contains reference to mesh with several bsplines!\n"
+                        f"\t- ref: {ref}\n"
+                        f"\t- mesh bsplines: {kbs}\n"
+                    )
+                    raise Exception(msg)
 
         # ref contains bsplines
         rbs = [(ii, rr) for ii, rr in enumerate(ref) if rr in dbsplines.keys()]
-        if len(rbs) > 1:
-            msg = (
-                "ref contains references to several bsplines!"
-                f"\t- ref: {ref}\n"
-                f"\t- splines: {rbs}\n"
-            )
-            raise Exception(msg)
+        while len(rbs) > 0:
 
-        elif len(rbs) == 1:
+            ii, kb = rbs[0]            
+
             ref = np.r_[
-                ref[:rbs[0][0]],
-                dbsplines[rbs[0][1]]['ref'],
-                ref[rbs[0][0]+1:],
+                ref[:ii],
+                dbsplines[kb]['ref'],
+                ref[ii+1:],
             ]
+            
+            rbs = [(ii, rr) for ii, rr in enumerate(ref) if rr in dbsplines.keys()]
 
             # repeat data if taken from ntri > 1 
             data = _repeat_data_ntri(
                 ref=ref,
-                rbs1=rbs[0][1],
-                refbs=dbsplines[rbs[0][1]]['ref'],
+                rbs1=kb,
+                refbs=dbsplines[kb]['ref'],
                 data=data,
                 # mesh
-                km=dbsplines[rbs[0][1]][which_mesh],
+                km=dbsplines[kb][coll._which_mesh],
                 dmesh=dmesh,
                 dbsplines=dbsplines,
             )
 
     return tuple(ref), data
-    kxk, kxc = f'{key}-{x_name}-nk', f'{key}-{x_name}-nc'
-    kkx, kcx = f'{key}-k-{x_name}', f'{key}-c-{x_name}'
-    return kxk, kxc, kkx, kcx
 
-    # ------------
-    # check inputs
 
-    c0 = hasattr(crop_poly, '__iter__') and len(crop_poly) == 2
-    lc = [
-        crop_poly is None,
-        (
-            c0
-            and isinstance(crop_poly, tuple)
-            and crop_poly[0].__class__.__name__ == 'Config'
-            and (isinstance(crop_poly[1], str) or crop_poly[1] is None)
-        )
-        or crop_poly.__class__.__name__ == 'Config',
-        c0
-        and all([
-            hasattr(cc, '__iter__') and len(cc) == len(crop_poly[0])
-            for cc in crop_poly[1:]
-        ])
-        and np.asarray(crop_poly).ndim == 2
-    ]
+def _repeat_data_ntri(
+    ref=None,
+    rbs1=None,
+    refbs=None,
+    data=None,
+    # mesh
+    km=None,
+    dmesh=None,
+    dbsplines=None,
+):
+    """ If triangular mesh with ntri > 1 => repeat data """
 
-    if not any(lc):
-        msg = (
-            "Arg config must be a Config instance!"
-        )
-        raise Exception(msg)
-
-    # -------------
-    # Get polyand domain
-
-    if lc[0]:
-        # trivial case
-        poly = None
-
-    else:
-
-        # -------------
-        # Get poly from input
-
-        if lc[1]:
-            # (config, structure name)
-
-            if crop_poly.__class__.__name__ == 'Config':
-                config = crop_poly
-                key_struct = None
-            else:
-                config, key_struct = crop_poly
-
-            # key_struct if None
-            if key_struct is None:
-                lk, ls = zip(*[
-                    (ss.Id.Name, ss.dgeom['Surf']) for ss in config.lStructIn
-                ])
-                key_struct = lk[np.argmin(ls)]
-
-            # poly
-            poly = config.dStruct['dObj']['Ves'][key_struct].Poly_closed
-
+    c0 = (
+        dmesh[km]['type'] == 'tri'
+        and dmesh[km]['ntri'] > 1
+    )
+    if c0:
+        ntri = dmesh[km]['ntri']
+        indr = ref.tolist().index(refbs[0])
+        nbs = dbsplines[rbs1]['shape'][0]
+        ndata = data.shape[indr]
+        if ndata == nbs:
+            pass
+        elif ndata == nbs / ntri:
+            data = np.repeat(data, ntri, axis=indr)
         else:
+            msg = (
+                "Mismatching data shape vs multi-triangular mesh:\n"
+                f"\t- data.shape[tribs] = {ndata}\n"
+                f"\t- expected {nbs} / {ntri} = {nbs / ntri}\n"
+            )
+            raise Exception(msg)
 
-            # make sure poly is np.ndarraya and closed
-            poly = np.asarray(crop_poly).astype(float)
-            if not np.allclose(poly[:, 0], poly[:, -1]):
-                poly = np.concatenate((poly, poly[:, 0:1]))
+    return data
 
-        # -------------
-        # Get domain from poly
 
-        if domain is None:
-            domain = [
-                [poly[0, :].min(), poly[0, :].max()],
-                [poly[1, :].min(), poly[1, :].max()],
+def _set_data_bsplines(coll=None):
+    
+    if coll.dobj.get(coll._which_bsplines) is not None:
+        
+        for k0, v0 in coll._ddata.items():
+            
+            lbs = [
+                k1 for k1, v1 in coll.dobj[coll._which_bsplines].items()
+                if v1['ref'] == tuple([
+                    rr for rr in v0['ref']
+                    if rr in v1['ref']
+                ])
             ]
-
-    return domain, poly
+            
+            if len(lbs) == 0:
+                pass
+            else:
+                coll._ddata[k0]['bsplines'] = tuple(lbs)
 
 
 # #############################################################################

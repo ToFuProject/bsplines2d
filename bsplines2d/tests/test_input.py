@@ -277,6 +277,14 @@ def _get_mesh(bsplines, nd=None, kind=None):
     ]
 
 
+def _get_bs(bs, nd=None, kind=None):
+    return [
+        k0 for k0, v0 in bs.dobj[bs._which_bsplines].items()
+        if nd in [None, bs.dobj[bs._which_mesh][v0[bs._which_mesh]]['nd']]
+        and kind in [None, bs.dobj[bs._which_mesh][v0[bs._which_mesh]]['nd']]
+    ]
+
+
 def _select_mesh_elements(bsplines, nd=None, kind=None):
     lkm = _get_mesh(bsplines, nd=nd, kind=kind)
     
@@ -342,7 +350,7 @@ def _plot_mesh(bsplines, nd=None, kind=None):
     for km in lkm:
         
         for comb in itt.product(lk, lc, lcrop):
-            dax = bsplines.plot_mesh(
+            _ = bsplines.plot_mesh(
                 key=km,
                 ind_knot=comb[0],
                 ind_cent=comb[1],
@@ -351,18 +359,51 @@ def _plot_mesh(bsplines, nd=None, kind=None):
             plt.close('all')
 
 
-def _add_data_fix(bsplines, key):
+def _add_data_1bs_fix(bs, nd=None, kind=None, remove=None):
+    lkb = _get_bs(bs, nd=nd, kind=kind)
+    
+    lkd = []
+    for kb in lkb:
+        
+        lkd.append(f'{kb}_fix')
+        shape = bs.dobj[bs._which_bsplines][kb]['shape']
+        data = np.random.random(shape)
 
-    kdata = f'{key}-data-fix'
-    shape = bsplines.dobj['bsplines'][key]['shape']
-    data = np.random.random(shape)
+        bs.add_data(
+            key=lkd[-1],
+            data=data,
+            ref=kb,
+        )
+    
+    if remove:
+        for kd in lkd:
+            bs.remove_data(kd)
 
-    bsplines.add_data(
-        key=kdata,
-        data=data,
-        ref=key,
-    )
-    return kdata
+def _add_data_1bs_arrays(bs, nd=None, kind=None, remove=None):
+    lkb = _get_bs(bs, nd=nd, kind=kind)
+    
+    if 'nt' not in bs.dref.keys():
+        nt, nE = 10, 11
+        bs.add_ref(key='nt', size=nt)
+        bs.add_ref(key='nE', size=nE)
+        
+    lkd = []
+    for kb in lkb:
+        
+        lkd.append(f'{kb}_fix')
+        shape = np.r_[nt, bs.dobj[bs._which_bsplines][kb]['shape'], nE]
+        data = np.random.random(shape)
+
+        bs.add_data(
+            key=lkd[-1],
+            data=data,
+            ref=['nt', kb, 'nE'],
+        )
+    
+    if remove:
+        for kd in lkd:
+            bs.remove_data(kd)
+
 
 
 def _add_data_var(bsplines, key):
