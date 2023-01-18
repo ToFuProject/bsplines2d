@@ -249,12 +249,9 @@ def _add_polar2(bsplines, key=None):
     )
 
 
-def _add_bsplines(bsplines, key=None, kind=None, deg=None, angle=None):
+def _add_bsplines(bs, key=None, nd=None, kind=None, deg=None, angle=None):
 
-    if kind is None:
-        kind = ['rect', 'tri', 'polar']
-    if key is None:
-        key = list(bsplines.dobj[bsplines._which_mesh].keys())
+    lkm = _get_mesh(bs, nd=nd, kind=kind)
     if isinstance(deg, int):
         deg = [deg]
     elif deg is None:
@@ -263,20 +260,14 @@ def _add_bsplines(bsplines, key=None, kind=None, deg=None, angle=None):
     ddeg = {
         None: [ii for ii in [0, 1, 2, 3] if ii in deg],
         'rect': [ii for ii in [0, 1, 2, 3] if ii in deg],
-        'tri': [ii for ii in [0, 1, 2, 3] if ii in deg],
+        'tri': [ii for ii in [0, 1] if ii in deg],
         'polar': [ii for ii in [0, 1, 2, 3] if ii in deg],
     }
 
-    for k0, v0 in bsplines.dobj[bsplines._which_mesh].items():
-        
-        if v0['type'] not in kind:
-            continue
-        
-        if k0 not in key:
-            continue
-        
-        for dd in ddeg[v0['type']]:
-            bsplines.add_bsplines(key=k0, deg=dd)
+    for km in lkm:
+        mtype = bs.dobj[bs._which_mesh][km]['type']
+        for dd in ddeg[mtype]:
+            bs.add_bsplines(key=k0, deg=dd)
 
 def _get_mesh(bsplines, nd=None, kind=None):
     return [

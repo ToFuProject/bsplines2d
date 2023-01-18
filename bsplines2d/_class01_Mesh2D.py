@@ -18,6 +18,8 @@ from . import _class01_checks_2d_tri as _checks_2d_tri
 from . import _class01_checks_2d_polar as _checks_2d_polar
 
 from . import _class01_compute as _compute
+from . import _class01_select as _select
+from . import _class01_sample as _sample
 from . import _class01_plot as _plot
 
 
@@ -360,7 +362,7 @@ class Mesh2D(ds.DataStock):
 
         Can covert one into the other
         """
-        return _compute._select_ind(
+        return _select._select_ind(
             coll=self,
             key=key,
             ind=ind,
@@ -407,7 +409,7 @@ class Mesh2D(ds.DataStock):
             crop=crop,
         )
 
-        return _compute._select_mesh(
+        return _select._select_mesh(
             coll=self,
             key=key,
             ind=ind,
@@ -433,7 +435,7 @@ class Mesh2D(ds.DataStock):
         imshow=None,
     ):
         """ Return a sampled version of the chosen mesh """
-        return _compute.sample_mesh(
+        return _sample.sample_mesh(
             coll=self,
             key=key,
             res=res,

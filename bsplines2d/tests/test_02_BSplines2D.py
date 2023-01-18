@@ -17,16 +17,6 @@ import matplotlib.pyplot as plt
 from . import test_input
 
 
-_HERE = os.path.abspath(os.path.dirname(__file__))
-_PATH_DATA = os.path.join(_HERE, 'test_data')
-_FNAME = 'ITER_JINTRAC_sh134000_run30_public_edgesources_quadtrimesh.npz'
-_PFE = os.path.join(_PATH_DATA, _FNAME)
-_DTRI = {
-    k0: v0.tolist()
-    for k0, v0 in dict(np.load(_PFE, allow_pickle=True)).items()
-}
-
-
 #######################################################
 #
 #     Setup and Teardown

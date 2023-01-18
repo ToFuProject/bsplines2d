@@ -12,6 +12,7 @@ import datastock as ds
 
 # local
 from ._class01_Mesh2D import Mesh2D as Previous
+from . import _class02_checks as _checks
 
 
 __all__ = ['BSplines2D']
@@ -38,7 +39,7 @@ class BSplines2D(Previous):
     # bsplines
     # ------------------
 
-    def add_bsplines(self, key=None, deg=None, angle=None):
+    def add_bsplines(self, key=None, deg=None):
         """ Add bspline basis functions on the chosen mesh """
 
         # --------------
@@ -50,14 +51,20 @@ class BSplines2D(Previous):
             deg=deg,
         )
 
-        # --------------
+        # ------------
         # get bsplines
 
-        if self.dobj[self._which_mesh][keym]['type'] == 'rect':
+        nd = self.dobj[self._which_mesh][keym]['nd']
+        mtype = self.dobj[self._which_mesh][keym]['type']
+        if nd == '1d':
+            dref, ddata, dobj = _compute._mesh1d_bsplines(
+                coll=self, keym=keym, keybs=keybs, deg=deg,
+            )
+        elif mtype == 'rect':
             dref, ddata, dobj = _compute._mesh2DRect_bsplines(
                 coll=self, keym=keym, keybs=keybs, deg=deg,
             )
-        elif self.dobj[self._which_mesh][keym]['type'] == 'tri':
+        elif mtype == 'tri':
             dref, ddata, dobj = _compute._mesh2DTri_bsplines(
                 coll=self, keym=keym, keybs=keybs, deg=deg,
             )
@@ -70,7 +77,7 @@ class BSplines2D(Previous):
         # update dict and crop if relevant
 
         self.update(dobj=dobj, ddata=ddata, dref=dref)
-        if self.dobj[self._which_mesh][keym]['type'] == 'rect':
+        if mtype == 'rect':
             _compute.add_cropbs_from_crop(
                 coll=self,
                 keybs=keybs,

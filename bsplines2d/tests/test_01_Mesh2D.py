@@ -163,6 +163,19 @@ class Test01_Mesh2D_Fixed():
     def test19_plot_mesh_tri(self):
         test_input._plot_mesh(self.bs, nd='2d', kind='tri')
 
+    # ##############
+    #  add bsplines
+    # ##############
+
+    def test20_add_bsplines_1d(self):
+        test_input._add_bsplines(self.bs, nd='1d')
+        
+    def test21_add_bsplines_2d_rect(self):
+        test_input._add_bsplines(self.bs, kind='rect')
+    
+    def test22_add_bsplines_2d_tri(self):
+        test_input._add_bsplines(self.bs, kind='tri')
+
 
 #######################################################
 #
