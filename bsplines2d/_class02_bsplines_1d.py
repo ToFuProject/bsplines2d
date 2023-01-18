@@ -115,8 +115,7 @@ class UnivariateSpline():
 
     def _check_coefs(self, coefs=None, axis=None):
         """ None for ev_details, (nt, shapebs) for sum """
-        if coefs is not None:
-            assert coefs.shape[axis] == self.nbs
+        assert coefs.shape[axis] == self.nbs
 
     def __call__(
         self,
@@ -127,10 +126,9 @@ class UnivariateSpline():
         axis=None,
         # options
         val_out=None,
-        # for purely radial only
         deriv=None,
         # for compatibility (unused)
-        indbs_tf=None,
+        **kwdargs,
     ):
         """ Assumes
 
@@ -141,6 +139,8 @@ class UnivariateSpline():
         # ------------
         # check inputs
 
+        if val_out is None:
+            val_out = np.nan
         if deriv is None:
             deriv = 0
 
@@ -182,13 +182,12 @@ class UnivariateSpline():
         # options
         indbs_tf=None,
         deriv=None,
-        # for compatibility (unused)
-        coefs=None,
         val_out=None,
+        # for compatibility (unused)
+        **kwdargs,
     ):
         """ Assumes
 
-        coefs.shape = (nt, shapebs)
         indbs_tf = flat array of int indices
 
         """
@@ -213,7 +212,7 @@ class UnivariateSpline():
         # prepare
 
         shape = tuple(np.r_[xx.shape, nbs])
-        val = np.zeros(shape)
+        val = np.full(shape, val_out)
 
         # ------------
         # compute
@@ -264,7 +263,7 @@ class UnivariateSpline():
 
         # coefs per radius per bs (nrad, nbs)
         ideriv = int(deriv[-1])
-        vv = self.ev_details(xx=xx, deriv=ideriv)
+        vv = self.ev_details(xx=xx, deriv=ideriv, val_out=0.)
 
         # check conflicts
         indok = (vv != 0)
@@ -327,7 +326,7 @@ def _get_overlap(
 # #############################################################################
 
 
-def get_bs2d_func(
+def get_bs_class(
     deg=None,
     knots=None,
     coll=None,
@@ -336,9 +335,7 @@ def get_bs2d_func(
     # ----------------
     # Define functions
 
-    bspline = UnivariateSpline(
+    return UnivariateSpline(
         knots=knots,
         deg=deg,
     )
-
-    return bspline.ev_details, bspline.__call__, bspline

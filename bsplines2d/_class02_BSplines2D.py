@@ -13,6 +13,7 @@ import datastock as ds
 # local
 from ._class01_Mesh2D import Mesh2D as Previous
 from . import _class02_checks as _checks
+from . import _class02_compute as _compute
 
 
 __all__ = ['BSplines2D']

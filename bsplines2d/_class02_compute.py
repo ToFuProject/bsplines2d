@@ -22,79 +22,6 @@ from . import _class02_bsplines_polar
 from . import _class02_bsplines_1d
 
 
-# #############################################################################
-# #############################################################################
-#                           Mesh2 - Tri - bsplines
-# #############################################################################
-
-
-def _mesh2DTri_bsplines(coll=None, keym=None, keybs=None, deg=None):
-
-    # --------------
-    # create bsplines
-
-    kknots = coll.dobj[coll._which_mesh][keym]['knots']
-    func_details, func_sum, clas = _class1_bsplines_tri.get_bs2d_func(
-        deg=deg,
-        knotsR=coll.ddata[kknots[0]]['data'],
-        knotsZ=coll.ddata[kknots[1]]['data'],
-        cents=coll.ddata[coll.dobj[coll._which_mesh][keym]['ind']]['data'],
-        trifind=coll.dobj[coll._which_mesh][keym]['func_trifind'],
-    )
-    keybsr = f'{keybs}-nbs'
-    kbscr = f'{keybs}-apR'
-    kbscz = f'{keybs}-apZ'
-
-    bs_cents = clas._get_bs_cents()
-
-    # ----------------
-    # format into dict
-
-    dref = {
-        # bs index
-        keybsr: {
-            'size': clas.nbs,
-        },
-    }
-
-    ddata = {
-        kbscr: {
-            'data': bs_cents[0, :],
-            'units': 'm',
-            'dim': 'distance',
-            'quant': 'R',
-            'name': 'R',
-            'ref': (keybsr,),
-        },
-        kbscz: {
-            'data': bs_cents[1, :],
-            'units': 'm',
-            'dim': 'distance',
-            'quant': 'Z',
-            'name': 'Z',
-            'ref': (keybsr,),
-        },
-    }
-
-    dobj = {
-        'bsplines': {
-            keybs: {
-                'deg': deg,
-                'mesh': keym,
-                'ref': (keybsr,),
-                'ref-bs': (keybsr,),
-                'apex': (kbscr, kbscz),
-                'shape': (clas.nbs,),
-                'crop': False,
-                'func_details': func_details,
-                'func_sum': func_sum,
-                'class': clas,
-            }
-        },
-    }
-
-    return dref, ddata, dobj
-
 
 # #############################################################################
 # #############################################################################
@@ -107,17 +34,15 @@ def _mesh1d_bsplines(
     keym=None,
     keybs=None,
     deg=None,
-    which_mesh=None,
-    which_bsplines='bsplines',
 ):
     
-    kknots = coll.dobj[which_mesh][keym]['knots'][0]
+    kknots = coll.dobj[coll._which_mesh][keym]['knots'][0]
     knots = coll.ddata[kknots]['data']
 
-    kbsn = f'{keybs}-nbs'
-    kbsap = f'{keybs}-ap'
+    kbsn = f'{keybs}_nbs'
+    kbsap = f'{keybs}_ap'
 
-    func_details, func_sum, clas = _class1_bsplines_1d.get_bs2d_func(
+    clas = _class02_bsplines_1d.get_bs_class(
         deg=deg,
         knots=knots,
         coll=coll,
@@ -152,16 +77,14 @@ def _mesh1d_bsplines(
 
     # dobj
     dobj = {
-        which_bsplines: {
+        coll._which_bsplines: {
             keybs: {
                 'deg': deg,
-                which_mesh: keym,
+                coll._which_mesh: keym,
                 'ref': ref,
                 'ref-bs': (kbsn,),
                 'apex': apex,
                 'shape': clas.shapebs,
-                'func_details': func_details,
-                'func_sum': func_sum,
                 'class': clas,
                 'crop': None,
             }
@@ -182,28 +105,28 @@ def _mesh2DRect_bsplines(coll=None, keym=None, keybs=None, deg=None):
     # --------------
     # create bsplines
 
-    kR, kZ = coll.dobj[coll._which_mesh][keym]['knots']
-    Rknots = coll.ddata[kR]['data']
-    Zknots = coll.ddata[kZ]['data']
+    k0, k1 = coll.dobj[coll._which_mesh][keym]['knots']
+    knots0 = coll.ddata[k0]['data']
+    knots1 = coll.ddata[k1]['data']
 
-    keybsr = f'{keybs}-nbs'
-    kRbsapn = f'{keybs}-nR'
-    kZbsapn = f'{keybs}-nZ'
-    kRbsap = f'{keybs}-apR'
-    kZbsap = f'{keybs}-apZ'
+    keybsr = f'{keybs}_nbs'
+    kRbsapn = f'{keybs}_nR'
+    kZbsapn = f'{keybs}_nZ'
+    kRbsap = f'{keybs}_apR'
+    kZbsap = f'{keybs}_apZ'
 
     (
         shapebs, Rbs_apex, Zbs_apex,
         knots_per_bs_R, knots_per_bs_Z,
-    ) = _class1_bsplines_rect.get_bs2d_RZ(
-        deg=deg, Rknots=Rknots, Zknots=Zknots,
+    ) = _class02_bsplines_rect.get_bs2d_x01(
+        deg=deg, knots0=knots0, knots1=knots1,
     )
     nbs = int(np.prod(shapebs))
 
-    func_details, func_sum, clas = _class1_bsplines_rect.get_bs2d_func(
+    clas = _class02_bsplines_rect.get_bs_class(
         deg=deg,
-        Rknots=Rknots,
-        Zknots=Zknots,
+        knots0=knots0, 
+        knots1=knots1,
         shapebs=shapebs,
         # knots_per_bs_R=knots_per_bs_R,
         # knots_per_bs_Z=knots_per_bs_Z,
@@ -253,8 +176,6 @@ def _mesh2DRect_bsplines(coll=None, keym=None, keybs=None, deg=None):
                 'apex': (kRbsap, kZbsap),
                 'shape': shapebs,
                 'crop': False,
-                'func_details': func_details,
-                'func_sum': func_sum,
                 'class': clas,
             }
         },
@@ -379,6 +300,78 @@ def _mesh2DRect_bsplines_knotscents(
 
 # #############################################################################
 # #############################################################################
+#                           Mesh2 - Tri - bsplines
+# #############################################################################
+
+
+def _mesh2DTri_bsplines(coll=None, keym=None, keybs=None, deg=None):
+
+    # --------------
+    # create bsplines
+
+    kknots = coll.dobj[coll._which_mesh][keym]['knots']
+    clas = _class02_bsplines_tri.get_bs_class(
+        deg=deg,
+        knots0=coll.ddata[kknots[0]]['data'],
+        knots1=coll.ddata[kknots[1]]['data'],
+        indices=coll.ddata[coll.dobj[coll._which_mesh][keym]['ind']]['data'],
+    )
+    keybsr = f'{keybs}-nbs'
+    kbscr = f'{keybs}-apR'
+    kbscz = f'{keybs}-apZ'
+
+    bs_cents = clas._get_bs_cents()
+
+    # ----------------
+    # format into dict
+
+    dref = {
+        # bs index
+        keybsr: {
+            'size': clas.nbs,
+        },
+    }
+
+    ddata = {
+        kbscr: {
+            'data': bs_cents[0, :],
+            'units': 'm',
+            'dim': 'distance',
+            'quant': 'R',
+            'name': 'R',
+            'ref': (keybsr,),
+        },
+        kbscz: {
+            'data': bs_cents[1, :],
+            'units': 'm',
+            'dim': 'distance',
+            'quant': 'Z',
+            'name': 'Z',
+            'ref': (keybsr,),
+        },
+    }
+
+    dobj = {
+        'bsplines': {
+            keybs: {
+                'deg': deg,
+                'mesh': keym,
+                'ref': (keybsr,),
+                'ref-bs': (keybsr,),
+                'apex': (kbscr, kbscz),
+                'shape': (clas.nbs,),
+                'crop': False,
+                'class': clas,
+            }
+        },
+    }
+
+    return dref, ddata, dobj
+
+
+
+# #############################################################################
+# #############################################################################
 #                           Mesh2D - polar - bsplines
 # #############################################################################
 
@@ -399,7 +392,7 @@ def _mesh2Dpolar_bsplines(
     if len(kknots) == 2:
         angle = coll.ddata[kknots[1]]['data']
 
-    func_details, func_sum, clas = _class1_bsplines_polar.get_bs2d_func(
+    clas = _class02_bsplines_polar.get_bs2d_func(
         deg=deg,
         knotsr=knotsr,
         angle=angle,
@@ -480,8 +473,6 @@ def _mesh2Dpolar_bsplines(
                 'ref-bs': (keybsn,),
                 'apex': apex,
                 'shape': clas.shapebs,
-                'func_details': func_details,
-                'func_sum': func_sum,
                 'class': clas,
                 'crop': coll.dobj[coll._which_mesh][keym]['crop'],
             }
@@ -688,7 +679,7 @@ def _get_keyingroup_ddata(
             raise Exception(msg)
     return key_out, msg
 
-
+"""
 def _get_possible_ref12d(
     dd=None,
     key=None, ref1d=None, ref2d=None,
@@ -817,21 +808,23 @@ def _get_possible_ref12d(
             )
             raise Exception(msg)
 
-    return kq, ref1d, ref2d
-    coll=None,
-    key=None,
-    R=None,
-    Z=None,
-    indbs=None,
-    indt=None,
-    grid=None,
-    details=None,
-    reshape=None,
-    res=None,
-    crop=None,
-    nan0=None,
-    imshow=None,
-    return_params=None,
+    return (
+        kq, ref1d, ref2d,
+        coll=None,
+        key=None,
+        R=None,
+        Z=None,
+        indbs=None,
+        indt=None,
+        grid=None,
+        details=None,
+        reshape=None,
+        res=None,
+        crop=None,
+        nan0=None,
+        imshow=None,
+        return_params=None,
+    )
 ):
 
     # ---------------
@@ -853,7 +846,7 @@ def _get_possible_ref12d(
         return val, dparams
     else:
         return val
-
+"""
 
 # #############################################################################
 # #############################################################################

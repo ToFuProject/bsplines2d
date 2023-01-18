@@ -11,7 +11,6 @@ import scipy.interpolate as scpinterp
 
 
 # specific
-from . import _generic_check
 from . import _utils_bsplines
 from . import _class02_bsplines_operators_rect
 
@@ -31,31 +30,31 @@ class BivariateSplineRect(scpinterp.BivariateSpline):
     Used self.set_coefs() to update
     """
 
-    def __init__(self, knotsR=None, knotsZ=None, deg=None, shapebs=None):
+    def __init__(self, knots0=None, knots1=None, deg=None, shapebs=None):
 
-        assert np.allclose(np.unique(knotsR), knotsR)
-        assert np.allclose(np.unique(knotsZ), knotsZ)
+        assert np.allclose(np.unique(knots0), knots0)
+        assert np.allclose(np.unique(knots1), knots1)
         assert deg in [0, 1, 2, 3]
 
         # get knots pr bs
         self._get_knots_per_bs_for_basis_elements(
-            knotsR=knotsR,
-            knotsZ=knotsZ,
+            knots0=knots0,
+            knots1=knots1,
             deg=deg,
         )
 
         # full knots with multiplicity
-        knotsR, nbsR = _utils_bsplines._get_knots_per_bs(
-            knotsR, deg=deg, returnas='data', return_unique=True,
+        knots0, nbs0 = _utils_bsplines._get_knots_per_bs(
+            knots0, deg=deg, returnas='data', return_unique=True,
         )
-        knotsZ, nbsZ = _utils_bsplines._get_knots_per_bs(
-            knotsZ, deg=deg, returnas='data', return_unique=True,
+        knots1, nbs1 = _utils_bsplines._get_knots_per_bs(
+            knots1, deg=deg, returnas='data', return_unique=True,
         )
 
-        coefs = np.ones((nbsR*nbsZ,), dtype=float)
+        coefs = np.ones((nbs0*nbs1,), dtype=float)
 
-        self.__nbs = (nbsR, nbsZ)
-        self.tck = [knotsR, knotsZ, coefs]
+        self.__nbs = (nbs0, nbs1)
+        self.tck = [knots0, knots1, coefs]
         self.degrees = [deg, deg]
 
         # shapebs
@@ -63,44 +62,44 @@ class BivariateSplineRect(scpinterp.BivariateSpline):
 
     def _get_knots_per_bs_for_basis_elements(
         self,
-        knotsR=None,
-        knotsZ=None,
+        knots0=None,
+        knots1=None,
         deg=None,
     ):
 
         # added for details
-        knots_per_bs_x = _utils_bsplines._get_knots_per_bs(
-            knotsR, deg=deg, returnas='data',
+        knots_per_bs_x0 = _utils_bsplines._get_knots_per_bs(
+            knots0, deg=deg, returnas='data',
         )
-        knots_per_bs_y = _utils_bsplines._get_knots_per_bs(
-            knotsZ, deg=deg, returnas='data',
+        knots_per_bs_x1 = _utils_bsplines._get_knots_per_bs(
+            knots1, deg=deg, returnas='data',
         )
 
-        self.knots_per_bs_x = knots_per_bs_x
-        self.knots_per_bs_y = knots_per_bs_y
+        self.knots_per_bs_x0 = knots_per_bs_x0
+        self.knots_per_bs_x1 = knots_per_bs_x1
 
         if deg == 0:
             pass
         else:
-            knots_per_bs_x = np.concatenate(
+            knots_per_bs_x0 = np.concatenate(
                 (
-                    np.tile(knots_per_bs_x[0, :] - 1, (deg, 1)),
-                    knots_per_bs_x,
-                    np.tile(knots_per_bs_x[-1, :] + 1, (deg, 1)),
+                    np.tile(knots_per_bs_x0[0, :] - 1, (deg, 1)),
+                    knots_per_bs_x0,
+                    np.tile(knots_per_bs_x0[-1, :] + 1, (deg, 1)),
                 ),
                 axis=0,
             )
-            knots_per_bs_y = np.concatenate(
+            knots_per_bs_x1 = np.concatenate(
                 (
-                    np.tile(knots_per_bs_y[0, :] - 1, (deg, 1)),
-                    knots_per_bs_y,
-                    np.tile(knots_per_bs_y[-1, :] + 1, (deg, 1)),
+                    np.tile(knots_per_bs_x1[0, :] - 1, (deg, 1)),
+                    knots_per_bs_x1,
+                    np.tile(knots_per_bs_x1[-1, :] + 1, (deg, 1)),
                 ),
                 axis=0,
             )
 
-        self.knots_per_bs_x_pad = np.asfortranarray(knots_per_bs_x)
-        self.knots_per_bs_y_pad = np.asfortranarray(knots_per_bs_y)
+        self.knots_per_bs_x0_pad = np.asfortranarray(knots_per_bs_x0)
+        self.knots_per_bs_x1_pad = np.asfortranarray(knots_per_bs_x1)
 
     def set_coefs(
         self,
@@ -124,24 +123,28 @@ class BivariateSplineRect(scpinterp.BivariateSpline):
 
     def __call__(
         self,
-        R=None,
-        Z=None,
+        # points
+        x0=None,
+        x1=None,
+        # coefs
         coefs=None,
         axis=None,
+        # crop
         crop=None,
         cropbs=None,
+        # options
         val_out=None,
         # for compatibility (unused)
-        **kwdargs
+        **kwdargs,
     ):
 
         if val_out is None:
             val_out = np.nan
 
         # r, z have same shape
-        r, z, crop = _check_RZ_crop(
-            R=R,
-            Z=Z,
+        x0, x1, crop = _check_x01_crop(
+            x0=x0,
+            x1=x1,
             crop=crop,
             cropbs=cropbs,
         )
@@ -149,32 +152,30 @@ class BivariateSplineRect(scpinterp.BivariateSpline):
         # prepare
         # coefs
         (
-            shape_rz, shape_other, axis_rz, ind_coefs, ind_rz,
+            shape_x, shape_other, axis_x, ind_coefs, ind_x,
         ) = _utils_bsplines._coefs_axis(
             shapebs=self.shapebs,
             coefs=coefs,
             axis=axis,
-            shapex=r.shape,
+            shapex=x0.shape,
         )
         shape_coefs = coefs.shape
         
-        val = np.zeros(shape_rz, dtype=float)
+        val = np.zeros(shape_x, dtype=float)
         cropbs_neg_flat = (~cropbs).ravel() if crop else None
-
-        
 
         # interpolate
         for ind in itt.product(*[range(aa) for aa in shape_other]):
             
             # prepare TBF
-            sli_c, sli_rz = _utils_bsplines._get_slices_iter(
+            sli_c, sli_x = _utils_bsplines._get_slices_iter(
                 axis=axis,
-                axis_x=axis_rz,
+                axis_x=axis_x,
                 shape_coefs=shape_coefs,
-                shape_x=shape_rz,
+                shape_x=shape_x,
                 ind=ind,
                 ind_coefs=ind_coefs,
-                ind_x=ind_rz,
+                ind_x=ind_x,
             )
             
             self.set_coefs(
@@ -183,13 +184,13 @@ class BivariateSplineRect(scpinterp.BivariateSpline):
             )
 
             # compute            
-            val[tuple(sli_rz)] = super().__call__(r, z, grid=False)
+            val[tuple(sli_x)] = super().__call__(x0, x1, grid=False)
 
         # clean
         if val_out is not False:
             indout = (
-                (r < self.tck[0][0]) | (r > self.tck[0][-1])
-                | (z < self.tck[1][0]) | (z > self.tck[1][-1])
+                (x0 < self.tck[0][0]) | (x0 > self.tck[0][-1])
+                | (x1 < self.tck[1][0]) | (x1 > self.tck[1][-1])
             )
             
             sli_out = _utils_bsplines._get_slice_out(
@@ -204,8 +205,8 @@ class BivariateSplineRect(scpinterp.BivariateSpline):
 
     def ev_details(
         self,
-        R=None,
-        Z=None,
+        x0=None,
+        x1=None,
         indbs_tf=None,
         crop=None,
         cropbs=None,
@@ -220,9 +221,9 @@ class BivariateSplineRect(scpinterp.BivariateSpline):
         # -----------
         # check input
 
-        x, y, crop = _check_RZ_crop(
-            R=R,
-            Z=Z,
+        x0, x1, crop = _check_x01_crop(
+            x0=x0,
+            x1=x1,
             crop=crop,
             cropbs=cropbs,
         )
@@ -232,17 +233,17 @@ class BivariateSplineRect(scpinterp.BivariateSpline):
 
         deg = self.degrees[0]
         nbs = indbs_tf[0].size
-        shape = x.shape
-        x = np.ascontiguousarray(x.ravel(), dtype=float)
-        y = np.ascontiguousarray(y.ravel(), dtype=float)
+        shape = x0.shape
+        x0 = np.ascontiguousarray(x0.ravel(), dtype=float)
+        x1 = np.ascontiguousarray(x1.ravel(), dtype=float)
         coef = np.zeros((deg + 4, 1), dtype=float)
         coef[deg] = 1.
-        outy = np.full((x.size, 1), np.nan)
+        out1 = np.full((x0.size, 1), np.nan)
 
         # -----------
         # compute
 
-        val = np.zeros(tuple(np.r_[x.size, nbs]))
+        val = np.zeros(tuple(np.r_[x0.size, nbs]))
         indtot = np.arange(0, nbs)
 
         iz_u = np.unique(indbs_tf[1])
@@ -253,44 +254,44 @@ class BivariateSplineRect(scpinterp.BivariateSpline):
                 self.knots_per_bs_y_pad[:, iz],
                 coef,
                 self.degrees[1],
-                y,
+                x1,
                 0,
                 False,
-                outy,
+                out1,
             )
 
-            indoky = ~np.isnan(outy)
-            if not np.any(indoky):
+            indok1 = ~np.isnan(out1)
+            if not np.any(indok1):
                 continue
-            indokx = np.copy(indoky)
+            indok0 = np.copy(indok1)
 
-            indr = indbs_tf[1] == iz
-            ir = indbs_tf[0][indr]
-            for ii, iir in enumerate(ir):
+            ind0 = indbs_tf[1] == iz
+            i0 = indbs_tf[0][ind0]
+            for ii, ii0 in enumerate(i0):
 
                 if ii > 0:
-                    indokx[...] = indoky
+                    indok0[...] = indok1
 
-                outx = np.full((indoky.sum(), 1), np.nan)
+                out0 = np.full((indok1.sum(), 1), np.nan)
 
                 scpinterp._bspl.evaluate_spline(
-                    self.knots_per_bs_x_pad[:, iir],
+                    self.knots_per_bs_x_pad[:, ii0],
                     coef,
                     self.degrees[0],
-                    x[indoky[:, 0]],
+                    x0[indok1[:, 0]],
                     0,
                     False,
-                    outx,
+                    out0,
                 )
 
-                ixok = ~np.isnan(outx)
+                ixok = ~np.isnan(out0)
                 if not np.any(ixok):
                     continue
 
-                indokx[indoky] = ixok[:, 0]
-                val[indokx[:, 0], indtot[indr][ii]] = (outx[ixok]*outy[indokx])
+                indok0[indok1] = ixok[:, 0]
+                val[indok0[:, 0], indtot[ind0][ii]] = (out0[ixok]*out1[indok0])
 
-        if shape != x.shape:
+        if shape != x0.shape:
             val = np.reshape(val, tuple(np.r_[shape, -1]))
 
         return val
@@ -298,8 +299,8 @@ class BivariateSplineRect(scpinterp.BivariateSpline):
     def get_overlap(self):
         return _get_overlap(
             deg=self.degrees[0],
-            knotsx=self.knots_per_bs_x,
-            knotsy=self.knots_per_bs_y,
+            knotsx=self.knots_per_bs_x0,
+            knotsy=self.knots_per_bs_x1,
             shapebs=self.shapebs,
         )
 
@@ -315,14 +316,14 @@ class BivariateSplineRect(scpinterp.BivariateSpline):
         returnas_element=None,
     ):
         """ Get desired operator """
-        return _class1_bsplines_operators_rect.get_mesh2dRect_operators(
+        return _class02_bsplines_operators_rect.get_mesh2dRect_operators(
             deg=self.degrees[0],
             operator=operator,
             geometry=geometry,
             knotsx_mult=self.tck[0],
             knotsy_mult=self.tck[1],
-            knotsx_per_bs=self.knots_per_bs_x,
-            knotsy_per_bs=self.knots_per_bs_y,
+            knotsx_per_bs=self.knots_per_bs_x0,
+            knotsy_per_bs=self.knots_per_bs_x1,
             overlap=self.get_overlap(),
             cropbs_flat=cropbs_flat,
             # specific to deg = 0
@@ -341,28 +342,28 @@ class BivariateSplineRect(scpinterp.BivariateSpline):
 
 def _get_overlap(
     deg=None,
-    knotsx=None,
-    knotsy=None,
+    knots0=None,
+    knots1=None,
     shapebs=None,
 ):
     # nb of overlapping, inc. itself in 1d
-    nbsR, nbsZ = shapebs
-    indR0 = np.tile(np.arange(0, nbsR), nbsZ)
-    indZ0 = np.repeat(np.arange(0, nbsZ), nbsR)
+    nbs0, nbs1 = shapebs
+    ind00 = np.tile(np.arange(0, nbs0), nbs1)
+    ind10 = np.repeat(np.arange(0, nbs1), nbs0)
 
     # complete
     ntot = 2*deg + 1
 
-    addR = np.tile(np.arange(-deg, deg+1), ntot)
-    addZ = np.repeat(np.arange(-deg, deg+1), ntot)
+    add0= np.tile(np.arange(-deg, deg+1), ntot)
+    add1 = np.repeat(np.arange(-deg, deg+1), ntot)
 
-    interR = indR0[None, :] + addR[:, None]
-    interZ = indZ0[None, :] + addZ[:, None]
+    inter0 = ind00[None, :] + add0[:, None]
+    inter1 = ind10[None, :] + add1[:, None]
 
     # purge
-    inter = interR + interZ*nbsR
+    inter = inter0 + inter1*nbs0
     indneg = (
-        (interR < 0) | (interR >= nbsR) | (interZ < 0) | (interZ >= nbsZ)
+        (inter0 < 0) | (inter0 >= nbs0) | (inter1 < 0) | (inter1 >= nbs1)
     )
     inter[indneg] = -1
 
@@ -375,19 +376,19 @@ def _get_overlap(
 # #############################################################################
 
 
-def _check_RZ_crop(
-    R=None,
-    Z=None,
+def _check_x01_crop(
+    x0=None,
+    x1=None,
     crop=None,
     cropbs=None,
 ):
 
     # R, Z
-    if not isinstance(R, np.ndarray):
-        R = np.atleast_1d(R)
-    if not isinstance(Z, np.ndarray):
-        Z = np.atleast_1d(Z)
-    assert R.shape == Z.shape
+    if not isinstance(x0, np.ndarray):
+        x0 = np.atleast_1d(x0)
+    if not isinstance(x1, np.ndarray):
+        x1 = np.atleast_1d(x1)
+    assert x0.shape == x1.shape
 
     # crop
     if crop is None:
@@ -400,43 +401,43 @@ def _check_RZ_crop(
         raise Exception(msg)
     crop = crop and cropbs is not None and cropbs is not False
 
-    return R, Z, crop
+    return x0, x1, crop
 
 
-def get_bs2d_RZ(deg=None, Rknots=None, Zknots=None):
+def get_bs2d_x01(deg=None, knots0=None, knots1=None):
 
     # ----------------
     # get knots per bspline, nb of bsplines...
 
-    knots_per_bs_R = _utils_bsplines._get_knots_per_bs(
-        Rknots, deg=deg, returnas='data',
+    knots_per_bs_x0 = _utils_bsplines._get_knots_per_bs(
+        knots0, deg=deg, returnas='data',
     )
-    knots_per_bs_Z = _utils_bsplines._get_knots_per_bs(
-        Zknots, deg=deg, returnas='data',
+    knots_per_bs_x1 = _utils_bsplines._get_knots_per_bs(
+        knots1, deg=deg, returnas='data',
     )
-    nbkbs = knots_per_bs_R.shape[0]
-    shapebs = (knots_per_bs_R.shape[1], knots_per_bs_Z.shape[1])
+    # nbkbs = knots_per_bs_R.shape[0]
+    shapebs = (knots_per_bs_x0.shape[1], knots_per_bs_x1.shape[1])
 
     # ----------------
     # get centers of bsplines
 
-    Rbs_apex = _utils_bsplines._get_apex_per_bs(
-        knots=Rknots,
-        knots_per_bs=knots_per_bs_R,
+    x0bs_apex = _utils_bsplines._get_apex_per_bs(
+        knots=knots0,
+        knots_per_bs=knots_per_bs_x0,
         deg=deg
     )
-    Zbs_apex = _utils_bsplines._get_apex_per_bs(
-        knots=Zknots,
-        knots_per_bs=knots_per_bs_Z,
+    x1bs_apex = _utils_bsplines._get_apex_per_bs(
+        knots=knots1,
+        knots_per_bs=knots_per_bs_x1,
         deg=deg
     )
-    return shapebs, Rbs_apex, Zbs_apex, knots_per_bs_R, knots_per_bs_Z
+    return shapebs, x0bs_apex, x1bs_apex, knots_per_bs_x0, knots_per_bs_x1
 
 
-def get_bs2d_func(
+def get_bs_class(
     deg=None,
-    Rknots=None,
-    Zknots=None,
+    knots0=None,
+    knots1=None,
     shapebs=None,
     # knots_per_bs_R=None,
     # knots_per_bs_Z=None,
@@ -445,11 +446,9 @@ def get_bs2d_func(
     # ----------------
     # Define functions
 
-    clas = BivariateSplineRect(
-        knotsR=Rknots,
-        knotsZ=Zknots,
+    return BivariateSplineRect(
+        knots0=knots0,
+        knots1=knots1,
         deg=deg,
         shapebs=shapebs,
     )
-
-    return clas.ev_details, clas.__call__, clas

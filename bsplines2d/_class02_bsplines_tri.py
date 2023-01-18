@@ -7,7 +7,6 @@
 # Common
 import numpy as np
 import scipy.interpolate as scpinterp
-import scipy.spatial as scpspace
 from matplotlib.tri import Triangulation as mplTri
 import datastock as ds
 
@@ -35,10 +34,9 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
 
     def __init__(
         self,
-        knotsR=None,
-        knotsZ=None,
-        cents=None,
-        trifind=None,
+        knots0=None,
+        knots1=None,
+        indices=None,
         deg=None,
     ):
         """ Class handling triangular bsplines """
@@ -46,36 +44,30 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
         # ------------
         # check inputs
 
-        knots = np.array([knotsR, knotsZ]).T
-        cents, knots = _checks._mesh2DTri_conformity(
-            knots=knots, cents=cents, key='class',
+        knots = np.array([knots0, knots1]).T
+        indices, knots = _checks._mesh2DTri_conformity(
+            knots=knots, indices=indices, key='class',
         )
-        cents = _checks._mesh2DTri_clockwise(
-            knots=knots, cents=cents, key='class',
+        indices = _checks._mesh2DTri_clockwise(
+            knots=knots, indices=indices, key='class',
         )
 
-        # check trifinder
-        if trifind is None:
-            mpltri = mplTri(knotsR, knotsZ, cents)
-            trifind = mpltri.get_trifinder()
+        # get trifinder
+        trifind = mplTri(knots0, knots1, indices).get_trifinder()
 
         # deg
         deg = ds._generic_check._check_var(
             deg, 'deg',
             types=int,
-            default=2,
-            allowed=[0, 1, 2, 3],
+            default=1,
+            allowed=[0, 1],
         )
 
-        if deg not in [0, 1]:
-            msg = "Only deg=0 implemented for triangular meshes so far!"
-            raise NotImplementedError(msg)
-
-        self.knotsR = knotsR
-        self.knotsZ = knotsZ
-        self.nknots = knots.shape[0]
-        self.cents = cents
-        self.ncents = cents.shape[0]
+        self.knots0 = knots0
+        self.knots1 = knots1
+        self.nknots = knots0.size
+        self.indices = indices
+        self.nind = indices.shape[0]
         self.deg = deg
         self.trifind = trifind
 
@@ -93,7 +85,7 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
         # nbsplines
 
         if deg == 0:
-            nbs = self.ncents
+            nbs = self.nind
         elif deg == 1:
             nbs = self.nknots
         elif deg == 2:
@@ -110,7 +102,7 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
         """
 
         out = [
-            np.any(self.cents == ii, axis=1).nonzero()[0]
+            np.any(self.indices == ii, axis=1).nonzero()[0]
             for ii in range(self.nknots)
         ]
         nmax = np.array([oo.size for oo in out])
@@ -126,18 +118,18 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
         Returnad as (ncents, 3) array, like cents
         """
 
-        R = self.knotsR[self.cents]
-        Z = self.knotsZ[self.cents]
+        x0 = self.knots0[self.indices]
+        x1 = self.knots1[self.indices]
 
-        heights = np.full(self.cents.shape, np.nan)
+        heights = np.full(self.indices.shape, np.nan)
 
         for iref, (i0, i1) in enumerate([(1, 2), (2, 0), (0, 1)]):
             base = np.sqrt(
-                (R[:, i1] - R[:, i0])**2 + (Z[:, i1] - Z[:, i0])**2
+                (x0[:, i1] - x0[:, i0])**2 + (x1[:, i1] - x1[:, i0])**2
             )
             heights[:, iref] = np.abs(
-                (R[:, i0] - R[:, iref])*(Z[:, i1] - Z[:, iref])
-                - (Z[:, i0] - Z[:, iref])*(R[:, i1] - R[:, iref])
+                (x0[:, i0] - x0[:, iref])*(x1[:, i1] - x1[:, iref])
+                - (x1[:, i0] - x1[:, iref])*(x0[:, i1] - x0[:, iref])
             ) / base
 
         return heights
@@ -151,31 +143,33 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
         """
 
         if x.shape != y.shape:
-            msg = "Arg x and y must hae the same shape!"
+            msg = "Arg x and y must have the same shape!"
             raise Exception(msg)
 
-        R = self.knotsR[self.cents]
-        Z = self.knotsZ[self.cents]
+        x0 = self.knots0[self.indices]
+        x1 = self.knots1[self.indices]
 
         heights = np.full(tuple(np.r_[x.shape, 3]), np.nan)
         ind = self.trifind(x, y)
 
         for ii in np.unique(ind):
+            
             if ii == -1:
                 continue
             indi = ind == ii
+            
             for iref, (i0, i1) in enumerate([(1, 2), (2, 0), (0, 1)]):
                 v_base = np.array([
-                    R[ii, i1] - R[ii, i0],
-                    Z[ii, i1] - Z[ii, i0],
+                    x0[ii, i1] - x0[ii, i0],
+                    x1[ii, i1] - x1[ii, i0],
                 ])
                 v_perp = np.array([v_base[1], -v_base[0]])
                 v_base = v_base / np.linalg.norm(v_base)
                 v_perp = v_perp / np.linalg.norm(v_perp)
 
                 v0 = np.array([
-                    R[ii, i0] - R[ii, iref],
-                    Z[ii, i0] - Z[ii, iref],
+                    x0[ii, i0] - x0[ii, iref],
+                    x1[ii, i0] - x1[ii, iref],
                 ])
                 v0_base = v0[0]*v_base[0] + v0[1]*v_base[1]
                 v0_perp = v0[0]*v_perp[0] + v0[1]*v_perp[1]
@@ -183,10 +177,10 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
                 v_height = (v0 + (-v0_base*v_base + v0_perp*v_perp))/2.
                 v_height_norm = np.linalg.norm(v_height)
 
-                dR = x[indi] - R[ii, iref]
-                dZ = y[indi] - Z[ii, iref]
+                dx0 = x[indi] - x0[ii, iref]
+                dx1 = y[indi] - x1[ii, iref]
                 heights[indi, iref] = (
-                    dR*v_height[0] + dZ*v_height[1]
+                    dx0*v_height[0] + dx1*v_height[1]
                 ) / v_height_norm**2
 
         indok = ~np.isnan(heights)
@@ -244,7 +238,7 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
             if return_cents:
                 cents_per_bs = ind_num[:, None]
             if return_knots:
-                knots_per_bs = self.cents[ind, :]
+                knots_per_bs = self.indices[ind, :]
 
         elif self.deg == 1:
             if return_cents or return_knots:
@@ -273,13 +267,13 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
                 nmax = np.sum(cents_per_bs >= 0, axis=1)
                 cents_per_bs_temp = np.full((2, nbs, nmax.max()), np.nan)
                 for ii in range(nbs):
-                    ind_temp = self.cents[cents_per_bs[ii, :nmax[ii]], :]
+                    ind_temp = self.indices[cents_per_bs[ii, :nmax[ii]], :]
                     cents_per_bs_temp[0, ii, :nmax[ii]] = np.mean(
-                        self.knotsR[ind_temp],
+                        self.knots0[ind_temp],
                         axis=1,
                     )
                     cents_per_bs_temp[1, ii, :nmax[ii]] = np.mean(
-                        self.knotsZ[ind_temp],
+                        self.knots1[ind_temp],
                         axis=1,
                     )
                 cents_per_bs = cents_per_bs_temp
@@ -321,14 +315,14 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
 
         if self.deg == 0:
             bs_cents = np.array([
-                np.mean(self.knotsR[self.cents[ind, :]], axis=1),
-                np.mean(self.knotsZ[self.cents[ind, :]], axis=1),
+                np.mean(self.knots0[self.indices[ind, :]], axis=1),
+                np.mean(self.knots1[self.indices[ind, :]], axis=1),
             ])
 
         elif self.deg == 1:
             bs_cents = np.array([
-                self.knotsR[ind],
-                self.knotsZ[ind],
+                self.knots0[ind],
+                self.knots1[ind],
             ])
 
         elif self.deg == 2:
@@ -397,8 +391,8 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
 
     def ev_details(
         self,
-        R=None,
-        Z=None,
+        x0=None,
+        x1=None,
         indbs_tf=None,
         # for compatibility (unused)
         **kwdargs,
@@ -408,23 +402,23 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
         # generic
 
         # points
-        x, y, crop = _mbr._check_RZ_crop(
-            R=R,
-            Z=Z,
+        x0, x1, crop = _mbr._check_RZ_crop(
+            x0=x0,
+            x1=x1,
             crop=False,
             cropbs=None,
         )
 
         # parameters
         nbs, knots_per_bs, cents_per_bs, indcent = self._ev_generic(
-            x, y, indbs=indbs_tf,
+            x0, x1, indbs=indbs_tf,
         )
 
         # -----------
         # compute
 
-        val = np.zeros(tuple(np.r_[x.shape, nbs]))
-        heights, ind = self.get_heights_per_centsknots_pts(x, y)
+        val = np.zeros(tuple(np.r_[x0.shape, nbs]))
+        heights, ind = self.get_heights_per_centsknots_pts(x0, x1)
 
         indu = np.unique(ind[ind >= 0])
         if self.deg == 0:
@@ -444,9 +438,9 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
                     indi = ind == ii
                     # get bs
                     ibs = np.any(cents_per_bs == ii, axis=1).nonzero()[0]
-                    sorter = np.argsort(self.cents[ii, :])
+                    sorter = np.argsort(self.indices[ii, :])
                     inum = sorter[np.searchsorted(
-                        self.cents[ii, :],
+                        self.indices[ii, :],
                         knots_per_bs[ibs, 0],
                         sorter=sorter,
                     )]
@@ -460,9 +454,9 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
                         indbs_tf,
                         np.any(cents_per_bs == ii, axis=1).nonzero()[0],
                     )
-                    sorter = np.argsort(self.cents[ii, :])
+                    sorter = np.argsort(self.indices[ii, :])
                     inum = sorter[np.searchsorted(
-                        self.cents[ii, :],
+                        self.indices[ii, :],
                         knots_per_bs[ibs, 0],
                         sorter=sorter,
                     )]
@@ -471,10 +465,10 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
                         val[indi, ij] = 1. - heights[indi, inum[jj]]
         return val
 
-    def ev_sum(
+    def __call__(
         self,
-        R=None,
-        Z=None,
+        x0=None,
+        x1=None,
         coefs=None,
         axis=None,
         val_out=None,
@@ -489,9 +483,9 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
             val_out = np.nan
 
         # points
-        x, y, crop = _mbr._check_RZ_crop(
-            R=R,
-            Z=Z,
+        x0, x1, crop = _mbr._check_x01_crop(
+            x0=x0,
+            x1=x1,
             crop=False,
             cropbs=None,
         )
@@ -503,19 +497,19 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
             shapebs=self.shapebs,
             coefs=coefs,
             axis=axis,
-            shapex=x.shape,
+            shapex=x0.shape,
         )
 
         # parameters
         nbs, knots_per_bs, cents_per_bs, indcent = self._ev_generic(
-            x, y, indbs=None,
+            x0, x1, indbs=None,
         )
 
         # -----------
         # prepare
 
         val = np.zeros(shape_x)
-        heights, ind = self.get_heights_per_centsknots_pts(x, y)
+        heights, ind = self.get_heights_per_centsknots_pts(x0, x1)
         # if not np.isscalar(coefs):
         #     newshape = np.r_[coefs.shape, 1]
         #     coefs = coefs.reshape(newshape)
@@ -555,9 +549,9 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
                 
                 # get bs
                 ibs = np.any(cents_per_bs == ii, axis=1).nonzero()[0]
-                sorter = np.argsort(self.cents[ii, :])
+                sorter = np.argsort(self.indices[ii, :])
                 inum = sorter[np.searchsorted(
-                    self.cents[ii, :],
+                    self.indices[ii, :],
                     knots_per_bs[ibs, 0],
                     sorter=sorter,
                 )]
@@ -630,7 +624,6 @@ def _get_overlap(
     shapebs=None,
 ):
     raise NotImplementedError()
-    return inter
 
 
 # #############################################################################
@@ -639,23 +632,19 @@ def _get_overlap(
 # #############################################################################
 
 
-def get_bs2d_func(
-    knotsR=None,
-    knotsZ=None,
-    cents=None,
-    trifind=None,
+def get_bs_class(
+    knots0=None,
+    knots1=None,
+    indices=None,
     deg=None,
 ):
 
     # -----------------
     # Instanciate class
 
-    clas = BivariateSplineTri(
-        knotsR=knotsR,
-        knotsZ=knotsZ,
-        cents=cents,
-        trifind=trifind,
+    return BivariateSplineTri(
+        knots0=knots0,
+        knots1=knots1,
+        indices=indices,
         deg=deg,
     )
-
-    return clas.ev_details, clas.ev_sum, clas

@@ -167,42 +167,6 @@ def add_data_meshbsplines_ref(
     return tuple(ref), data
 
 
-def _repeat_data_ntri(
-    ref=None,
-    rbs1=None,
-    refbs=None,
-    data=None,
-    # mesh
-    km=None,
-    dmesh=None,
-    dbsplines=None,
-):
-    """ If triangular mesh with ntri > 1 => repeat data """
-
-    c0 = (
-        dmesh[km]['type'] == 'tri'
-        and dmesh[km]['ntri'] > 1
-    )
-    if c0:
-        ntri = dmesh[km]['ntri']
-        indr = ref.tolist().index(refbs[0])
-        nbs = dbsplines[rbs1]['shape'][0]
-        ndata = data.shape[indr]
-        if ndata == nbs:
-            pass
-        elif ndata == nbs / ntri:
-            data = np.repeat(data, ntri, axis=indr)
-        else:
-            msg = (
-                "Mismatching data shape vs multi-triangular mesh:\n"
-                f"\t- data.shape[tribs] = {ndata}\n"
-                f"\t- expected {nbs} / {ntri} = {nbs / ntri}\n"
-            )
-            raise Exception(msg)
-
-    return data
-
-
 # #############################################################################
 # #############################################################################
 #                           mesh generic check
@@ -514,7 +478,6 @@ def _check_polar_2dquant(
     return dquant
 
 
-
 def _mesh_names(key=None, x_name=None): 
     kxk, kxc = f'{key}-{x_name}-nk', f'{key}-{x_name}-nc'
     kkx, kcx = f'{key}-k-{x_name}', f'{key}-c-{x_name}'
@@ -527,13 +490,13 @@ def _mesh_names(key=None, x_name=None):
 # #############################################################################
 
 
-def _mesh2DTri_conformity(knots=None, cents=None, key=None):
+def _mesh2DTri_conformity(knots=None, indices=None, key=None):
 
     # ---------------------------------
     # make sure np.ndarrays of dim = 2
 
     knots = np.atleast_2d(knots).astype(float)
-    cents = np.atleast_2d(cents).astype(int)
+    indices = np.atleast_2d(indices).astype(int)
 
     # --------------
     # check shapes
@@ -541,23 +504,23 @@ def _mesh2DTri_conformity(knots=None, cents=None, key=None):
     c0 = (
         knots.shape[1] == 2
         and knots.shape[0] >= 3
-        and cents.shape[1] in [3, 4]
-        and cents.shape[0] >= 1
-        and cents.dtype == int
+        and indices.shape[1] in [3, 4]
+        and indices.shape[0] >= 1
+        and indices.dtype == int
     )
     if not c0:
         msg = (
             "Arg knots must be of shape (nknots>=3, 2) and "
-            "arg cents must be of shape (ncents>=1, 3 or 4) and dtype = int\n"
+            "arg cents must be of shape (nind>=1, 3 or 4) and dtype = int\n"
             "Provided:\n"
             f"\t- knots.shape: {knots.shape}\n"
-            f"\t- cents.shape: {cents.shape}\n"
-            f"\t- cents.dtype: {cents.dtype}\n"
+            f"\t- indices.shape: {indices.shape}\n"
+            f"\t- indices.dtype: {indices.dtype}\n"
         )
         raise Exception(msg)
 
     nknots = knots.shape[0]
-    ncents = cents.shape[0]
+    nind = indices.shape[0]
 
     # -------------------
     # Test for duplicates
@@ -579,39 +542,39 @@ def _mesh2DTri_conformity(knots=None, cents=None, key=None):
         msg = (
             f"Non-valid mesh {key}: \n"
             f"  Duplicate knots: {ind.sum()}\n"
-            f"\t- knots.shape: {cents.shape}\n"
+            f"\t- knots.shape: {indices.shape}\n"
             f"\t- duplicate indices:\n"
             + "\n".join(lstr)
         )
         raise Exception(msg)
 
     # cents (indices)
-    centsu = np.unique(cents, axis=0)
-    if centsu.shape[0] != ncents:
+    indu = np.unique(indices, axis=0)
+    if indu.shape[0] != nind:
         msg = (
             f"Non-valid mesh {key}: \n"
-            f"  Duplicate cents: {ncents - centsu.shape[0]}\n"
-            f"\t- cents.shape: {cents.shape}\n"
-            f"\t- unique shape: {centsu.shape}"
+            f"  Duplicate cents: {nind - indu.shape[0]}\n"
+            f"\t- indices.shape: {indices.shape}\n"
+            f"\t- unique shape: {indu.shape}"
         )
         raise Exception(msg)
 
     # -------------------------------
     # Test for unused / unknown knots
 
-    centsu = np.unique(centsu)
-    c0 = np.all(centsu >= 0) and centsu.size == nknots
+    indu = np.unique(indu)
+    c0 = np.all(indu >= 0) and indu.size == nknots
 
     # unused knots
     ino = (~np.in1d(
         range(0, nknots),
-        centsu,
+        indu,
         assume_unique=False,
         invert=False,
     )).nonzero()[0]
 
     # unknown knots
-    unknown = np.setdiff1d(centsu, range(nknots), assume_unique=True)
+    unknown = np.setdiff1d(indu, range(nknots), assume_unique=True)
 
     if ino.size > 0 or unknown.size > 0:
         msg = "Knots non-conformity identified:\n"
@@ -621,27 +584,27 @@ def _mesh2DTri_conformity(knots=None, cents=None, key=None):
             msg += f"\t- Unknown knots indices: {unknown}\n"
         raise Exception(msg)
 
-    if centsu.size < nknots:
+    if indu.size < nknots:
         msg = (
             f"Unused knots in {key}:\n"
             f"\t- unused knots indices: {ino}"
         )
         warnings.warn(msg)
 
-    elif centsu.size > nknots or centsu.max() != nknots - 1:
-        unknown = np.setdiff1d(centsu, range(nknots), assume_unique=True)
+    elif indu.size > nknots or indu.max() != nknots - 1:
+        unknown = np.setdiff1d(indu, range(nknots), assume_unique=True)
         msg = (
-            "Unknown knots refered to in cents!\n"
+            "Unknown knots refered to in indices!\n"
             f"\t- unknown knots: {unknown}"
         )
         raise Exception(msg)
 
-    return cents, knots
+    return indices, knots
 
 
-def _mesh2DTri_clockwise(knots=None, cents=None, key=None):
+def _mesh2DTri_clockwise(knots=None, indices=None, key=None):
 
-    x, y = knots[cents, 0], knots[cents, 1]
+    x, y = knots[indices, 0], knots[indices, 1]
     orient = (
         (y[:, 1] - y[:, 0])*(x[:, 2] - x[:, 1])
         - (y[:, 2] - y[:, 1])*(x[:, 1] - x[:, 0])
@@ -652,48 +615,47 @@ def _mesh2DTri_clockwise(knots=None, cents=None, key=None):
         msg = (
             "Some triangles not counter-clockwise\n"
             "  (necessary for matplotlib.tri.Triangulation)\n"
-            f"    => {clock.sum()}/{cents.shape[0]} triangles reshaped"
+            f"    => {clock.sum()}/{indices.shape[0]} triangles reshaped"
         )
         warnings.warn(msg)
-        cents[clock, 1], cents[clock, 2] = cents[clock, 2], cents[clock, 1]
-    return cents
+        indices[clock, 1], indices[clock, 2] = indices[clock, 2], indices[clock, 1]
+    return indices
 
 
-def _mesh2DTri_to_dict(knots=None, cents=None, key=None, trifind=None):
+def _mesh2DTri_to_dict(knots=None, indices=None, key=None, trifind=None):
 
     # ---------------------
     # check mesh conformity
 
-    cents, knots = _mesh2DTri_conformity(knots=knots, cents=cents, key=key)
+    indices, knots = _mesh2DTri_conformity(knots=knots, indices=indices, key=key)
 
     # ---------------------------------------------
     # define triangular mesh and trifinder function
 
     # triangular mesh
-    if cents.shape[1] == 3:
+    if indices.shape[1] == 3:
 
         # check clock-wise triangles
-        cents = _mesh2DTri_clockwise(knots=knots, cents=cents, key=key)
+        indices = _mesh2DTri_clockwise(knots=knots, indices=indices, key=key)
         ntri = 1
 
     # Quadrangular mesh => convert to triangular
-    elif cents.shape[1] == 4:
+    elif indices.shape[1] == 4:
 
-        cents2 = np.empty((cents.shape[0]*2, 3), dtype=int)
-        cents2[::2, :] = cents[:, :3]
-        cents2[1::2, :-1] = cents[:, 2:]
-        cents2[1::2, -1] = cents[:, 0]
-        cents = cents2
+        ind2 = np.empty((indices.shape[0]*2, 3), dtype=int)
+        ind2[::2, :] = indices[:, :3]
+        ind2[1::2, :-1] = indices[:, 2:]
+        ind2[1::2, -1] = indices[:, 0]
+        indices = ind2
 
         # Re-check mesh conformity
-        cents, knots = _mesh2DTri_conformity(knots=knots, cents=cents, key=key)
-        cents = _mesh2DTri_clockwise(knots=knots, cents=cents, key=key)
+        indices, knots = _mesh2DTri_conformity(knots=knots, indices=indices, key=key)
+        indices = _mesh2DTri_clockwise(knots=knots, indices=indices, key=key)
         ntri = 2
 
     # check trifinder
     if trifind is None:
-        mpltri = mplTri(knots[:, 0], knots[:, 1], cents)
-        trifind = mpltri.get_trifinder()
+        trifind = mplTri(knots[:, 0], knots[:, 1], indices).get_trifinder()
 
     # ----------------------------
     # Check on trifinder function
@@ -714,14 +676,14 @@ def _mesh2DTri_to_dict(knots=None, cents=None, key=None, trifind=None):
     # -----------------
     # Format ouput dict
 
-    kk = f"{key}-nk"
-    kc = f"{key}-nc"
-    ki = f"{key}-nind"
+    kk = f"{key}_nk"
+    kc = f"{key}_nc"
+    ki = f"{key}_nind"
 
-    _, _, kkR, kcR = _mesh_names(key=key, x_name='R')
-    _, _, kkZ, kcZ = _mesh_names(key=key, x_name='Z')
+    _, _, kkR, kcR = _mesh_names(key=key, x_name='x0')
+    _, _, kkZ, kcZ = _mesh_names(key=key, x_name='x1')
 
-    kii = f"{key}-ind"
+    kii = f"{key}_ind"
 
     # dref
     dref = {
@@ -729,7 +691,7 @@ def _mesh2DTri_to_dict(knots=None, cents=None, key=None, trifind=None):
             'size': knots.shape[0],
         },
         kc: {
-            'size': cents.shape[0],
+            'size': indices.shape[0],
         },
         ki: {
             'size': 3,
@@ -753,21 +715,21 @@ def _mesh2DTri_to_dict(knots=None, cents=None, key=None, trifind=None):
             'ref': kk,
         },
         kcR: {
-            'data': np.mean(knots[cents, 0], axis=1),
+            'data': np.mean(knots[indices, 0], axis=1),
             'units': 'm',
             'quant': 'R',
             'dim': 'distance',
             'ref': kc,
         },
         kcZ: {
-            'data': np.mean(knots[cents, 1], axis=1),
+            'data': np.mean(knots[indices, 1], axis=1),
             'units': 'm',
             'quant': 'Z',
             'dim': 'distance',
             'ref': kc,
         },
         kii: {
-            'data': cents,
+            'data': indices,
             # 'units': '',
             'quant': 'indices',
             'dim': 'indices',
@@ -785,13 +747,49 @@ def _mesh2DTri_to_dict(knots=None, cents=None, key=None, trifind=None):
             'ind': kii,
             # 'ref-k': (kk,),
             # 'ref-c': (kc,),
-            'shape-c': (cents.shape[0],),
+            'shape-c': (indices.shape[0],),
             'shape-k': (knots.shape[0],),
             'func_trifind': trifind,
             'crop': False,
         },
     }
     return dref, ddata, dmesh
+
+
+def _repeat_data_ntri(
+    ref=None,
+    rbs1=None,
+    refbs=None,
+    data=None,
+    # mesh
+    km=None,
+    dmesh=None,
+    dbsplines=None,
+):
+    """ If triangular mesh with ntri > 1 => repeat data """
+
+    c0 = (
+        dmesh[km]['type'] == 'tri'
+        and dmesh[km]['ntri'] > 1
+    )
+    if c0:
+        ntri = dmesh[km]['ntri']
+        indr = ref.tolist().index(refbs[0])
+        nbs = dbsplines[rbs1]['shape'][0]
+        ndata = data.shape[indr]
+        if ndata == nbs:
+            pass
+        elif ndata == nbs / ntri:
+            data = np.repeat(data, ntri, axis=indr)
+        else:
+            msg = (
+                "Mismatching data shape vs multi-triangular mesh:\n"
+                f"\t- data.shape[tribs] = {ndata}\n"
+                f"\t- expected {nbs} / {ntri} = {nbs / ntri}\n"
+            )
+            raise Exception(msg)
+
+    return data
 
 
 # #############################################################################

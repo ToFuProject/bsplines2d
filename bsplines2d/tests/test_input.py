@@ -267,7 +267,7 @@ def _add_bsplines(bs, key=None, nd=None, kind=None, deg=None, angle=None):
     for km in lkm:
         mtype = bs.dobj[bs._which_mesh][km]['type']
         for dd in ddeg[mtype]:
-            bs.add_bsplines(key=k0, deg=dd)
+            bs.add_bsplines(key=km, deg=dd)
 
 def _get_mesh(bsplines, nd=None, kind=None):
     return [
