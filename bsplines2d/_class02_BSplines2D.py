@@ -14,6 +14,7 @@ from ._class01_Mesh2D import Mesh2D as Previous
 from . import _class02_checks as _checks
 from . import _class02_compute as _compute
 from . import _class01_rect_cropping as _cropping
+from . import _class02_binning as _binning
 from . import _class02_operators as _operators
 
 
@@ -156,11 +157,16 @@ class BSplines2D(Previous):
 
         # dict of profiles2d
         dk = {
-            k0: v0[self._which_bsplines]
+            k0: {
+                k1: [
+                    v0['ref'].index(rr)
+                    for rr in self.dobj[self._which_bsplines][k1]['ref']
+                ]
+                for k1 in v0[self._which_bsplines]
+            }
             for k0, v0 in self._ddata.items()
             if v0[self._which_bsplines] not in [None, '']
         }
-        dk.update({k0: k0 for k0 in self._dobj[self._which_bsplines].keys()})
 
         return dk
 
@@ -246,18 +252,16 @@ class BSplines2D(Previous):
     def binning(
         self,
         keys=None,
+        ref_key=None,
         bins=None,
-        axis=None,
-        key_bs=None,
     ):
         """ Return binned data along the desired axis """
         
         return _binning.binning(
             coll=self,
             keys=keys,
+            ref_key=ref_key,
             bins=bins,
-            axis=axis,
-            key_bs=key_bs,
         )
         
 
@@ -295,9 +299,7 @@ class BSplines2D(Previous):
         inplace=None,
     ):
         
-        
-        
-
+        pass
 
     """
     def get_sample_bspline(self, key=None, res=None, grid=None, mode=None):

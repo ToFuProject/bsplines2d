@@ -202,22 +202,23 @@ class Test01_Mesh2D_Fixed():
         test_input._add_data_multibs_arrays(self.bs, remove=remove)
 
     # ##############
-    # interp bs
-    # ##############
-    
-    def test30_interpolate_bsplines_simple(self):
-        pass
-
-    def test31_interpolate_bsplines_multiple(self):
-        pass
-
-    # ##############
     # binning 1d
     # ##############
 
-    def test32_binning_1d(self):
+    def test30_binning_1d(self):
+        test_input._bin(self.bs)
+
+    # ##############
+    # interp bs
+    # ##############
+    
+    def test31_interpolate_bsplines_simple(self):
         pass
 
+    def test32_interpolate_bsplines_multiple(self):
+        pass
+
+    
 
 #######################################################
 #
