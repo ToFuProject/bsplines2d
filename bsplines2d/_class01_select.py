@@ -198,13 +198,13 @@ def _select_ind(
 
                 # ind_tup is not 2d anymore
                 ind_tup = ind_bool.T.nonzero()[::-1]  # R varies first
-                warnings.warn("ind is not 2d anymore!")
+                # warnings.warn("ind is not 2d anymore!")
 
             elif ind_tup[0].shape == cropi.shape:
                 ind_bool = ind_bool & cropi
                 # ind_tup is not 2d anymore
                 ind_tup = ind_bool.T.nonzero()[::-1]  # R varies first
-                warnings.warn("ind is not 2d anymore!")
+                # warnings.warn("ind is not 2d anymore!")
 
             else:
                 ind_bool = ind_bool & cropi

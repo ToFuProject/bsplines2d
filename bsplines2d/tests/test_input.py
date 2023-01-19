@@ -285,6 +285,26 @@ def _get_bs(bs, nd=None, kind=None):
     ]
 
 
+def _get_data(bs, nd=None, kind=None):
+
+    dkd = {}
+    dbs, dref = bs.get_dict_bsplines()
+    for k0 in sorted(dbs.keys()):
+        v0 = dbs[k0]
+        for kb in v0.keys():
+            km = bs.dobj[bs._which_bsplines][kb][bs._which_mesh]
+            c0 = (
+                nd in [None, bs.dobj[bs._which_mesh][km]['nd']]
+                and kind in [None, bs.dobj[bs._which_mesh][km]['type']]
+            )
+            if c0 and k0 not in dkd.keys():
+                dkd[k0] = {'bs': [kb], 'ref': dref[k0]}
+            elif c0:
+                dkd[k0]['bs'].append(kb)
+                
+    return dkd
+
+
 def _select_mesh_elements(bsplines, nd=None, kind=None):
     lkm = _get_mesh(bsplines, nd=nd, kind=kind)
     
@@ -391,6 +411,7 @@ def _add_data_1bs_arrays(bs, nd=None, kind=None, remove=None):
     if 'nt' not in bs.dref.keys():
         bs.add_ref(key='nt', size=nt)
         bs.add_ref(key='nE', size=nE)
+        bs.add_data(key='t', data=np.linspace(1, 1.1, nt), ref='nt', unit='s')
         
     lkd = []
     for kb in lkb:
@@ -422,6 +443,7 @@ def _add_data_multibs_arrays(bs, nd=None, kind=None, remove=None):
     if 'nt' not in bs.dref.keys():
         bs.add_ref(key='nt', size=nt)
         bs.add_ref(key='nE', size=nE)
+        bs.add_data(key='t', data=np.linspace(1, 1.1, nt), ref='nt', unit='s')
     
     lkd = []
     for ii, kb in enumerate(lkb):
@@ -463,6 +485,75 @@ def _add_data_multibs_arrays(bs, nd=None, kind=None, remove=None):
     if remove:
         for kd in lkd:
             bs.remove_data(kd)
+
+
+def _interpolate(bs, nd=None, kind=None):
+    dkd = _get_data(bs, nd=nd, kind=kind)
+    
+    for ii, (kd, vd) in enumerate(dkd.items()):
+        
+        if dkd
+            
+        ref_key = None
+        nd = bs.dobj[bs._which_bsplines][ref_key]['nd']
+        
+        
+        if nd == '1d':
+            dx = {'x0': x0}
+        else:
+            dx = {'x0': x0, 'x1': x1}
+
+        vect = bs.dobj[bs._which_bsplines][vd['bs'][0]]['apex'][0]
+        vect = bs.ddata[vect]['data']
+            
+        dd = np.abs(np.mean(np.diff(vect)))
+        DD = vect[-1] - vect[0]
+        nbins = int(DD/dd)
+        bins = np.linspace(vect[0] - 0.1*DD, vect[0]+0.5*DD, nbins)
+        
+        val, units = bs.interpolate(
+            key=kd,
+            ref_key=ref_key,
+            **dx
+        )
+        
+        shape = list(bs.ddata[kd]['shape'])
+        shape[0] = nbins - 1
+        #assert val.shape == shape
+
+
+def _bin_bs(bs, nd=None, kind=None):
+    dkd = _get_data(bs, nd=nd, kind=kind)
+    
+    print()
+    print(nd, kind, sorted(dkd.keys()))
+    
+    for ii, (kd, vd) in enumerate(dkd.items()):
+            
+        if ii % 10 == 0 and len(vd['ref']) > 1:
+            ref_key = vd['ref'][0]
+        elif len(vd['ref']) > 1:
+            ref_key = vd['bs'][0]
+        else:
+            continue
+            
+        vect = bs.dobj[bs._which_bsplines][vd['bs'][0]]['apex'][0]
+        vect = bs.ddata[vect]['data']
+            
+        dd = np.abs(np.mean(np.diff(vect)))
+        DD = vect[-1] - vect[0]
+        nbins = int(DD/dd)
+        bins = np.linspace(vect[0] - 0.1*DD, vect[0]+0.5*DD, nbins)
+        
+        val, units = bs.binning(
+            key=kd,
+            ref_key=ref_key,
+            bins=bins,
+        )
+        
+        shape = list(bs.ddata[kd]['shape'])
+        shape[0] = nbins - 1
+        #assert val.shape == shape
 
 
 def _add_data_var(bsplines, key):

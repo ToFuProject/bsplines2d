@@ -35,7 +35,11 @@ def binning(
     # checks
     
     # keys
-    isbs, key, ref_key, axis = _binning_check_keys(coll=coll, ref_key=ref_key)
+    isbs, key, ref_key, axis = _binning_check_keys(
+        coll=coll,
+        key=key,
+        ref_key=ref_key,
+    )
         
     # ----------
     # trivial
@@ -53,7 +57,7 @@ def binning(
     
     # units
     keym = coll.dobj[coll._which_bsplines][ref_key][coll._which_mesh]
-    kknots = coll.dobj[coll._which_mesh]['knots'][0]
+    kknots = coll.dobj[coll._which_mesh][keym]['knots'][0]
     
     units = coll.ddata[key]['units']
     units_ref = coll.ddata[kknots]['units']
@@ -88,7 +92,7 @@ def binning(
 
     # sample mesh
     res0 = np.abs(np.min(np.diff(vect)))
-    xx = coll.get_sample_mesh(keym, res=res0 / npts, mode='abs')
+    xx = coll.get_sample_mesh(keym, res=res0 / npts, mode='abs')[0]
 
     # interpolate
     val = clas(
@@ -104,7 +108,7 @@ def binning(
         db=db,
         vect=xx,
         data=val,
-        axis=axis,
+        axis=axis[0],
     )
     
     return val, units
@@ -125,7 +129,7 @@ def _binning_check_keys(
     # keys
     
     # dict of bsplines data
-    dbs = coll.get_dict_bsplines()
+    dbs = coll.get_dict_bsplines()[0]
     
     # binning only for non-bsplines or 1d bsplines
     lok_nobs = [k0 for k0, v0 in coll.ddata.items() if k0 not in dbs.keys()]
@@ -170,7 +174,7 @@ def _binning_check_keys(
         isbs = ref_key in lok_bs
         
         if isbs:
-            axis = dbs[key][ref_key][0]
+            axis = dbs[key][ref_key]
 
     return isbs, key, ref_key, axis
 

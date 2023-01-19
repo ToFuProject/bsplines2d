@@ -250,7 +250,7 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
                 knots_per_bs[:, 0] = ind_num
                 for ii, i0 in enumerate(ind_num):
                     nu = np.unique(
-                        self.cents[cents_per_bs[ii, :nmax_cents[ii]], :]
+                        self.indices[cents_per_bs[ii, :nmax_cents[ii]], :]
                     )
                     knots_per_bs[ii, 1:nu.size] = [nn for nn in nu if nn != i0]
 

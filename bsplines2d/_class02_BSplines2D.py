@@ -156,19 +156,24 @@ class BSplines2D(Previous):
         """ Return dict of profiles2d with associated bsplines as values """
 
         # dict of profiles2d
-        dk = {
-            k0: {
-                k1: [
-                    v0['ref'].index(rr)
-                    for rr in self.dobj[self._which_bsplines][k1]['ref']
+        dbs, dref = {}, {}
+        for k0, v0 in self._ddata.items():
+            if v0[self._which_bsplines] not in [None, '']:
+                dbs[k0] = {
+                    k1: [
+                        v0['ref'].index(rr)
+                        for rr in self.dobj[self._which_bsplines][k1]['ref']
+                    ]
+                    for k1 in v0[self._which_bsplines]
+                }
+                
+                lax = np.concatenate(tuple([v1 for v1 in dbs[k0].values()]))
+                dref[k0] = [
+                    rr for ii, rr in enumerate(v0['ref'])
+                    if ii not in lax
                 ]
-                for k1 in v0[self._which_bsplines]
-            }
-            for k0, v0 in self._ddata.items()
-            if v0[self._which_bsplines] not in [None, '']
-        }
 
-        return dk
+        return dbs, dref
 
     # -----------------
     # indices
@@ -251,7 +256,7 @@ class BSplines2D(Previous):
 
     def binning(
         self,
-        keys=None,
+        key=None,
         ref_key=None,
         bins=None,
     ):
@@ -259,7 +264,7 @@ class BSplines2D(Previous):
         
         return _binning.binning(
             coll=self,
-            keys=keys,
+            key=key,
             ref_key=ref_key,
             bins=bins,
         )

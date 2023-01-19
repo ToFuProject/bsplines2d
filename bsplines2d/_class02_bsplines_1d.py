@@ -143,6 +143,8 @@ class UnivariateSpline():
             val_out = np.nan
         if deriv is None:
             deriv = 0
+        if hasattr(axis, '__iter__'):
+            axis = axis[0]
 
         # coefs
         self._check_coefs(coefs=coefs, axis=axis)
@@ -166,10 +168,10 @@ class UnivariateSpline():
         if val_out is not False:
             # pts out 
             indout = (xx < self.knots[0]) | (xx > self.knots[-1])
-            sli = [
+            sli = tuple([
                 indout if ii == axis else slice(None)
                 for ii in range(len(shape))
-            ]
+            ])
             val[sli] = val_out
 
         return val
