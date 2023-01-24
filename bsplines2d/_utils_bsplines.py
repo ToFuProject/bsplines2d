@@ -341,62 +341,6 @@ def _get_apex_per_bs(
 # #################################################################
 
 
-def _coefs_axis(shapebs=None, coefs=None, axis=None, shapex=None):
-    
-    # -------------------------------------------------
-    # initial safety check on coefs vs shapebs vs axis
-    
-    if np.isscalar(coefs):
-        coefs = np.full(shapebs, coefs)
-    
-    c0 = (
-        isinstance(coefs, np.ndarray)
-        and coefs.ndim >= len(shapebs)
-        and len(axis) == len(shapebs)
-        and all([aa == axis[0] + ii for ii, aa in enumerate(axis)])
-        and all([coefs.shape[aa] == shapebs[ii] for ii, aa in enumerate(axis)])
-    )
-    if not c0:
-        msg = (
-            f"Arg coefs must have a shape including {shapebs}\n"
-            f"\t- shapebs: {shapebs}\n"
-            f"\t- coefs.shape: {coefs.shape}\n"
-            f"\t- axis: {axis}\n"
-        )
-        raise Exception(msg)
-    
-    # ----------------
-    # shape for output 
-    
-    shape_pts, axis_x, ind_coefs, ind_x = [], [], [], []
-    jj = 0
-    for ii in range(coefs.ndim):
-        if ii == axis[0]:
-            for jj in range(len(shapex)):
-                shape_pts.append(shapex[jj])
-                axis_x.append(ii + jj)
-                ind_x.append(None)
-            ind_coefs.append(None)
-            
-        elif len(axis) > 1 and ii in axis[1:]:
-            ind_coefs.append(None)
-        else:
-            shape_pts.append(coefs.shape[ii])
-            ind_coefs.append(jj)
-            ind_x.append(jj)
-            jj += 1
-    
-    # ----------------
-    # shape_other
-    
-    shape_other = tuple([
-        ss for ii, ss in enumerate(coefs.shape)
-        if ii not in axis
-    ])
-    
-    return tuple(shape_pts), shape_other, axis_x, ind_coefs, ind_x
-
-
 def _get_slices_iter(
     axis=None,
     axis_x=None,

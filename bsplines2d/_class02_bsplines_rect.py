@@ -153,11 +153,11 @@ class BivariateSplineRect(scpinterp.BivariateSpline):
         # coefs
         (
             shape_x, shape_other, axis_x, ind_coefs, ind_x,
-        ) = _utils_bsplines._coefs_axis(
-            shapebs=self.shapebs,
-            coefs=coefs,
+        ) = ds._class1_interpolate._get_shapes_axis_ind(
+            shape_bs=self.shapebs,
+            shape_coefs=coefs.shape,
             axis=axis,
-            shapex=x0.shape,
+            shape_x=x0.shape,
         )
         shape_coefs = coefs.shape
         

@@ -491,8 +491,6 @@ def _interpolate(bs, nd=None, kind=None):
     dkd = _get_data(bs, nd=nd, kind=kind)
     
     for ii, (kd, vd) in enumerate(dkd.items()):
-        
-        if dkd
             
         ref_key = None
         nd = bs.dobj[bs._which_bsplines][ref_key]['nd']
@@ -514,7 +512,7 @@ def _interpolate(bs, nd=None, kind=None):
         val, units = bs.interpolate(
             key=kd,
             ref_key=ref_key,
-            **dx
+            **dx,
         )
         
         shape = list(bs.ddata[kd]['shape'])
@@ -546,7 +544,7 @@ def _bin_bs(bs, nd=None, kind=None):
         bins = np.linspace(vect[0] - 0.1*DD, vect[0]+0.5*DD, nbins)
         
         val, units = bs.binning(
-            key=kd,
+            keys=kd,
             ref_key=ref_key,
             bins=bins,
         )

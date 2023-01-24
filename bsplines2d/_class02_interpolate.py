@@ -24,6 +24,157 @@ from . import _class02_bsplines_1d
 
 # #############################################################################
 # #############################################################################
+#                                       Main
+# #############################################################################
+
+
+
+
+
+
+# #############################################################################
+# #############################################################################
+#                           checks
+# #############################################################################
+
+
+def _check_keys_dbs(
+    coll=None,
+    keys=None,
+    ref_key=None,
+):
+
+    # -------------
+    # keys vs ref_key
+    
+    # ref_key
+    if ref_key is not None:
+        if ref_key in coll.dref.keys():
+            hasref, hasvect, ref, ref_key = coll.get_ref_vector(ref=ref_key)
+        else:
+            hasref, hasvect, ref, ref_key = coll.get_ref_vector(key=ref_key)
+            
+    
+        if not (hasref and hasvect):
+            msg = (
+                "Provided ref_key not a valid ref or ref vector!\n"
+                "Provided: {ref_key}"
+            )
+            raise Exception(msg)
+            
+        lok_keys = [k0 for k0, v0 in coll.ddata.items() if ref in v0['ref']]
+        
+        if keys is None:
+            keys = lok_keys
+    else:
+        lok_keys = list(coll.ddata.keys())
+        
+    # keys
+    keys = ds._generic_check._check_var_iter(
+        keys, 'keys',
+        types=list,
+        types_iter=str,
+        allowed=lok_keys,
+    )
+    
+    if ref_key is None:
+        hasref, ref, _ref_key, val, dkeys = coll.get_ref_vector_common(
+            keys=keys,
+        )
+
+    return keys, ref_key, ref
+    
+    
+    
+    
+    
+    
+    
+    # -------------
+    # keys
+    
+    dk_bs = coll.get_dict_bsplines()[0]
+    dk_nobs = {
+        k0: v0['ref'] for k0, v0 in coll.ddata.items()
+        if k0 not in dk_bs.keys()
+        and 'crop' not in k0
+    }
+    
+    lk = list(dk_bs) + list(dk_nobs)
+    if keys is None and len(dk) == 1:
+        keys = list(dk.keys())[0]
+    
+    keys = _generic_check._check_var_iter(
+        keys, 'keys',
+        types=list,
+        types_iter=str,
+        allowed=lkok,
+    )
+    
+    
+    
+    return keys, ref_key
+    
+    
+    dk = {
+        k0: v0['bsplines']
+        for k0, v0 in coll.ddata.items()
+        if v0.get('bsplines') not in ['', None]
+        and 'crop' not in k0
+    }
+    dk.update({kk: kk for kk in coll.dobj['bsplines'].keys()})
+    if key is None and len(dk) == 1:
+        key = list(dk.keys())[0]
+    if key not in dk.keys():
+        msg = (
+            "Arg key must the key to a data referenced on a bsplines set\n"
+            f"\t- available: {list(dk.keys())}\n"
+            f"\t- provided: {key}\n"
+        )
+        raise Exception(msg)
+    
+    keybs = dk[key]
+    keym = coll.dobj['bsplines'][keybs]['mesh']
+    mtype = coll.dobj[coll._which_mesh][keym]['type']
+
+    # ---
+    # keys
+    
+    lkok = list(ddata.keys())
+    if isinstance(keys, str):
+        keys = [keys]
+    keys = _generic_check._check_var_iter(
+        keys, 'keys',
+        types=list,
+        types_iter=str,
+        allowed=lkok,
+    )
+    
+    lrefs = set([ddata[kk]['ref'] for kk in keys])
+    if len(lrefs) != 1:
+        msg = (
+            "All interpolation keys must share the same refs!\n"
+            f"\t- keys: {keys}\n"
+            f"\t- refs: {lrefs}\n"
+        )
+        raise Exception(msg)
+    
+    ref = ddata[keys[0]]['ref']
+    ndim = ddata[keys[0]]['data'].ndim
+    assert ndim == len(ref)
+    if ndim > 2:
+        msg = "Interpolation not implemented for more than 3 dimensions!"
+        raise NotImplementedError(msg)
+
+
+
+
+
+
+
+
+# #############################################################################
+# #############################################################################
 #                           Mesh2DRect - interp
 # #############################################################################
 

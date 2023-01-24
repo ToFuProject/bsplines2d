@@ -158,7 +158,7 @@ class BSplines2D(Previous):
         # dict of profiles2d
         dbs, dref = {}, {}
         for k0, v0 in self._ddata.items():
-            if v0[self._which_bsplines] not in [None, '']:
+            if v0[self._which_bsplines] not in [None, ''] and 'crop' not in k0:
                 dbs[k0] = {
                     k1: [
                         v0['ref'].index(rr)
@@ -256,7 +256,7 @@ class BSplines2D(Previous):
 
     def binning(
         self,
-        key=None,
+        keys=None,
         ref_key=None,
         bins=None,
     ):
@@ -264,7 +264,7 @@ class BSplines2D(Previous):
         
         return _binning.binning(
             coll=self,
-            key=key,
+            keys=keys,
             ref_key=ref_key,
             bins=bins,
         )
@@ -274,34 +274,44 @@ class BSplines2D(Previous):
     # interp tools
     # ------------------
 
-    def _interpolate_bsplines(
+    def interpolate(
         self,
-        # interpolation base, 1d or 2d
-        key=None,
-        # external coefs (optional)
-        coefs=None,
-        # interpolation points
+        # interpolation base
+        keys=None,
+        ref_keys=None,
+        ref_quant=None,
+        # interpolation pts
         x0=None,
         x1=None,
-        grid=None,
-        # time: t or indt
-        t=None,
-        indt=None,
-        indt_strict=None,
-        # bsplines
-        indbs=None,
         # parameters
-        details=None,
-        reshape=None,
-        res=None,
-        crop=None,
-        nan0=None,
-        val_out=None,
-        imshow=None,
+        grid=None,
+        deg=None,
+        deriv=None,
+        log_log=None,
         return_params=None,
-        # storing
-        store=None,
-        inplace=None,
+        # self,
+        # # interpolation base, 1d or 2d
+        # key=None,
+        # # external coefs (optional)
+        # coefs=None,
+        # # interpolation points
+        # x0=None,
+        # x1=None,
+        # grid=None,
+        # # bsplines
+        # indbs=None,
+        # # parameters
+        # details=None,
+        # reshape=None,
+        # res=None,
+        # crop=None,
+        # nan0=None,
+        # val_out=None,
+        # imshow=None,
+        # return_params=None,
+        # # storing
+        # store=None,
+        # inplace=None,
     ):
         
         pass
