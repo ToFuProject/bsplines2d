@@ -68,9 +68,6 @@ def binning(
     keym = coll.dobj[coll._which_bsplines][ref_key][coll._which_mesh]
     kknots = coll.dobj[coll._which_mesh][keym]['knots'][0]
 
-    units = coll.ddata[key]['units']
-    units_ref = coll.ddata[kknots]['units']
-
     # vect
     vect = coll.ddata[kknots]['data']
 
@@ -86,7 +83,7 @@ def binning(
     )
 
     # units
-    units = ds._class1_binning._units(
+    dunits = ds._class1_binning._units(
         key=key,
         units=units,
         units_ref=units_ref,
@@ -309,7 +306,7 @@ def _binning_check_keys(
 
         # units_ref
         wbs = coll._which_bsplines
-        units_ref = coll.ddata[coll.dobj[wbs][ref_key]['knots'][0]]['units']
+        units_ref = coll.ddata[coll.dobj[wbs][ref_key]['apex'][0]]['units']
 
     # ref_key
     elif ref_key is None:

@@ -82,39 +82,39 @@ def _check_keys_dbs(
         )
 
     return keys, ref_key, ref
-    
-    
-    
-    
-    
-    
-    
+
+
+
+
+
+
+
     # -------------
     # keys
-    
+
     dk_bs = coll.get_dict_bsplines()[0]
     dk_nobs = {
         k0: v0['ref'] for k0, v0 in coll.ddata.items()
         if k0 not in dk_bs.keys()
         and 'crop' not in k0
     }
-    
+
     lk = list(dk_bs) + list(dk_nobs)
     if keys is None and len(dk) == 1:
         keys = list(dk.keys())[0]
-    
+
     keys = _generic_check._check_var_iter(
         keys, 'keys',
         types=list,
         types_iter=str,
         allowed=lkok,
     )
-    
-    
-    
+
+
+
     return keys, ref_key
-    
-    
+
+
     dk = {
         k0: v0['bsplines']
         for k0, v0 in coll.ddata.items()
@@ -131,14 +131,14 @@ def _check_keys_dbs(
             f"\t- provided: {key}\n"
         )
         raise Exception(msg)
-    
+
     keybs = dk[key]
     keym = coll.dobj['bsplines'][keybs]['mesh']
     mtype = coll.dobj[coll._which_mesh][keym]['type']
 
     # ---
     # keys
-    
+
     lkok = list(ddata.keys())
     if isinstance(keys, str):
         keys = [keys]
@@ -148,7 +148,7 @@ def _check_keys_dbs(
         types_iter=str,
         allowed=lkok,
     )
-    
+
     lrefs = set([ddata[kk]['ref'] for kk in keys])
     if len(lrefs) != 1:
         msg = (
@@ -157,7 +157,7 @@ def _check_keys_dbs(
             f"\t- refs: {lrefs}\n"
         )
         raise Exception(msg)
-    
+
     ref = ddata[keys[0]]['ref']
     ndim = ddata[keys[0]]['data'].ndim
     assert ndim == len(ref)
@@ -323,7 +323,7 @@ def _interp2d_check(
         # take out key if bsplines
         lk = [kk for kk in [key, radius2d] if kk != keybs]
 
-        # 
+        #
         hastime, reft, keyt, t, dind = coll.get_time_common(
             keys=lk,
             t=t,
@@ -684,7 +684,7 @@ def interp2d(
     radius=None,
     angle=None,
     grid=None,
-    radius_vs_time=None,        # if radius is provided, in case radius vs time 
+    radius_vs_time=None,        # if radius is provided, in case radius vs time
     azone=None,                 # if angle2d is interpolated, exclusion zone
     # time: t or indt
     t=None,
@@ -1494,7 +1494,7 @@ def radius2d_special_points(
         ref_O: {'size': 1},
     }
 
-    # get barycenter 
+    # get barycenter
     if val.ndim == 3:
         assert cR.shape[1] == 1
         ax_R = np.nanmean(cR[:, 0, :], axis=-1)[:, None]
@@ -1614,7 +1614,7 @@ def angle2d_zone(
     rmin = np.full(cRmin.shape, np.nan)
     rmax = np.full(cRmax.shape, np.nan)
 
-    # get points inside contour 
+    # get points inside contour
     for ii in range(nt):
         rmin[ii, :], _, _ = coll.interpolate_profile2d(
             key=keyrad2d,
@@ -1698,7 +1698,7 @@ def angle2d_zone(
     # Ajust sizes
     nb = np.array([pR.size for pR in lpR])
 
-    # 
+    #
     nmax = np.max(nb)
     pR = np.full((nt, nmax), np.nan)
     pZ = np.full((nt, nmax), np.nan)

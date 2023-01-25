@@ -49,7 +49,6 @@ def _mesh1d_bsplines(
 
     ref = (kbsn,)
     apex = (kbsap,)
-    apunits = coll.ddata[kknots]['units']
 
     # ----------------
     # format into dict
@@ -64,10 +63,10 @@ def _mesh1d_bsplines(
     ddata = {
         kbsap: {
             'data': clas.apex_per_bs,
-            'units': apunits,
-            'dim': '',
-            'quant': '',
-            'name': '',
+            'units': coll.ddata[kknots]['units'],
+            'dim': coll.ddata[kknots]['dim'],
+            'quant': coll.ddata[kknots]['quant'],
+            'name': coll.ddata[kknots]['name'],
             'ref': (kbsn,),
         },
     }
@@ -295,18 +294,18 @@ def _mesh2DTri_bsplines(coll=None, keym=None, keybs=None, deg=None):
     ddata = {
         kbscr: {
             'data': bs_cents[0, :],
-            'units': coll.ddata[kknots]['units'],
-            'dim': coll.ddata[kknots]['dim'],
-            'quant': coll.ddata[kknots]['quant'],
-            'name': coll.ddata[kknots]['name'],
+            'units': coll.ddata[kknots[0]]['units'],
+            'dim': coll.ddata[kknots[0]]['dim'],
+            'quant': coll.ddata[kknots[0]]['quant'],
+            'name': coll.ddata[kknots[0]]['name'],
             'ref': (keybsr,),
         },
         kbscz: {
             'data': bs_cents[1, :],
-            'units': coll.ddata[kknots]['units'],
-            'dim': coll.ddata[kknots]['dim'],
-            'quant': coll.ddata[kknots]['quant'],
-            'name': coll.ddata[kknots]['name'],
+            'units': coll.ddata[kknots[1]]['units'],
+            'dim': coll.ddata[kknots[1]]['dim'],
+            'quant': coll.ddata[kknots[1]]['quant'],
+            'name': coll.ddata[kknots[1]]['name'],
             'ref': (keybsr,),
         },
     }
