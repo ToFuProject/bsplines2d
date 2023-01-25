@@ -533,15 +533,15 @@ def _interpolate(bs, nd=None, kind=None):
 def _bin_bs(bs, nd=None, kind=None):
     dkd = _get_data(bs, nd=nd, kind=kind)
 
-    print()
-    print(nd, kind, sorted(dkd.keys()))
-
+    wbs = bs._which_bsplines
     for ii, (kd, vd) in enumerate(dkd.items()):
 
         if ii % 10 == 0 and len(vd['ref']) > 1:
             ref_key = vd['ref'][0]
+            ax = 0
         elif len(vd['ref']) > 1:
             ref_key = vd['bs'][0]
+            ax = bs.ddata[kd]['ref'].index(bs.dobj[wbs][ref_key]['ref'][0])
         else:
             continue
 
@@ -553,15 +553,24 @@ def _bin_bs(bs, nd=None, kind=None):
         nbins = int(DD/dd)
         bins = np.linspace(vect[0] - 0.1*DD, vect[0]+0.5*DD, nbins)
 
-        val, units = bs.binning(
+        dout = bs.binning(
             keys=kd,
             ref_key=ref_key,
             bins=bins,
         )
 
         shape = list(bs.ddata[kd]['shape'])
-        shape[0] = nbins - 1
-        #assert val.shape == shape
+        shape[ax] = nbins - 1
+        shape = tuple(shape)
+        if dout[kd]['data'].shape != shape:
+            shd = bs.ddata[kd]['data'].shape
+            msg = (
+                "Binnign of data '{kd}' along ref 'ref_key' has wrong shape:\n"
+                f"\t- ddata['{kd}']['data'].shape = {shd}\n"
+                f"\t- dout['{kd}']['data'].shape = {dout[kd]['data'].shape}\n"
+                f"\t- expected shape = {shape}\n"
+            )
+            raise Exception(msg)
 
 
 def _add_data_var(bsplines, key):

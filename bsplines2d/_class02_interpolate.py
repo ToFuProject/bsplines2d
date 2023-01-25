@@ -13,8 +13,6 @@ import datastock as ds
 
 
 # tofu
-from . import _generic_mesh
-from . import _utils_bsplines
 # from . import _class02_checks as _checks
 from . import _class02_bsplines_rect
 from . import _class02_bsplines_tri
@@ -22,151 +20,492 @@ from . import _class02_bsplines_polar
 from . import _class02_bsplines_1d
 
 
-# #############################################################################
-# #############################################################################
+# #################################################################
+# #################################################################
 #                                       Main
-# #############################################################################
+# #################################################################
+
+
+def interpolate(
+    coll=None,
+    # interpolation base
+    keys=None,
+    ref_key=None,
+    # interpolation pts
+    x0=None,
+    x1=None,
+    grid=None,
+    # domain limitation
+    ddomain=None,
+    # bsplines-specific
+    details=None,
+    # parameters
+    deg=None,
+    deriv=None,
+    log_log=None,
+    return_params=None,
+):
+    """ Interpolate at desired points on desired data
+
+    Interpolate quantities (keys) on coordinates (ref_keys)
+    All provided keys should share the same refs
+    They should have dimension 2 or less
+
+    ref_keys should be a list of monotonous data keys to be used as coordinates
+    It should have one element per dimension in refs
+
+    The interpolation points are provided as np.ndarrays in each dimension
+    They should all have the same shape except if grid = True
+
+    deg is the degree of the interpolation
+
+    It is an interpolation, not a smoothing, so it will pass through all points
+    Uses scpinterp.InterpolatedUnivariateSpline() for 1d
+
+    """
+
+    # -------------
+    # check inputs
+
+    # keys
+    isbs, keys, ref_key, daxis, dunits, units_ref = _check_keys(
+        coll=coll,
+        keys=keys,
+        ref_key=ref_key,
+        only1d=False,
+    )
+
+    # -----------
+    # trivial
+
+    if not isbs:
+        return ds._class1_interpolate.interpolate(
+            coll=coll,
+            # interpolation base
+            keys=keys,
+            ref_key=ref_key,
+            # interpolation pts
+            x0=x0,
+            x1=x1,
+            grid=grid,
+            # parameters
+            deg=deg,
+            deriv=deriv,
+            log_log=log_log,
+            return_params=return_params,
+        )
+
+    # -----------------
+    # prepare bsplines
+
+    keybs, keym, mtype, ref_key = _prepare_bsplines(
+        coll=coll,
+        keys=keys,
+        ref_key=ref_key,
+    )
+
+    # params
+    (
+        _, deriv,
+        x0, x1,
+        log_log, grid, ndim, return_params,
+    ) = ds._class1_interpolate._check_params(
+        coll=coll,
+        # interpolation base
+        keys=keys,
+        ref_key=ref_key,      # ddata keys
+        # interpolation pts
+        x0=x0,
+        x1=x1,
+        # parameters
+        grid=grid,
+        deg=None,
+        deriv=deriv,
+        log_log=None,
+        return_params=return_params,
+    )
+
+    # ------------
+    # prepare
+
+    dshape, dout = ds._class1_inerpolate._prepare_dshape_dout(
+        coll=coll,
+        keys=keys,
+        daxis=daxis,
+        dunits=dunits,
+        x0=x0,
+    )
+
+    # ---------------
+    # prepare x0, x1
 
 
 
+    # ---------------
+    # interpolate
+
+    # loop on keys
+    derr = {}
+    clas = coll.dobj[coll._which_bsplines][ref_key]['class']
+    for ii, k0 in enumerate(keys):
+
+        try:
+            dout[k0]['data'] = clas(
+                coefs=coll.ddata[k0]['data'],
+                x0=x0,
+            )
+
+            print('success')
+
+        except Exception as err:
+            raise err
+            derr[k0] = str(err)
+
+    # ----------------------------
+    # raise warning if any failure
+
+    if len(derr) > 0:
+        lstr = [f"\t- '{k0}': {v0}" for k0, v0 in derr.items()]
+        msg = (
+            "The following keys could not be interpolated:\n"
+            + "\n".join(lstr)
+        )
+        warnings.warn(msg)
+
+    # -------
+    # return
+
+    if return_params is True:
+        dparam = {
+            'keys': keys,
+            'ref_key': ref_key,
+            'deg': deg,
+            'deriv': deriv,
+            'log_log': log_log,
+            'x0': x0,
+            'x1': x1,
+            'grid': grid,
+        }
+        return dout, dparam
+    else:
+        return dout
 
 
+# ####################################
+# ####################################
+#       check
+# ####################################
 
-# #############################################################################
-# #############################################################################
-#                           checks
-# #############################################################################
 
-
-def _check_keys_dbs(
+def _check_keys(
     coll=None,
     keys=None,
     ref_key=None,
+    only1d=None,
 ):
 
-    # -------------
+    # only1d
+    only1d = ds._generic_check._check_var(
+        only1d, 'only1d',
+        types=bool,
+        default=True,
+    )
+
+    maxd = 1 if only1d else 2
+
+    # ---------------
     # keys vs ref_key
 
     # ref_key
+    dbs = coll.get_dict_bsplines()[0]
     if ref_key is not None:
-        if ref_key in coll.dref.keys():
-            hasref, hasvect, ref, ref_key = coll.get_ref_vector(ref=ref_key)
-        else:
-            hasref, hasvect, ref, ref_key = coll.get_ref_vector(key=ref_key)
 
-        if not (hasref and hasvect):
+        # basic checks
+        if isinstance(ref_key, str):
+            ref_key = (ref_key,)
+
+        lref = list(coll.dref.keys())
+        ldata = list(coll.ddata.keys())
+        lbs = list(coll.dobj[coll._which_bsplines].keys())
+
+        ref_key = list(ds._generic_check._check_var_iter(
+            ref_key, 'ref_key',
+            types=(list, tuple),
+            types_iter=str,
+            allowed=lref + ldata + lbs,
+        ))
+
+        lc = [
+            all([rr in lref + ldata for rr in ref_key]),
+            all([rr in lbs for rr in ref_key]),
+        ]
+        if np.sum(lc) != 1:
             msg = (
-                "Provided ref_key not a valid ref or ref vector!\n"
-                "Provided: {ref_key}"
+                "Arg ref_key must refer to (ref or vector) xor bsplines!\n"
+                f"Provided: {ref_key}"
             )
             raise Exception(msg)
 
-        lok_keys = [k0 for k0, v0 in coll.ddata.items() if ref in v0['ref']]
+        # check vs maxd
+        if (lc[0] and len(ref_key) > maxd) or (lc[1] and len(ref_key) != 1):
+            msg = (
+                "Arg ref_key shall not more than {maxd} ref!\n"
+                "And can only contain one single bsplines!\n"
+                f"Provided: {ref_key}"
+            )
+            raise Exception(msg)
+
+        # bs vs refs
+        if lc[1]:
+            ref_key = ref_key[0]
+            lok_bs = [
+                k0 for k0, v0 in coll.ddata.items()
+                if ref_key in v0[coll._which_bsplines]
+            ]
+            lok_nobs = []
+
+        else:
+
+            # check vs valid vectors
+            for ii, rr in enumerate(ref_key):
+                if rr in lref:
+                    kwd = {'ref': rr}
+                else:
+                    kwd = {'key': rr}
+                hasref, hasvect, ref, ref_key[ii] = coll.get_ref_vector(**kwd)[:4]
+
+                if not (hasref and hasvect):
+                    msg = (
+                        f"Provided ref_key[{ii}] not a valid ref or ref vector!\n"
+                        "Provided: {rr}"
+                    )
+                    raise Exception(msg)
+
+            if not (hasref and hasvect):
+                msg = (
+                    "Provided ref_key not a valid ref or ref vector!\n"
+                    "Provided: {ref_key}"
+                )
+                raise Exception(msg)
+
+            lok_nobs = [
+                k0 for k0, v0 in coll.ddata.items()
+                if all([coll.ddata[rr]['ref'][0] in v0['ref'] for rr in ref_key])
+            ]
+            lok_bs = []
 
         if keys is None:
-            keys = lok_keys
+            keys = lok_nobs + lok_bs
+
     else:
-        lok_keys = list(coll.ddata.keys())
+        # binning only for non-bsplines or 1d bsplines
+        lok_nobs = [k0 for k0, v0 in coll.ddata.items() if k0 not in dbs.keys()]
+        lok_bs = [
+            k0 for k0, v0 in coll.ddata.items()
+            if (
+                k0 in dbs.keys()
+                and any([len(v1) <= maxd for v1 in dbs[k0].values()])
+            )
+        ]
 
-    # keys
-    keys = ds._generic_check._check_var_iter(
-        keys, 'keys',
-        types=list,
-        types_iter=str,
-        allowed=lok_keys,
-    )
-
-    if ref_key is None:
-        hasref, ref, _ref_key, val, dkeys = coll.get_ref_vector_common(
-            keys=keys,
-        )
-
-    return keys, ref_key, ref
-
-
-
-
-
-
-
-    # -------------
+    # ---------
     # keys
 
-    dk_bs = coll.get_dict_bsplines()[0]
-    dk_nobs = {
-        k0: v0['ref'] for k0, v0 in coll.ddata.items()
-        if k0 not in dk_bs.keys()
-        and 'crop' not in k0
-    }
-
-    lk = list(dk_bs) + list(dk_nobs)
-    if keys is None and len(dk) == 1:
-        keys = list(dk.keys())[0]
-
-    keys = _generic_check._check_var_iter(
-        keys, 'keys',
-        types=list,
-        types_iter=str,
-        allowed=lkok,
-    )
-
-
-
-    return keys, ref_key
-
-
-    dk = {
-        k0: v0['bsplines']
-        for k0, v0 in coll.ddata.items()
-        if v0.get('bsplines') not in ['', None]
-        and 'crop' not in k0
-    }
-    dk.update({kk: kk for kk in coll.dobj['bsplines'].keys()})
-    if key is None and len(dk) == 1:
-        key = list(dk.keys())[0]
-    if key not in dk.keys():
-        msg = (
-            "Arg key must the key to a data referenced on a bsplines set\n"
-            f"\t- available: {list(dk.keys())}\n"
-            f"\t- provided: {key}\n"
-        )
-        raise Exception(msg)
-
-    keybs = dk[key]
-    keym = coll.dobj['bsplines'][keybs]['mesh']
-    mtype = coll.dobj[coll._which_mesh][keym]['type']
-
-    # ---
-    # keys
-
-    lkok = list(ddata.keys())
     if isinstance(keys, str):
         keys = [keys]
-    keys = _generic_check._check_var_iter(
+
+    keys = ds._generic_check._check_var_iter(
         keys, 'keys',
-        types=list,
         types_iter=str,
-        allowed=lkok,
+        types=list,
+        allowed=lok_nobs + lok_bs,
     )
 
-    lrefs = set([ddata[kk]['ref'] for kk in keys])
-    if len(lrefs) != 1:
+    libs = [
+        all([k0 in lok_bs for k0 in keys]),
+        all([k0 not in lok_bs for k0 in keys]),
+    ]
+    if np.sum(libs) != 1:
         msg = (
-            "All interpolation keys must share the same refs!\n"
-            f"\t- keys: {keys}\n"
-            f"\t- refs: {lrefs}\n"
+            "Either all keys must refer to bsplines or to non-bsplines!\n"
+            f"Provided: {keys}"
         )
         raise Exception(msg)
 
-    ref = ddata[keys[0]]['ref']
-    ndim = ddata[keys[0]]['data'].ndim
-    assert ndim == len(ref)
-    if ndim > 2:
-        msg = "Interpolation not implemented for more than 3 dimensions!"
-        raise NotImplementedError(msg)
+    isbs = libs[0]
+
+    # ------------
+    # ref_key
+
+    if isbs:
+
+        # check ref_key
+        wbs = coll._which_bsplines
+        lbs = [
+            [
+                bs for bs in coll.ddata[k0][wbs]
+                if len(coll.dobj[wbs][bs]['ref']) <= maxd
+            ]
+            for k0 in keys
+            if any([
+                len(coll.dobj[wbs][bs]['ref']) <= maxd
+                for bs in coll.ddata[k0][wbs]
+            ])
+        ]
+        lbsu = sorted(set(itt.chain.from_iterable(lbs)))
+        lbsok = [
+            bs for bs in lbsu
+            if all([bs in bb for bb in lbs])
+        ]
+
+        # ref_key
+        ref_key = ds._generic_check._check_var(
+            ref_key, 'ref_key',
+            types=str,
+            allowed=lbsok,
+        )
+
+        # daxis
+        daxis = {
+            k0: coll.ddata[k0]['ref'].index(coll.dobj[wbs][ref_key]['ref'][0])
+            for k0 in keys
+        }
+
+        # dunits
+        dunits = {
+            k0: coll.ddata[coll.dobj[wbs][ref_key]['apex'][0]]['units']
+            for k0 in keys
+        }
+
+        # units_ref
+        wbs = coll._which_bsplines
+        units_ref = coll.ddata[coll.dobj[wbs][ref_key]['apex'][0]]['units']
+
+    # ref_key
+    else:
+        if ref_key is None:
+            hasref, ref, ref_key, val, dkeys = coll.get_ref_vector_common(
+                keys=keys,
+            )
+            if ref_key is None:
+                msg = f"No matching ref vector found for {keys}"
+                raise Exception(msg)
+            ref_key = (ref_key,)
+
+        # daxis
+        daxis = {
+            k0: [
+                coll.ddata[k0]['ref'].index(coll.ddata[rr]['ref'][0])
+                for rr in ref_key
+            ]
+            for k0 in keys
+        }
+
+        # dunits
+        dunits = {k0: coll.ddata[k0]['units'] for k0 in keys}
+
+        # units_ref
+        units_ref = [coll.ddata[rr]['units'] for rr in ref_key]
+
+    return isbs, keys, ref_key, daxis, dunits, units_ref
 
 
+# #############################################################################
+# #############################################################################
+#                       Prepare bsplines
+# #############################################################################
 
+
+def _prepare_bsplines(
+    coll=None,
+    keys=None,
+    ref_key=None,
+    details=None,
+    crop=None,
+    nan0=None,
+    val_out=None,
+):
+
+    # ----------------
+    # keys and types
+
+    wbs = coll._which_bsplines
+    keybs = ref_key
+    keym = coll.dobj[wbs][keybs]['mesh']
+    ref_key = coll.dobj[wbs][keybs]['ref']
+    mtype = coll.dobj[coll._which_mesh][keym]['type']
+
+    # -------------
+    # details
+
+    details = ds._generic_check._check_var(
+        details, 'details',
+        types=bool,
+        default=False,
+    )
+
+    # -------------
+    # crop
+
+    crop = ds._generic_check._check_var(
+        crop, 'crop',
+        types=bool,
+        default=mtype == 'rect',
+        allowed=[False, True] if mtype == 'rect' else [False],
+    )
+
+    # -------------
+    # nan0
+
+    nan0 = ds._generic_check._check_var(
+        nan0, 'nan0',
+        types=bool,
+        default=True,
+    )
+
+    # -------------
+    # val_out
+
+    val_out = ds._generic_check._check_var(
+        val_out, 'val_out',
+        default=np.nan,
+        allowed=[False, np.nan, 0.]
+    )
+
+    # -------------
+    # azone
+
+    azone = ds._generic_check._check_var(
+        azone, 'azone',
+        types=bool,
+        default=True,
+    )
+
+    # -----------
+    # indbs
+
+    if details is True:
+        if mtype == 'rect':
+            returnas = 'tuple-flat'
+        elif mtype == 'tri':
+            returnas = int
+        elif mtype == 'polar':
+            if len(coll.dobj['bsplines'][keybs]['shape']) == 2:
+                returnas = 'array-flat'
+            else:
+                returnas = int
+
+        # compute validated indbs array with appropriate form
+        indbs_tf = coll.select_ind(
+            key=keybs,
+            returnas=returnas,
+            ind=indbs,
+        )
+    else:
+        indbs_tf = None
+
+
+    return keybs, keym, mtype, ref_key
 
 
 

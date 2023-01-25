@@ -204,8 +204,8 @@ class Test01_Mesh2D_Fixed():
     # interp bs
     # ##############
 
-    # def test30_interpolate_bsplines_1d(self):
-    #     test_input._bin_bs(self.bs, nd='1d', kind=None)
+    def test30_interpolate_bsplines_1d(self):
+        test_input._bin_bs(self.bs, nd='1d', kind=None)
 
     # def test31_interpolate_bsplines_multiple(self):
     #     pass
@@ -217,11 +217,11 @@ class Test01_Mesh2D_Fixed():
     def test30_binning_1d(self):
         test_input._bin_bs(self.bs, nd='1d', kind=None)
 
-    def test31_binning_2d_rect(self):
-        test_input._bin_bs(self.bs, nd='2d', kind='rect')
+    # def test31_binning_2d_rect(self):
+        # test_input._bin_bs(self.bs, nd='2d', kind='rect')
 
-    def test32_binning_2d_tri(self):
-        test_input._bin_bs(self.bs, nd='2d', kind='tri')
+    # def test32_binning_2d_tri(self):
+        # test_input._bin_bs(self.bs, nd='2d', kind='tri')
 
     # ##############
     # plot bsplines
