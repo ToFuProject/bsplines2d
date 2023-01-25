@@ -19,10 +19,10 @@ from . import _class02_bsplines_1d
 
 
 
-# #############################################################################
-# #############################################################################
+# ##################################################################
+# ##################################################################
 #                           Mesh1D - bsplines
-# #############################################################################
+# ##################################################################
 
 
 def _mesh1d_bsplines(
@@ -31,7 +31,7 @@ def _mesh1d_bsplines(
     keybs=None,
     deg=None,
 ):
-    
+
     kknots = coll.dobj[coll._which_mesh][keym]['knots'][0]
     knots = coll.ddata[kknots]['data']
 
@@ -49,6 +49,7 @@ def _mesh1d_bsplines(
 
     ref = (kbsn,)
     apex = (kbsap,)
+    apunits = coll.ddata[kknots]['units']
 
     # ----------------
     # format into dict
@@ -63,7 +64,7 @@ def _mesh1d_bsplines(
     ddata = {
         kbsap: {
             'data': clas.apex_per_bs,
-            'units': '',
+            'units': apunits,
             'dim': '',
             'quant': '',
             'name': '',
@@ -121,7 +122,7 @@ def _mesh2DRect_bsplines(coll=None, keym=None, keybs=None, deg=None):
 
     clas = _class02_bsplines_rect.get_bs_class(
         deg=deg,
-        knots0=knots0, 
+        knots0=knots0,
         knots1=knots1,
         shapebs=shapebs,
         # knots_per_bs_R=knots_per_bs_R,
@@ -146,18 +147,18 @@ def _mesh2DRect_bsplines(coll=None, keym=None, keybs=None, deg=None):
     ddata = {
         kRbsap: {
             'data': Rbs_apex,
-            'units': 'm',
-            'dim': 'distance',
-            'quant': 'R',
-            'name': 'R',
+            'units': coll.ddata[k0]['units'],
+            'dim': coll.ddata[k0]['dim'],
+            'quant': coll.ddata[k0]['quant'],
+            'name': coll.ddata[k0]['name'],
             'ref': kRbsapn,
         },
         kZbsap: {
             'data': Zbs_apex,
-            'units': 'm',
-            'dim': 'distance',
-            'quant': 'Z',
-            'name': 'Z',
+            'units': coll.ddata[k1]['units'],
+            'dim': coll.ddata[k1]['dim'],
+            'quant': coll.ddata[k1]['quant'],
+            'name': coll.ddata[k1]['name'],
             'ref': kZbsapn,
         },
     }
@@ -257,10 +258,10 @@ def _mesh2DRect_bsplines_knotscents(
     return out
 
 
-# #############################################################################
-# #############################################################################
+# ##################################################################
+# ##################################################################
 #                           Mesh2 - Tri - bsplines
-# #############################################################################
+# ##################################################################
 
 
 def _mesh2DTri_bsplines(coll=None, keym=None, keybs=None, deg=None):
@@ -294,18 +295,18 @@ def _mesh2DTri_bsplines(coll=None, keym=None, keybs=None, deg=None):
     ddata = {
         kbscr: {
             'data': bs_cents[0, :],
-            'units': 'm',
-            'dim': 'distance',
-            'quant': 'R',
-            'name': 'R',
+            'units': coll.ddata[kknots]['units'],
+            'dim': coll.ddata[kknots]['dim'],
+            'quant': coll.ddata[kknots]['quant'],
+            'name': coll.ddata[kknots]['name'],
             'ref': (keybsr,),
         },
         kbscz: {
             'data': bs_cents[1, :],
-            'units': 'm',
-            'dim': 'distance',
-            'quant': 'Z',
-            'name': 'Z',
+            'units': coll.ddata[kknots]['units'],
+            'dim': coll.ddata[kknots]['dim'],
+            'quant': coll.ddata[kknots]['quant'],
+            'name': coll.ddata[kknots]['name'],
             'ref': (keybsr,),
         },
     }
@@ -329,10 +330,10 @@ def _mesh2DTri_bsplines(coll=None, keym=None, keybs=None, deg=None):
 
 
 
-# #############################################################################
-# #############################################################################
+# ##################################################################
+# ##################################################################
 #                           Mesh2D - polar - bsplines
-# #############################################################################
+# ##################################################################
 
 
 def _mesh2Dpolar_bsplines(

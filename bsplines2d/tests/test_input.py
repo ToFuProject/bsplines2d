@@ -44,16 +44,20 @@ for k0, fname in _DFNAME.items():
 
 
 def _add_1d_knots_uniform(bsplines, key=None):
-    bsplines.add_mesh_1d(key=key, knots=np.linspace(0, 10, 11))
+    bsplines.add_mesh_1d(key=key, knots=np.linspace(0, 10, 11), units='eV')
 
-    
+
 def _add_1d_knots_variable(bsplines, key=None):
-    bsplines.add_mesh_1d(key=key, knots=np.r_[0, 1, 4, 7, 10], uniform=False)
-    
+    bsplines.add_mesh_1d(
+        key=key, knots=np.r_[0, 1, 4, 7, 10], uniform=False, units='A',
+    )
+
 
 def _add_rect_uniform(bsplines, key=None):
     # add uniform rect mesh
-    bsplines.add_mesh_2d_rect(key=key, domain=[[2, 3], [-1, 1]], res=0.1)
+    bsplines.add_mesh_2d_rect(
+        key=key, domain=[[2, 3], [-1, 1]], res=0.1, units='GHz',
+    )
 
 
 def _add_rect_variable(bsplines, key=None):
@@ -62,6 +66,7 @@ def _add_rect_variable(bsplines, key=None):
         key=key,
         domain=[[2, 2.3, 2.6, 3], [-1, 0., 1]],
         res=[[0.2, 0.1, 0.1, 0.2], [0.2, 0.1, 0.2]],
+        units='m',
     )
 
 
@@ -72,6 +77,7 @@ def _add_rect_variable_crop(bsplines, key=None):
         domain=[[2, 2.3, 2.6, 3], [-1, 0., 1]],
         res=[[0.2, 0.1, 0.1, 0.2], [0.2, 0.1, 0.2]],
         crop_poly=_DDATA['WEST_poly']['Poly'],
+        units='cm',
     )
 
 
@@ -82,9 +88,10 @@ def _add_rect_crop_from_knots(bsplines, key=None):
         knots0=np.linspace(2, 3, 11),
         knots1=np.linspace(-1, 1, 11),
         crop_poly=_DDATA['WEST_poly']['Poly'],
+        units='mm',
     )
 
-    
+
 def _add_rect_variable_crop_from_knots(bsplines, key=None):
     # add variable rect mesh
     bsplines.add_mesh_2d_rect(
@@ -92,58 +99,62 @@ def _add_rect_variable_crop_from_knots(bsplines, key=None):
         knots0=np.r_[np.linspace(2, 2.4, 5), np.r_[2.5, 2.7, 2.8, 3.]],
         knots1=np.linspace(-1, 1, 11),
         crop_poly=_DDATA['WEST_poly']['Poly'],
+        units='km',
     )
 
 
 def _add_tri_ntri1(bsplines, key=None):
-    
+
     knots = np.array([
         _DDATA['WEST_tri']['pts_x0'],
         _DDATA['WEST_tri']['pts_x1'],
     ]).T
-    
+
     bsplines.add_mesh_2d_tri(
         key=key,
         knots=knots,
         indices=_DDATA['WEST_tri']['indices'],
+        units='dm',
     )
 
 
 def _add_tri_ntri2(bsplines, key=None):
-    
+
     knots = np.array([
         _DDATA['quad_tri']['pts_x0'],
         _DDATA['quad_tri']['pts_x1'],
     ]).T
-    
+
     bsplines.add_mesh_2d_tri(
         key=key,
         knots=knots,
         indices=_DDATA['quad_tri']['indices'],
+        units='um',
     )
 
 
 def _add_tri_delaunay(bsplines, key=None):
-    
+
     bsplines.add_mesh_2d_tri(
         key=key,
         pts_x0=_DDATA['quad_tri']['pts_x0'],
         pts_x1=_DDATA['quad_tri']['pts_x1'],
+        units='nm',
     )
 
 
 def _add_mesh_1d_subkey_fixed(bsplines, key=None, keybs=None):
-    
+
     ka = bsplines.dobj['bsplines'][keybs]['apex']
     ap = bsplines.ddata[ka]['data']
     rho = 1 - np.exp(-ap**2)
-    
+
     bsplines.add_data(
         key='rho1d',
         data=rho,
         ref=keybs,
     )
-    
+
     bsplines.add_mesh_1d(
         key=key,
         knots=np.linspace(0, 20, 5),
@@ -301,33 +312,33 @@ def _get_data(bs, nd=None, kind=None):
                 dkd[k0] = {'bs': [kb], 'ref': dref[k0]}
             elif c0:
                 dkd[k0]['bs'].append(kb)
-                
+
     return dkd
 
 
 def _select_mesh_elements(bsplines, nd=None, kind=None):
     lkm = _get_mesh(bsplines, nd=nd, kind=kind)
-    
+
     if nd == '1d':
         lcrop = [None]
         lind = [None, 0, [0, 3]]
         lneigh = [False]
-        
+
     elif kind == 'rect':
         lcrop = [False, True]
         lind = [None, 0, [0, 3]]
         lneigh = [False, True]
-        
+
     else:
         lcrop = [None]
         lind = [None, 0, [0, 3]]
         lneigh = [False, True]
-    
+
     lel = ['knots', 'cents']
     lret = ['ind', 'data']
-    
+
     for km in lkm:
-        
+
         for comb in itt.product(lcrop, lel, lind, lret, lneigh):
             out = bsplines.select_mesh_elements(
                 key=km,
@@ -340,13 +351,13 @@ def _select_mesh_elements(bsplines, nd=None, kind=None):
 
 def _sample_mesh(bsplines, nd=None, kind=None):
     lkm = _get_mesh(bsplines, nd=nd, kind=kind)
-    
+
     lres = [0.1, 0.3]
     lmode = ['abs', 'rel']
     limshow = [False, True]
-    
+
     for km in lkm:
-        
+
         for comb in itt.product(lres, lmode, limshow):
             out = bsplines.get_sample_mesh(
                 key=km,
@@ -359,16 +370,16 @@ def _sample_mesh(bsplines, nd=None, kind=None):
 
 def _plot_mesh(bsplines, nd=None, kind=None):
     lkm = _get_mesh(bsplines, nd=nd, kind=kind)
-    
+
     lk = [None, 2, [2, 3]]
     lc = [None, 2, [2, 3]]
     if kind == 'rect':
         lcrop = [False, True]
     else:
         lcrop = [False]
-    
+
     for km in lkm:
-        
+
         for comb in itt.product(lk, lc, lcrop):
             _ = bsplines.plot_mesh(
                 key=km,
@@ -381,10 +392,10 @@ def _plot_mesh(bsplines, nd=None, kind=None):
 
 def _add_data_1bs_fix(bs, nd=None, kind=None, remove=None):
     lkb = _get_bs(bs, nd=nd, kind=kind)
-    
+
     lkd = []
     for kb in lkb:
-        
+
         lkd.append(f'{kb}_fix')
         shape = bs.dobj[bs._which_bsplines][kb]['shape']
         data = np.random.random(shape)
@@ -394,11 +405,11 @@ def _add_data_1bs_fix(bs, nd=None, kind=None, remove=None):
             data=data,
             ref=kb,
         )
-        
+
         assert bs.ddata[lkd[-1]][bs._which_bsplines] == (kb,)
         bsref = bs.dobj[bs._which_bsplines][kb]['ref']
         assert bs.ddata[lkd[-1]]['ref'] == bsref
-    
+
     if remove:
         for kd in lkd:
             bs.remove_data(kd)
@@ -406,16 +417,16 @@ def _add_data_1bs_fix(bs, nd=None, kind=None, remove=None):
 
 def _add_data_1bs_arrays(bs, nd=None, kind=None, remove=None):
     lkb = _get_bs(bs, nd=nd, kind=kind)
-    
+
     nt, nE = 10, 11
     if 'nt' not in bs.dref.keys():
         bs.add_ref(key='nt', size=nt)
         bs.add_ref(key='nE', size=nE)
         bs.add_data(key='t', data=np.linspace(1, 1.1, nt), ref='nt', unit='s')
-        
+
     lkd = []
     for kb in lkb:
-        
+
         lkd.append(f'{kb}_fix')
         shape = np.r_[nt, bs.dobj[bs._which_bsplines][kb]['shape'], nE]
         data = np.random.random(shape)
@@ -425,12 +436,12 @@ def _add_data_1bs_arrays(bs, nd=None, kind=None, remove=None):
             data=data,
             ref=['nt', kb, 'nE'],
         )
-    
+
         assert bs.ddata[lkd[-1]][bs._which_bsplines] == (kb,)
         bsref = bs.dobj[bs._which_bsplines][kb]['ref']
         ref = tuple(['nt'] + list(bsref) + ['nE'])
         assert bs.ddata[lkd[-1]]['ref'] == ref
-    
+
     if remove:
         for kd in lkd:
             bs.remove_data(kd)
@@ -438,18 +449,18 @@ def _add_data_1bs_arrays(bs, nd=None, kind=None, remove=None):
 
 def _add_data_multibs_arrays(bs, nd=None, kind=None, remove=None):
     lkb = _get_bs(bs, nd=nd, kind=kind)
-    
+
     nt, nE = 10, 11
     if 'nt' not in bs.dref.keys():
         bs.add_ref(key='nt', size=nt)
         bs.add_ref(key='nE', size=nE)
         bs.add_data(key='t', data=np.linspace(1, 1.1, nt), ref='nt', unit='s')
-    
+
     lkd = []
     for ii, kb in enumerate(lkb):
-        
+
         lkd.append(f'{kb}_var')
-        
+
         kb2 = lkb[(ii + int(len(lkb)/2)) % len(lkb)]
         shape = np.r_[
             nt,
@@ -464,14 +475,14 @@ def _add_data_multibs_arrays(bs, nd=None, kind=None, remove=None):
             data=data,
             ref=['nt', kb, 'nE', kb2],
         )
-    
+
         if bs.ddata[lkd[-1]][bs._which_bsplines] != (kb, kb2):
             msg = (
                 f"Wrong '{bs._which_bsplines}' for ddata['{lkd[-1]}']:\n"
                 f"{bs.ddata[lkd[-1]][bs._which_bsplines]} vs {(kb, kb2)}"
             )
             raise Exception(msg)
-            
+
         bsref = bs.dobj[bs._which_bsplines][kb]['ref']
         bsref2 = bs.dobj[bs._which_bsplines][kb2]['ref']
         ref = tuple(['nt'] + list(bsref) + ['nE'] + list(bsref2))
@@ -481,7 +492,7 @@ def _add_data_multibs_arrays(bs, nd=None, kind=None, remove=None):
                 f"{bs.ddata[lkd[-1]]['ref']} vs {ref}"
             )
             raise Exception(msg)
-    
+
     if remove:
         for kd in lkd:
             bs.remove_data(kd)
@@ -489,13 +500,12 @@ def _add_data_multibs_arrays(bs, nd=None, kind=None, remove=None):
 
 def _interpolate(bs, nd=None, kind=None):
     dkd = _get_data(bs, nd=nd, kind=kind)
-    
+
     for ii, (kd, vd) in enumerate(dkd.items()):
-            
+
         ref_key = None
         nd = bs.dobj[bs._which_bsplines][ref_key]['nd']
-        
-        
+
         if nd == '1d':
             dx = {'x0': x0}
         else:
@@ -503,18 +513,18 @@ def _interpolate(bs, nd=None, kind=None):
 
         vect = bs.dobj[bs._which_bsplines][vd['bs'][0]]['apex'][0]
         vect = bs.ddata[vect]['data']
-            
+
         dd = np.abs(np.mean(np.diff(vect)))
         DD = vect[-1] - vect[0]
         nbins = int(DD/dd)
         bins = np.linspace(vect[0] - 0.1*DD, vect[0]+0.5*DD, nbins)
-        
+
         val, units = bs.interpolate(
             key=kd,
             ref_key=ref_key,
             **dx,
         )
-        
+
         shape = list(bs.ddata[kd]['shape'])
         shape[0] = nbins - 1
         #assert val.shape == shape
@@ -522,33 +532,33 @@ def _interpolate(bs, nd=None, kind=None):
 
 def _bin_bs(bs, nd=None, kind=None):
     dkd = _get_data(bs, nd=nd, kind=kind)
-    
+
     print()
     print(nd, kind, sorted(dkd.keys()))
-    
+
     for ii, (kd, vd) in enumerate(dkd.items()):
-            
+
         if ii % 10 == 0 and len(vd['ref']) > 1:
             ref_key = vd['ref'][0]
         elif len(vd['ref']) > 1:
             ref_key = vd['bs'][0]
         else:
             continue
-            
+
         vect = bs.dobj[bs._which_bsplines][vd['bs'][0]]['apex'][0]
         vect = bs.ddata[vect]['data']
-            
+
         dd = np.abs(np.mean(np.diff(vect)))
         DD = vect[-1] - vect[0]
         nbins = int(DD/dd)
         bins = np.linspace(vect[0] - 0.1*DD, vect[0]+0.5*DD, nbins)
-        
+
         val, units = bs.binning(
             keys=kd,
             ref_key=ref_key,
             bins=bins,
         )
-        
+
         shape = list(bs.ddata[kd]['shape'])
         shape[0] = nbins - 1
         #assert val.shape == shape

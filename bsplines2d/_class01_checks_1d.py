@@ -31,36 +31,36 @@ def check(
 
     # --------
     # keys
-    
+
     # key
     key = ds._generic_check._obj_key(
         d0=coll._dobj.get(coll._which_mesh, {}),
         short='m',
-        key=key,   
+        key=key,
     )
 
     # ------------
     # knots vector
-    
+
     knots, res = _check_knots(
         knots=knots,
         knots_name=knots_name,
-        uniform=uniform,        
+        uniform=uniform,
     )
-    
+
     # ----------------
     # angles handdling
-    
+
     isangle = str(kwdargs.get('units')) == 'rad'
     if isangle:
         knots, cents = _knots_angle(knots)
-        
+
     else:
         cents = 0.5*(knots[1:] + knots[:-1])
 
     # ---------------------
     # depend on 2d bsplines
-    
+
     submesh, kwdargs = _defined_from(
         coll=coll,
         subkey=subkey,
@@ -68,9 +68,9 @@ def check(
         kwdargs=kwdargs,
     )
 
-    # -------------- 
+    # --------------
     # to dict
-    
+
     dref, ddata, dobj = _to_dict(
         coll=coll,
         key=key,
@@ -97,21 +97,21 @@ def check(
 def _check_knots(
     knots=None,
     knots_name=None,
-    uniform=None,        
+    uniform=None,
 ):
-    
+
     # ------------
     # check input
-    
+
     uniform = ds._generic_check._check_var(
         uniform, 'uniform',
         types=bool,
         default=True,
     )
-    
+
     # ---------
     # check x
-    
+
     knots = ds._generic_check._check_flat1darray(
         knots, 'knots',
         dtype=float,
@@ -121,13 +121,13 @@ def _check_knots(
 
     # resolution
     res = np.diff(knots)
-    
+
     # -----------------
     # check uniformity
-    
+
     if np.allclose(res, np.mean(res), atol=1e-12, rtol=0):
         res = res[0]
-        
+
     elif uniform is True:
         msg = (
             "Non-uniform resolution for user-provided mesh {knots_name}\n"
@@ -136,7 +136,7 @@ def _check_knots(
             f"\t- res: {res}\n"
             )
         raise NotImplementedError(msg)
-        
+
     return knots, res
 
 
@@ -153,7 +153,7 @@ def _knots_angle(
             f"Provided: {knots}"
         )
         raise Exception(msg)
-    
+
     # cents - handle discontinuity at -pi
     cents = 0.5*(knots[1:] + knots[:-1])
     mid = 0.5*(knots[-1] + (2.*np.pi + knots[0]))
@@ -162,16 +162,16 @@ def _knots_angle(
         cents = np.r_[mid, cents]
     else:
         cents = np.r_[cents, mid]
-        
+
     return knots, cents
-    
+
 
 # #############################################################################
 # #############################################################################
 #                        defined_from
 # #############################################################################
 
-    
+
 def _defined_from(
     coll=None,
     subkey=None,
@@ -181,13 +181,13 @@ def _defined_from(
 
     # ------------
     # trivial
-    
+
     if subkey is None:
         return None, kwdargs
-    
+
     # ------------
     # check key_on
-    
+
     wbs = coll._which_bsplines
     if coll.dobj.get(wbs) is not None:
         lok = [
@@ -211,7 +211,7 @@ def _defined_from(
 
     # ----------------
     # complete kwdargs
-    
+
     lq = ['dim', 'quant', 'name', 'units']
     for k0 in lq:
         if kwdargs.get(k0) is None:
@@ -219,12 +219,12 @@ def _defined_from(
 
     # --------------
     # key_submesh
-    
+
     submesh = coll.dobj[wbs][coll.ddata[subkey][wbs]]['mesh']
 
     return submesh, kwdargs
-    
-    
+
+
 # #############################################################################
 # #############################################################################
 #                           to_dict
@@ -247,13 +247,13 @@ def _to_dict(
 
     # ---------
     # check
-    
+
     knots_name = ds._generic_check._check_var(
         knots_name, 'knots_name',
         types=str,
         default='x',
     )
-    
+
     # ---------
     # prepare
 
@@ -266,7 +266,7 @@ def _to_dict(
 
     # variable
     variable = not np.isscalar(res)
-    
+
     # attributes
     latt = ['dim', 'quant', 'name', 'units']
     dim, quant, name, units = [kwdargs.get(ss) for ss in latt]
@@ -323,10 +323,10 @@ def _to_dict(
             },
         },
     }
-    
+
     # additional attributes
     for k0, v0 in kwdargs.items():
         if k0 not in latt:
             dobj[coll._which_mesh][key][k0] = v0
-    
+
     return dref, ddata, dobj

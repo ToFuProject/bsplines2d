@@ -39,7 +39,7 @@ def teardown_module():
 
 
 class Test00_check_routines():
-    
+
     def test00_mesh2DRect_X_check(self):
 
         lx = [[1, 2], [1, 2, 3, 4]]
@@ -54,7 +54,7 @@ class Test00_check_routines():
             )
             if hasattr(lres, '__iter__'):
                 assert x.size == np.unique(x).size == res.size + 1
-                
+
 
 #######################################################
 #
@@ -84,13 +84,13 @@ class Test01_Mesh2D_Fixed():
     # #################
     #  mesh 1d (fixed)
     # #################
-    
+
     def test01_mesh1d_from_knots_uniform(self):
         test_input._add_1d_knots_uniform(self.bs)
 
     def test02_mesh1d_from_knots_variable(self):
         test_input._add_1d_knots_variable(self.bs)
-    
+
     # ##############
     #  mesh 2d rect
     # ##############
@@ -105,8 +105,8 @@ class Test01_Mesh2D_Fixed():
         test_input._add_rect_variable_crop(self.bs)
 
     def test06_add_mesh_rect_variable_crop(self):
-        test_input._add_rect_variable_crop(self.bs) 
-    
+        test_input._add_rect_variable_crop(self.bs)
+
     def test07_add_mesh_rect_variable_crop(self):
         test_input._add_rect_variable_crop(self.bs)
 
@@ -119,7 +119,7 @@ class Test01_Mesh2D_Fixed():
 
     def test09_add_mesh_tri_ntri2(self):
         test_input._add_tri_ntri2(self.bs)
-        
+
     def test10_add_mesh_tri_delaunay(self):
         test_input._add_tri_delaunay(self.bs)
 
@@ -145,7 +145,7 @@ class Test01_Mesh2D_Fixed():
 
     def test15_sample_mesh_rect(self):
         test_input._sample_mesh(self.bs, nd='2d', kind='rect')
-        
+
     def test16_sample_mesh_tri(self):
         test_input._sample_mesh(self.bs, nd='2d', kind='tri')
 
@@ -155,7 +155,7 @@ class Test01_Mesh2D_Fixed():
 
     def test17_plot_mesh_1d(self):
         test_input._plot_mesh(self.bs, nd='1d', kind=None)
-        
+
     def test18_plot_mesh_rect(self):
         test_input._plot_mesh(self.bs, nd='2d', kind='rect')
 
@@ -168,10 +168,10 @@ class Test01_Mesh2D_Fixed():
 
     def test20_add_bsplines_1d(self):
         test_input._add_bsplines(self.bs, nd='1d')
-        
+
     def test21_add_bsplines_2d_rect(self):
         test_input._add_bsplines(self.bs, kind='rect')
-    
+
     def test22_add_bsplines_2d_tri(self):
         test_input._add_bsplines(self.bs, kind='tri')
 
@@ -181,7 +181,7 @@ class Test01_Mesh2D_Fixed():
 
     def test23_add_data_1bs_fix_1d(self, remove=True):
         test_input._add_data_1bs_fix(self.bs, nd='1d', kind=None, remove=remove)
-        
+
     def test24_add_data_1bs_fix_2d_rect(self, remove=True):
         test_input._add_data_1bs_fix(self.bs, nd='2d', kind='rect', remove=remove)
 
@@ -190,20 +190,20 @@ class Test01_Mesh2D_Fixed():
 
     def test26_add_data_1bs_arrays_1d(self, remove=False):
         test_input._add_data_1bs_arrays(self.bs, nd='1d', kind=None, remove=remove)
-        
+
     def test27_add_data_1bs_arrays_2d_rect(self, remove=False):
         test_input._add_data_1bs_arrays(self.bs, nd='2d', kind='rect', remove=remove)
 
     def test28_add_data_1bs_arrays_2d_tri(self, remove=False):
         test_input._add_data_1bs_arrays(self.bs, nd='2d', kind='tri', remove=remove)
-        
+
     def test29_add_data_multibs_arrays(self, remove=False):
         test_input._add_data_multibs_arrays(self.bs, remove=remove)
 
     # ##############
     # interp bs
     # ##############
-    
+
     # def test30_interpolate_bsplines_1d(self):
     #     test_input._bin_bs(self.bs, nd='1d', kind=None)
 
@@ -213,26 +213,26 @@ class Test01_Mesh2D_Fixed():
     # ##############
     # binning 1d
     # ##############
-        
+
     def test30_binning_1d(self):
         test_input._bin_bs(self.bs, nd='1d', kind=None)
 
     def test31_binning_2d_rect(self):
         test_input._bin_bs(self.bs, nd='2d', kind='rect')
-        
+
     def test32_binning_2d_tri(self):
         test_input._bin_bs(self.bs, nd='2d', kind='tri')
 
     # ##############
     # plot bsplines
     # ##############
-    
+
     def testXX_plot_bsplines_1d(self):
         pass
 
     def testXX_plot_bsplines_2d_rect(self):
         pass
-    
+
     def testXX_plot_bsplines_2d_tri(self):
         pass
 
@@ -266,33 +266,33 @@ class Test02_Mesh2D_Subkey():
     # #######################
     #  add bsplines and data
     # #######################
-    
+
     def test01_add_bsplines(self):
         test_input._add_bsplines(self.bs)
 
     def test02_add_Bsplines_data(self):
         pass
-    
+
     # ##############
     #  mesh 1d sub
     # ##############
-    
+
     def test03_add_mesh1d_subkey_fixed(self):
         pass
-    
+
     def test10_add_mesh_1d_subkey_1d(self):
         test_input._add_bsplines(self.bs, key='m00', deg=None)
-        
+
         lbs = [f'm00_bs{ii}' for ii in [0, 1, 2, 3]]
         for kbs in lbs:
             test_input._add_mesh_1d_subkey_fixed(
                 self.bs, key=None, keybs=kbs,
             )
-    
+
     # ##############
     #  mesh 2d polar
     # ##############
-    
+
     def test04_add_mesh1d_subkey_variable(self):
         pass
 

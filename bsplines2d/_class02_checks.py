@@ -8,12 +8,12 @@ import warnings
 # Common
 import numpy as np
 import datastock as ds
-    
 
-# #############################################################################
-# #############################################################################
+
+# ##################################################################
+# ##################################################################
 #                          add data on mesh / bsplines
-# #############################################################################
+# ##################################################################
 
 
 def add_data_meshbsplines_ref(
@@ -24,7 +24,7 @@ def add_data_meshbsplines_ref(
 
     dmesh = coll._dobj.get(coll._which_mesh)
     dbsplines = coll._dobj.get(coll._which_bsplines)
-    
+
     if dmesh is None or dbsplines is None:
         return ref, data
 
@@ -38,7 +38,7 @@ def add_data_meshbsplines_ref(
         # ref contains mesh
         rm = [(ii, rr) for ii, rr in enumerate(ref) if rr in dmesh.keys()]
         if len(rm) > 0:
-            
+
             ref = list(ref)
             for (ki, km) in rm:
                 kbs = [
@@ -59,14 +59,14 @@ def add_data_meshbsplines_ref(
         rbs = [(ii, rr) for ii, rr in enumerate(ref) if rr in dbsplines.keys()]
         while len(rbs) > 0:
 
-            ii, kb = rbs[0]            
+            ii, kb = rbs[0]
 
             ref = np.r_[
                 ref[:ii],
                 dbsplines[kb]['ref'],
                 ref[ii+1:],
             ]
-            
+
             rbs = [(ii, rr) for ii, rr in enumerate(ref) if rr in dbsplines.keys()]
 
             # repeat data if taken from ntri > 1 
@@ -121,12 +121,12 @@ def _repeat_data_ntri(
 
 
 def _set_data_bsplines(coll=None):
-    
+
     if coll.dobj.get(coll._which_bsplines) is not None:
-        
+
         wbs = coll._which_bsplines
         for k0, v0 in coll._ddata.items():
-            
+
             lbs = [
                 (v0['ref'].index(v1['ref'][0]), k1) 
                 for k1, v1 in coll.dobj[wbs].items()
@@ -135,22 +135,22 @@ def _set_data_bsplines(coll=None):
                     if rr in v1['ref']
                 ])
             ]
-            
+
             if len(lbs) == 0:
                 pass
             else:
                 # re-order
                 ind = np.argsort([bb[0] for bb in lbs])
                 lbs = [lbs[ii][1] for ii in ind]
-                
+
                 # store
                 coll._ddata[k0]['bsplines'] = tuple(lbs)
 
 
-# #############################################################################
-# #############################################################################
+# ##################################################################
+# ##################################################################
 #                           Mesh2DRect - bsplines
-# #############################################################################
+# ##################################################################
 
 
 def _mesh_bsplines(key=None, lkeys=None, deg=None):

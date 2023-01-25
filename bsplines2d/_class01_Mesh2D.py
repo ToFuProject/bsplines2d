@@ -40,7 +40,7 @@ class Mesh2D(ds.DataStock):
 
     _which_mesh = 'mesh'
     _which_bsplines = 'bsplines'
-    
+
     def add_mesh_1d(
         self,
         key=None,
@@ -52,9 +52,9 @@ class Mesh2D(ds.DataStock):
         # direct addition of bsplines
         deg=None,
         # additional attributes
-        **kwdargs,        
+        **kwdargs,
     ):
-        
+
         """ Add an 1d mesh by key
 
         The mesh is defined by a strictly increasing vector of knots (edges)
@@ -116,7 +116,7 @@ class Mesh2D(ds.DataStock):
             # or
             - domain:
             - res:
-                
+
 
         Can optionally be cropped by a closed polygon crop_poly, that can be:
             - a (2, N) np.narray of (R, Z) coordinates
@@ -169,7 +169,7 @@ class Mesh2D(ds.DataStock):
                 thresh_in=thresh_in,
                 remove_isolated=remove_isolated,
             )
-               
+
     def add_mesh_2d_tri(
         self,
         # rectangular mesh
@@ -205,6 +205,8 @@ class Mesh2D(ds.DataStock):
             # from pts and polygon
             pts_x0=pts_x0,
             pts_x1=pts_x1,
+            # others
+            **kwdargs,
         )
 
         # update dicts

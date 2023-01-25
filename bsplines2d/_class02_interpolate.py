@@ -46,29 +46,28 @@ def _check_keys_dbs(
 
     # -------------
     # keys vs ref_key
-    
+
     # ref_key
     if ref_key is not None:
         if ref_key in coll.dref.keys():
             hasref, hasvect, ref, ref_key = coll.get_ref_vector(ref=ref_key)
         else:
             hasref, hasvect, ref, ref_key = coll.get_ref_vector(key=ref_key)
-            
-    
+
         if not (hasref and hasvect):
             msg = (
                 "Provided ref_key not a valid ref or ref vector!\n"
                 "Provided: {ref_key}"
             )
             raise Exception(msg)
-            
+
         lok_keys = [k0 for k0, v0 in coll.ddata.items() if ref in v0['ref']]
-        
+
         if keys is None:
             keys = lok_keys
     else:
         lok_keys = list(coll.ddata.keys())
-        
+
     # keys
     keys = ds._generic_check._check_var_iter(
         keys, 'keys',
@@ -76,7 +75,7 @@ def _check_keys_dbs(
         types_iter=str,
         allowed=lok_keys,
     )
-    
+
     if ref_key is None:
         hasref, ref, _ref_key, val, dkeys = coll.get_ref_vector_common(
             keys=keys,

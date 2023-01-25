@@ -37,7 +37,7 @@ class BSplines2D(Previous):
     _ddef['params']['dref'] = None
 
     _dshow = dict(Previous._dshow)
- 
+
     # -----------------
     # bsplines
     # ------------------

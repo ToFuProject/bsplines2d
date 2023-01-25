@@ -8,7 +8,7 @@ import datastock as ds
 
 from . import _generic_mesh
 from . import _class01_checks_1d as _checks_1d
-    
+
 
 # #############################################################################
 # #############################################################################
@@ -27,21 +27,23 @@ def check(
     # automated
     domain=None,
     res=None,
+    # attributes
+    **kwdargs,
 ):
 
     # --------
     # keys
-    
+
     # key
     key = ds._generic_check._obj_key(
         d0=coll._dobj.get(coll._which_mesh, {}),
         short='m',
-        key=key,   
+        key=key,
     )
-    
+
     # -------------
     # knots vectors
-    
+
     knots0, knots1, res0, res1 = _mesh2DRect_check(
         knots0=knots0,
         knots1=knots1,
@@ -52,7 +54,7 @@ def check(
     cents0 = 0.5*(knots0[1:] + knots0[:-1])
     cents1 = 0.5*(knots1[1:] + knots1[:-1])
 
-    # -------------- 
+    # --------------
     # to dict
 
     dref, ddata, dobj = _to_dict(
@@ -64,6 +66,7 @@ def check(
         cents1=cents1,
         knots0_name=knots0_name,
         knots1_name=knots1_name,
+        **kwdargs,
     )
 
     return key, dref, ddata, dobj
@@ -141,19 +144,19 @@ def _mesh2DRect_check(
         knots1, res1, _ = _mesh2DRect_X_check(domain[1], res=res[1])
 
     elif lc[1]:
-        
+
         # knots0
         knots0, res0 = _checks_1d._check_knots(
             knots=knots0,
             knots_name=knots0_name,
-            uniform=True,        
+            uniform=True,
         )
 
         # knots1
         knots1, res1 = _checks_1d._check_knots(
             knots=knots1,
             knots_name=knots1_name,
-            uniform=True, 
+            uniform=True,
         )
 
     return knots0, knots1, res0, res1
@@ -279,20 +282,20 @@ def _to_dict(
 
     # ---------
     # check
-    
+
     knots0_name = ds._generic_check._check_var(
         knots0_name, 'knots0_name',
         types=str,
         default='x',
     )
-    
+
     knots1_name = ds._generic_check._check_var(
         knots1_name, 'knots1_name',
         types=str,
         default='y',
         excluded=[knots0_name],
     )
-    
+
     # --------------------
     # check / format input
 
@@ -304,7 +307,7 @@ def _to_dict(
         key=key,
         knots_name=knots1_name,
     )
-    
+
     # attributes
     latt = ['dim', 'quant', 'name', 'units']
     dim, quant, name, units = [kwdargs.get(ss) for ss in latt]
@@ -387,12 +390,12 @@ def _to_dict(
             },
         }
     }
-    
+
     # additional attributes
     for k0, v0 in kwdargs.items():
         if k0 not in latt:
             dobj[coll._which_mesh][key][k0] = v0
-    
+
     return dref, ddata, dobj
 
 

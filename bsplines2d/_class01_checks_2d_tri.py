@@ -34,13 +34,15 @@ def check(
     # names of coords
     knots0_name=None,
     knots1_name=None,
+    # attributes
+    **kwdargs,
 ):
 
     # key
     key = ds._generic_check._obj_key(
         d0=coll._dobj.get(coll._which_mesh, {}),
         short='m',
-        key=key,   
+        key=key,
     )
 
     # -------------
@@ -59,10 +61,10 @@ def check(
             f"\t- pts_x1: {pts_x1}\n"
         )
         raise Exception(msg)
-        
+
     # --------------------
     # from pts and polygon
-    
+
     if lc[1]:
         knots, indices = _from_pts_poly(
             pts_x0=pts_x0,
@@ -71,7 +73,7 @@ def check(
 
     # -------------
     # knots vectors
-    
+
     knots, indices, ntri = _check_knotscents(
         key=key,
         knots=knots,
@@ -81,10 +83,10 @@ def check(
     cents0 = np.mean(knots[indices, 0], axis=1)
     cents1 = np.mean(knots[indices, 1], axis=1)
 
-    # -------------- 
+    # --------------
     # to dict
 
-    dref, ddata, dobj = _mesh2DTri_to_dict(
+    dref, ddata, dobj = _to_dict(
         coll=coll,
         key=key,
         knots=knots,
@@ -94,6 +96,7 @@ def check(
         ntri=ntri,
         knots0_name=knots0_name,
         knots1_name=knots1_name,
+        **kwdargs,
     )
 
     return key, dref, ddata, dobj
@@ -109,32 +112,32 @@ def _from_pts_poly(
     pts_x0=None,
     pts_x1=None,
 ):
-    
+
     pts_x0 = ds._generic_check._check_flat1darray(
         pts_x0, 'pts_x0',
         dtype=float,
         can_be_None=False,
     )
-    
+
     pts_x1 = ds._generic_check._check_flat1darray(
         pts_x1, 'pts_x1',
         dtype=float,
         size=pts_x0.size,
         can_be_None=False,
     )
-    
+
     # --------
     # Delauney
-    
+
     knots = np.array([pts_x0, pts_x1]).T
-    
+
     delau = scpsp.Delaunay(
         knots,
         furthest_site=False,
         incremental=False,
         qhull_options='QJ',
     )
-    
+
     return knots, delau.simplices
 
 
@@ -197,7 +200,7 @@ def _check_knotscents(
             f"\t- knots = {knots}"
         )
         raise Exception(msg)
-        
+
     return knots, indices, ntri
 
 
@@ -340,7 +343,7 @@ def _mesh2DTri_ccw(knots=None, indices=None, key=None):
     return indices
 
 
-def _mesh2DTri_to_dict(
+def _to_dict(
     coll=None,
     key=None,
     knots=None,
@@ -357,23 +360,23 @@ def _mesh2DTri_to_dict(
 
     # ---------
     # check
-    
+
     knots0_name = ds._generic_check._check_var(
         knots0_name, 'knots0_name',
         types=str,
         default='x',
     )
-    
+
     knots1_name = ds._generic_check._check_var(
         knots1_name, 'knots1_name',
         types=str,
         default='y',
         excluded=[knots0_name],
     )
-    
+
     # -----------------
     # keys
-    
+
     kk = f"{key}-nk"
     kc = f"{key}-nc"
     ki = f"{key}-nind"
@@ -388,14 +391,14 @@ def _mesh2DTri_to_dict(
     )
 
     kii = f"{key}-ind"
-    
+
     # attributes
     latt = ['dim', 'quant', 'name', 'units']
     dim, quant, name, units = [kwdargs.get(ss) for ss in latt]
 
     # -----------------
     # dict
-    
+
     # dref
     dref = {
         kk: {
@@ -466,10 +469,10 @@ def _mesh2DTri_to_dict(
             },
         }
     }
-    
+
     # additional attributes
     for k0, v0 in kwdargs.items():
         if k0 not in latt:
             dobj[coll._which_mesh][key][k0] = v0
-    
+
     return dref, ddata, dobj
