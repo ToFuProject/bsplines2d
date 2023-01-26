@@ -14,6 +14,7 @@ from ._class01_Mesh2D import Mesh2D as Previous
 from . import _class02_checks as _checks
 from . import _class02_compute as _compute
 from . import _class01_rect_cropping as _cropping
+from . import _class02_interpolate as _interpolate
 from . import _class02_binning as _binning
 from . import _class02_operators as _operators
 
@@ -23,7 +24,7 @@ __all__ = ['BSplines2D']
 
 # #############################################################################
 # #############################################################################
-#                       
+#
 # #############################################################################
 
 
@@ -121,7 +122,7 @@ class BSplines2D(Previous):
 
         # assign bsplines
         _checks._set_data_bsplines(coll=self)
-        
+
     # -----------------
     # crop
     # ------------------
@@ -137,8 +138,8 @@ class BSplines2D(Previous):
         all remaining bsplines have full support domain
         """
         super().crop(
-            key=key, 
-            crop=crop, 
+            key=key,
+            crop=crop,
             thresh_in=thresh_in,
             remove_isolated=remove_isolated,
         )
@@ -166,7 +167,7 @@ class BSplines2D(Previous):
                     ]
                     for k1 in v0[self._which_bsplines]
                 }
-                
+
                 lax = np.concatenate(tuple([v1 for v1 in dbs[k0].values()]))
                 dref[k0] = [
                     rr for ii, rr in enumerate(v0['ref'])
@@ -261,14 +262,13 @@ class BSplines2D(Previous):
         bins=None,
     ):
         """ Return binned data along the desired axis """
-        
+
         return _binning.binning(
             coll=self,
             keys=keys,
             ref_key=ref_key,
             bins=bins,
         )
-        
 
     # -----------------
     # interp tools
@@ -278,43 +278,55 @@ class BSplines2D(Previous):
         self,
         # interpolation base
         keys=None,
-        ref_keys=None,
+        ref_key=None,
         ref_quant=None,
         # interpolation pts
         x0=None,
         x1=None,
+        # domain limitation
+        domain=None,
+        # bsplines-specific
+        details=None,
         # parameters
         grid=None,
         deg=None,
         deriv=None,
         log_log=None,
         return_params=None,
-        # self,
-        # # interpolation base, 1d or 2d
-        # key=None,
-        # # external coefs (optional)
-        # coefs=None,
-        # # interpolation points
-        # x0=None,
-        # x1=None,
-        # grid=None,
         # # bsplines
         # indbs=None,
         # # parameters
-        # details=None,
         # reshape=None,
         # res=None,
         # crop=None,
         # nan0=None,
         # val_out=None,
         # imshow=None,
-        # return_params=None,
         # # storing
         # store=None,
         # inplace=None,
     ):
-        
-        pass
+        """ Interpolate along a given ref or bspline, in 1d or 2d """
+
+        return _interpolate.interpolate(
+            coll=self,
+            # interpolation base
+            keys=keys,
+            ref_key=ref_key,
+            # interpolation pts
+            x0=x0,
+            x1=x1,
+            grid=grid,
+            # domain limitation
+            domain=domain,
+            # bsplines-specific
+            details=details,
+            # parameters
+            deg=deg,
+            deriv=deriv,
+            log_log=log_log,
+            return_params=return_params,
+        )
 
     """
     def get_sample_bspline(self, key=None, res=None, grid=None, mode=None):

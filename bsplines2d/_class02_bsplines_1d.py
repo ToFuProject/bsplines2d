@@ -98,20 +98,20 @@ class UnivariateSpline():
         self.nbs = nbs
         self.lbs = lbs
 
-    def _check_input(self, xx=None, coefs=None, axis=None):
-        if not isinstance(xx, np.ndarray):
-            xx = np.atleast_1d(xx)
-            
-        if xx.ndim != 1:
-            msg = "1d bsplines only accepts 1d xx!\nProvided: {xx.shape}"
+    def _check_input(self, x0=None, coefs=None, axis=None):
+        if not isinstance(x0, np.ndarray):
+            x0 = np.atleast_1d(x0)
+
+        if x0.ndim != 1:
+            msg = "1d bsplines only accepts 1d x0!\nProvided: {x0.shape}"
             raise Exception(msg)
-            
+
         shape = tuple([
-            xx.size if ii == axis else coefs.shape[ii]
+            x0.size if ii == axis else coefs.shape[ii]
             for ii in range(coefs.ndim)
         ])
-            
-        return xx, shape
+
+        return x0, shape
 
     def _check_coefs(self, coefs=None, axis=None):
         """ None for ev_details, (nt, shapebs) for sum """
@@ -120,7 +120,7 @@ class UnivariateSpline():
     def __call__(
         self,
         # coordiantes
-        xx=None,
+        x0=None,
         # coefs
         coefs=None,
         axis=None,
@@ -148,9 +148,9 @@ class UnivariateSpline():
 
         # coefs
         self._check_coefs(coefs=coefs, axis=axis)
-        
-        # xx, shape, val
-        xx, shape = self._check_input(xx=xx, coefs=coefs, axis=axis)
+
+        # x0, shape, val
+        x0, shape = self._check_input(x0=x0, coefs=coefs, axis=axis)
         val = np.zeros(shape, dtype=float)
 
         # ------------
@@ -162,12 +162,12 @@ class UnivariateSpline():
             self.deg,
             axis=axis,
             extrapolate=False,
-        )(xx, nu=deriv)
+        )(x0, nu=deriv)
 
         # clean out-of-mesh
-        if val_out is not False:
-            # pts out 
-            indout = (xx < self.knots[0]) | (xx > self.knots[-1])
+        if val_out not in [None, False]:
+            # pts out
+            indout = (x0 < self.knots[0]) | (x0 > self.knots[-1])
             sli = tuple([
                 indout if ii == axis else slice(None)
                 for ii in range(len(shape))
@@ -180,7 +180,7 @@ class UnivariateSpline():
     def ev_details(
         self,
         # coordinates
-        xx=None,
+        x0=None,
         # options
         indbs_tf=None,
         deriv=None,
@@ -197,7 +197,7 @@ class UnivariateSpline():
         # ------------
         # check inputs
 
-        xx = self._check_input(xx)
+        x0 = self._check_input(x0)
 
         if indbs_tf is None:
             nbs = self.nbs
@@ -213,7 +213,7 @@ class UnivariateSpline():
         # -------
         # prepare
 
-        shape = tuple(np.r_[xx.shape, nbs])
+        shape = tuple(np.r_[x0.shape, nbs])
         val = np.full(shape, val_out)
 
         # ------------
@@ -226,11 +226,11 @@ class UnivariateSpline():
                 continue
 
             iok = (
-                (xx >= self.knots_per_bs[0, ii])
-                & ((xx < self.knots_per_bs[-1, ii]))
+                (x0 >= self.knots_per_bs[0, ii])
+                & ((x0 < self.knots_per_bs[-1, ii]))
             )
             if np.any(iok):
-                val[iok, ni] = self.lbs[ii](xx[iok], nu=deriv)
+                val[iok, ni] = self.lbs[ii](x0[iok], nu=deriv)
             ni += 1
 
         return val
@@ -238,7 +238,7 @@ class UnivariateSpline():
     def get_constraints_deriv(
         self,
         deriv=None,
-        xx=None,
+        x0=None,
         val=None,
     ):
         """
@@ -265,7 +265,7 @@ class UnivariateSpline():
 
         # coefs per radius per bs (nrad, nbs)
         ideriv = int(deriv[-1])
-        vv = self.ev_details(xx=xx, deriv=ideriv, val_out=0.)
+        vv = self.ev_details(x0=x0, deriv=ideriv, val_out=0.)
 
         # check conflicts
         indok = (vv != 0)

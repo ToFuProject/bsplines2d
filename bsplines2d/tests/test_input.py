@@ -498,36 +498,31 @@ def _add_data_multibs_arrays(bs, nd=None, kind=None, remove=None):
             bs.remove_data(kd)
 
 
-def _interpolate(bs, nd=None, kind=None):
+def _interpolate(bs, nd=None, kind=None, details=None):
     dkd = _get_data(bs, nd=nd, kind=kind)
 
+    wbs = bs._which_bsplines
     for ii, (kd, vd) in enumerate(dkd.items()):
 
-        ref_key = None
-        nd = bs.dobj[bs._which_bsplines][ref_key]['nd']
-
-        if nd == '1d':
-            dx = {'x0': x0}
-        else:
-            dx = {'x0': x0, 'x1': x1}
-
-        vect = bs.dobj[bs._which_bsplines][vd['bs'][0]]['apex'][0]
+        ref_key = vd['bs'][0]
+        vect = bs.dobj[wbs][ref_key]['apex'][0]
         vect = bs.ddata[vect]['data']
 
-        dd = np.abs(np.mean(np.diff(vect)))
-        DD = vect[-1] - vect[0]
-        nbins = int(DD/dd)
-        bins = np.linspace(vect[0] - 0.1*DD, vect[0]+0.5*DD, nbins)
+        if nd == '1d':
+            dx = {'x0': vect}
+        else:
+            dx = {'x0': vect, 'x1': vect}
 
-        val, units = bs.interpolate(
-            key=kd,
+        dout = bs.interpolate(
+            keys=kd,
             ref_key=ref_key,
+            details=details,
             **dx,
         )
 
         shape = list(bs.ddata[kd]['shape'])
-        shape[0] = nbins - 1
-        #assert val.shape == shape
+        shape[0] = tuple(np.r_[shape[:], x0.shape, shape[:]])
+        assert dout[kd]['data'].shape == shape
 
 
 def _bin_bs(bs, nd=None, kind=None):

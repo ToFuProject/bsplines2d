@@ -205,7 +205,22 @@ class Test01_Mesh2D_Fixed():
     # ##############
 
     def test30_interpolate_bsplines_1d(self):
-        test_input._bin_bs(self.bs, nd='1d', kind=None)
+        test_input._interpolate(self.bs, nd='1d', kind=None, details=False)
+
+    def test31_interpolate_bsplines_1d_details(self):
+        test_input._interpolate(self.bs, nd='1d', kind=None, details=True)
+
+    def test32_interpolate_bsplines_2d_rect(self):
+        test_input._interpolate(self.bs, nd='2d', kind='rect', details=False)
+
+    def test33_interpolate_bsplines_2d_rect_details(self):
+        test_input._interpolate(self.bs, nd='2d', kind='rect', details=True)
+
+    def test34_interpolate_bsplines_2d_tri(self):
+        test_input._interpolate(self.bs, nd='2d', kind='tri', details=False)
+
+    def test35_interpolate_bsplines_2d_tri_details(self):
+        test_input._interpolate(self.bs, nd='2d', kind='tri', details=True)
 
     # def test31_interpolate_bsplines_multiple(self):
     #     pass
@@ -214,7 +229,7 @@ class Test01_Mesh2D_Fixed():
     # binning 1d
     # ##############
 
-    def test30_binning_1d(self):
+    def test36_binning_1d(self):
         test_input._bin_bs(self.bs, nd='1d', kind=None)
 
     # def test31_binning_2d_rect(self):

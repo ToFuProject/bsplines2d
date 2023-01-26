@@ -76,9 +76,6 @@ def binning(
     vect = coll.ddata[kknots]['data']
     res0 = np.abs(np.min(np.diff(vect)))
 
-    # sample mesh
-    xx = coll.get_sample_mesh(keym, res=res0 / npts, mode='abs')
-
     # ----------
     # bins
 
@@ -92,6 +89,9 @@ def binning(
         strict=False,
         deg=coll.dobj[coll._which_bsplines][ref_key]['deg'],
     )
+
+    # sample mesh
+    xx = coll.get_sample_mesh(keym, res=res0 / npts, mode='abs')
 
     # units
     dout = ds._class1_binning._units(
@@ -113,6 +113,8 @@ def binning(
             axis=daxis[k0],
             val_out=0.,
         )
+
+        import pdb; pdb.set_trace() # DB
 
         # bin
         dout[k0]['data'] = ds._class1_binning._bin(

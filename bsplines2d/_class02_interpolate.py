@@ -2,6 +2,7 @@
 
 
 # Built-in
+import itertools as itt
 import warnings
 
 # Common
@@ -36,7 +37,7 @@ def interpolate(
     x1=None,
     grid=None,
     # domain limitation
-    ddomain=None,
+    domain=None,
     # bsplines-specific
     details=None,
     # parameters
@@ -88,6 +89,8 @@ def interpolate(
             x0=x0,
             x1=x1,
             grid=grid,
+            # domain limitation
+            domain=domain,
             # parameters
             deg=deg,
             deriv=deriv,
@@ -104,7 +107,9 @@ def interpolate(
         ref_key=ref_key,
     )
 
-    # params
+    # ---------------
+    # prepare x0, x1
+
     (
         _, deriv,
         x0, x1,
@@ -128,32 +133,54 @@ def interpolate(
     # ------------
     # prepare
 
-    dshape, dout = ds._class1_inerpolate._prepare_dshape_dout(
+    ddata, dout = ds._class1_interpolate._prepare_ddata(
         coll=coll,
         keys=keys,
         daxis=daxis,
         dunits=dunits,
         x0=x0,
+        domain=domain,
+        ref_key=ref_key,
     )
-
-    # ---------------
-    # prepare x0, x1
-
-
 
     # ---------------
     # interpolate
 
     # loop on keys
     derr = {}
-    clas = coll.dobj[coll._which_bsplines][ref_key]['class']
+    clas = coll.dobj[coll._which_bsplines][keyds]['class']
     for ii, k0 in enumerate(keys):
 
         try:
-            dout[k0]['data'] = clas(
-                coefs=coll.ddata[k0]['data'],
-                x0=x0,
-            )
+
+            if details is True:
+                dout[k0]['data'] = clas.ev_details(
+                    x0=x0,
+                    x1=x1,
+                    # options
+                    val_out=0.,
+                    deriv=deriv,
+                    # indices
+                    indbs_tf=indbstf,
+                    # rect-specific
+                    crop=crop,
+                    cropbs=cropsbs,
+                )
+
+            else:
+                dout[k0]['data'] = clas(
+                    x0=x0,
+                    x1=x1,
+                    # coefs
+                    coefs=ddata[k0]['data'],
+                    axis=daxis[k0],
+                    # options
+                    val_out=0.,
+                    deriv=deriv,
+                    # rect-specific
+                    crop=crop,
+                    cropbs=cropsbs,
+                )
 
             print('success')
 
@@ -185,6 +212,10 @@ def interpolate(
             'x0': x0,
             'x1': x1,
             'grid': grid,
+            'details': details,
+            'domain': domain,
+            'crop': crop,
+            'cropbs': cropbs,
         }
         return dout, dparam
     else:
@@ -367,7 +398,10 @@ def _check_keys(
 
         # daxis
         daxis = {
-            k0: coll.ddata[k0]['ref'].index(coll.dobj[wbs][ref_key]['ref'][0])
+            k0: [
+                coll.ddata[k0]['ref'].index(rr)
+                for rr in coll.dobj[wbs][ref_key]['ref']
+            ]
             for k0 in keys
         }
 
@@ -475,11 +509,11 @@ def _prepare_bsplines(
     # -------------
     # azone
 
-    azone = ds._generic_check._check_var(
-        azone, 'azone',
-        types=bool,
-        default=True,
-    )
+    # azone = ds._generic_check._check_var(
+        # azone, 'azone',
+        # types=bool,
+        # default=True,
+    # )
 
     # -----------
     # indbs
@@ -503,7 +537,6 @@ def _prepare_bsplines(
         )
     else:
         indbs_tf = None
-
 
     return keybs, keym, mtype, ref_key
 

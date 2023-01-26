@@ -160,13 +160,13 @@ class BivariateSplineRect(scpinterp.BivariateSpline):
             shape_x=x0.shape,
         )
         shape_coefs = coefs.shape
-        
+
         val = np.zeros(shape_x, dtype=float)
         cropbs_neg_flat = (~cropbs).ravel() if crop else None
 
         # interpolate
         for ind in itt.product(*[range(aa) for aa in shape_other]):
-            
+
             # prepare TBF
             sli_c, sli_x = _utils_bsplines._get_slices_iter(
                 axis=axis,
@@ -177,30 +177,30 @@ class BivariateSplineRect(scpinterp.BivariateSpline):
                 ind_coefs=ind_coefs,
                 ind_x=ind_x,
             )
-            
+
             self.set_coefs(
                 coefs=coefs[tuple(sli_c)],
                 cropbs_neg_flat=cropbs_neg_flat,
             )
 
-            # compute            
+            # compute
             val[tuple(sli_x)] = super().__call__(x0, x1, grid=False)
 
         # clean
-        if val_out is not False:
+        if val_out not in [None, False]:
             indout = (
                 (x0 < self.tck[0][0]) | (x0 > self.tck[0][-1])
                 | (x1 < self.tck[1][0]) | (x1 > self.tck[1][-1])
             )
-            
+
             sli_out = _utils_bsplines._get_slice_out(
                 indout=indout,
                 axis=axis,
                 shape_coefs=shape_coefs,
             )
-            
+
             val[sli_out] = val_out
-            
+
         return val
 
     def ev_details(

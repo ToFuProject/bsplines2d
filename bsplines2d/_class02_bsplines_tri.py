@@ -153,11 +153,11 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
         ind = self.trifind(x, y)
 
         for ii in np.unique(ind):
-            
+
             if ii == -1:
                 continue
             indi = ind == ii
-            
+
             for iref, (i0, i1) in enumerate([(1, 2), (2, 0), (0, 1)]):
                 v_base = np.array([
                     x0[ii, i1] - x0[ii, i0],
@@ -489,7 +489,7 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
             crop=False,
             cropbs=None,
         )
-        
+
         # coefs
         (
             shape_x, shape_other, axis_x, ind_coefs, ind_x,
@@ -521,7 +521,7 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
             ind_coefs=0,
             return_as_list=True,
         )
-        
+
         sli_x = _utils_bsplines._get_slices_iter_reverse_x(
             axis_x=axis_x,
             shape_x=shape_x,
@@ -534,7 +534,7 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
 
         indu = np.unique(ind[ind >= 0])
         if self.deg == 0:
-            
+
             for ii in np.intersect1d(indu, indcent):
                 sli_x[axis_x[0]] = (ind == ii)
                 sli_c[axis[0]] = ii
@@ -543,10 +543,10 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
 
         elif self.deg == 1:
             for ii in np.intersect1d(indu, indcent):
-                
+
                 indi = ind == ii
                 sli_x[axis_x[0]] = indi
-                
+
                 # get bs
                 ibs = np.any(cents_per_bs == ii, axis=1).nonzero()[0]
                 sorter = np.argsort(self.indices[ii, :])
@@ -555,19 +555,19 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
                     knots_per_bs[ibs, 0],
                     sorter=sorter,
                 )]
-                
+
                 for jj, jbs in enumerate(ibs):
                     sli_c[axis[0]] = jbs
-                    
+
                     val[sli_x] += (
                         1. - heights[indi, inum[jj]]
                     ) * coefs[tuple(sli_c)]
                     # val[:, indi] += (
                     #     1. - heights[indi, inum[jj]]
                     # ) * coefs[:, jbs, ...]
-                    
+
         # val_out
-        if val_out is not False:
+        if val_out not in [None, False]:
             sli_out = _utils_bsplines._get_slice_out(
                 indout=ind == -1,
                 axis=axis,
