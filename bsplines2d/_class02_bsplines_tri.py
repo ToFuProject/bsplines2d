@@ -398,14 +398,6 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
         # -----------
         # generic
 
-        # points
-        x0, x1, crop = _mbr._check_RZ_crop(
-            x0=x0,
-            x1=x1,
-            crop=False,
-            cropbs=None,
-        )
-
         # parameters
         (
             nbs, knots_per_bs, cents_per_bs, indcent,
@@ -475,9 +467,10 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
         # slicing
         sli_c=None,
         sli_v=None,
-        sli_out=None,
+        sli_o=None,
         shape_v=None,
         shape_o=None,
+        shape_c=None,
         axis_v=None,
         # for compatibility (unused)
         **kwdargs,
@@ -487,15 +480,19 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
         # generic
 
         # parameters
-        nbs, knots_per_bs, cents_per_bs, indcent = self._ev_generic(
-            x0, x1, indbs=None,
-        )
+        (
+            nbs, knots_per_bs, cents_per_bs, indcent,
+        ) = self._ev_generic(indbs=None)
 
         # -----------
         # prepare
 
         val = np.zeros(shape_v)
         heights, ind = self.get_heights_per_centsknots_pts(x0, x1)
+        shape_height = tuple([
+            x0.size if ii in axis else 1
+            for ii in range(len(shape_c))
+        ])
 
         # -----------
         # compute
@@ -505,7 +502,7 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
 
             for ii in np.intersect1d(indu, indcent):
                 sli_v[axis_v[0]] = (ind == ii)
-                sli_c[axis[0]] = ii
+                sli_c[axis[0]] = [ii]
                 val[tuple(sli_v)] += coefs[tuple(sli_c)]
                 # val[:, indi] += coefs[:, ii, ...]
 
@@ -525,10 +522,11 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
                 )]
 
                 for jj, jbs in enumerate(ibs):
-                    sli_c[axis[0]] = jbs
+                    sli_c[axis[0]] = [jbs]
 
-                    val[tuple(sli_v)] += (
-                        1. - heights[indi, inum[jj]]
+                    val[tuple(sli_v)] += np.reshape(
+                        1. - heights[indi, inum[jj]],
+                        shape_height,
                     ) * coefs[tuple(sli_c)]
                     # val[:, indi] += (
                     #     1. - heights[indi, inum[jj]]

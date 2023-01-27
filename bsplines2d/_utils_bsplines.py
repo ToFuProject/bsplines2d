@@ -388,10 +388,11 @@ def _get_slice_cx(
     """
 
     if reverse is True:
-        sli = [
-            ind_cv if ii in axis else slice(None)
-            for ii in range(len(shape))
-        ]
+            sli = [
+                ind_cv if ii == axis[0] else slice(None)
+                for ii in range(len(shape))
+                if ii not in axis[1:]
+            ]
 
     else:
         def sli(ind, axis=axis, shape=shape, ind_cv=ind_cv):

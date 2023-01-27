@@ -190,10 +190,6 @@ class BivariateSplineRect(scpinterp.BivariateSpline):
         """
 
         # -----------
-        # check input
-
-
-        # -----------
         # prepare
 
         deg = self.degrees[0]

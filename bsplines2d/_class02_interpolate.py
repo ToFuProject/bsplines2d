@@ -248,6 +248,7 @@ def interpolate(
                     sli_o=sli_o,
                     shape_o=shape_o,
                     shape_v=shape_v,
+                    shape_c=shape_c,
                     axis_v=axis_v,
                 )
 

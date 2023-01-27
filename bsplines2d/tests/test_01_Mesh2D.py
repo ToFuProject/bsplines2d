@@ -222,9 +222,6 @@ class Test01_Mesh2D_Fixed():
     def test35_interpolate_bsplines_2d_tri_details(self):
         test_input._interpolate(self.bs, nd='2d', kind='tri', details=True)
 
-    # def test31_interpolate_bsplines_multiple(self):
-    #     pass
-
     # ##############
     # binning 1d
     # ##############
