@@ -123,7 +123,7 @@ class BivariateSplineRect(scpinterp.BivariateSpline):
 
     def __call__(
         self,
-        # points
+        # interp points
         x0=None,
         x1=None,
         # coefs
@@ -134,72 +134,43 @@ class BivariateSplineRect(scpinterp.BivariateSpline):
         cropbs=None,
         # options
         val_out=None,
+        # slicing
+        sli_c=None,
+        sli_v=None,
+        sli_o=None,
+        shape_v=None,
+        shape_o=None,
         # for compatibility (unused)
         **kwdargs,
     ):
 
-        if val_out is None:
-            val_out = np.nan
-
-        # r, z have same shape
-        x0, x1, crop = _check_x01_crop(
-            x0=x0,
-            x1=x1,
-            crop=crop,
-            cropbs=cropbs,
-        )
-
         # prepare
-        # coefs
-        (
-            shape_x, shape_other, axis_x, ind_coefs, ind_x,
-        ) = ds._class1_interpolate._get_shapes_axis_ind(
-            shape_bs=self.shapebs,
-            shape_coefs=coefs.shape,
-            axis=axis,
-            shape_x=x0.shape,
-        )
-        shape_coefs = coefs.shape
-
-        val = np.zeros(shape_x, dtype=float)
+        val = np.zeros(shape_v, dtype=float)
         cropbs_neg_flat = (~cropbs).ravel() if crop else None
 
         # interpolate
-        for ind in itt.product(*[range(aa) for aa in shape_other]):
+        for ind in itt.product(*[range(aa) for aa in shape_o]):
 
-            # prepare TBF
-            sli_c, sli_x = _utils_bsplines._get_slices_iter(
-                axis=axis,
-                axis_x=axis_x,
-                shape_coefs=shape_coefs,
-                shape_x=shape_x,
-                ind=ind,
-                ind_coefs=ind_coefs,
-                ind_x=ind_x,
-            )
+            # slices
+            slic = sli_c(ind)
+            sliv = sli_v(ind)
 
             self.set_coefs(
-                coefs=coefs[tuple(sli_c)],
+                coefs=coefs[slic],
                 cropbs_neg_flat=cropbs_neg_flat,
             )
 
-            # compute
-            val[tuple(sli_x)] = super().__call__(x0, x1, grid=False)
+            # can be called on any shape of x0, x1?
+            val[sliv] = super().__call__(x0, x1, grid=False)
 
-        # clean
-        if val_out not in [None, False]:
+        # clean out-of-mesh
+        if val_out is not False:
             indout = (
                 (x0 < self.tck[0][0]) | (x0 > self.tck[0][-1])
                 | (x1 < self.tck[1][0]) | (x1 > self.tck[1][-1])
             )
-
-            sli_out = _utils_bsplines._get_slice_out(
-                indout=indout,
-                axis=axis,
-                shape_coefs=shape_coefs,
-            )
-
-            val[sli_out] = val_out
+            slio = sli_o(indout)
+            val[slio] = val_out
 
         return val
 
@@ -221,12 +192,6 @@ class BivariateSplineRect(scpinterp.BivariateSpline):
         # -----------
         # check input
 
-        x0, x1, crop = _check_x01_crop(
-            x0=x0,
-            x1=x1,
-            crop=crop,
-            cropbs=cropbs,
-        )
 
         # -----------
         # prepare
@@ -243,7 +208,7 @@ class BivariateSplineRect(scpinterp.BivariateSpline):
         # -----------
         # compute
 
-        val = np.zeros(tuple(np.r_[x0.size, nbs]))
+        val = np.zeros(tuple(np.r_[x0.shape, nbs]))
         indtot = np.arange(0, nbs)
 
         iz_u = np.unique(indbs_tf[1])
@@ -251,7 +216,7 @@ class BivariateSplineRect(scpinterp.BivariateSpline):
         for iz in iz_u:
 
             scpinterp._bspl.evaluate_spline(
-                self.knots_per_bs_y_pad[:, iz],
+                self.knots_per_bs_x1_pad[:, iz],
                 coef,
                 self.degrees[1],
                 x1,
@@ -275,7 +240,7 @@ class BivariateSplineRect(scpinterp.BivariateSpline):
                 out0 = np.full((indok1.sum(), 1), np.nan)
 
                 scpinterp._bspl.evaluate_spline(
-                    self.knots_per_bs_x_pad[:, ii0],
+                    self.knots_per_bs_x0_pad[:, ii0],
                     coef,
                     self.degrees[0],
                     x0[indok1[:, 0]],
@@ -374,34 +339,6 @@ def _get_overlap(
 # #############################################################################
 #                           Mesh2DRect - bsplines
 # #############################################################################
-
-
-def _check_x01_crop(
-    x0=None,
-    x1=None,
-    crop=None,
-    cropbs=None,
-):
-
-    # R, Z
-    if not isinstance(x0, np.ndarray):
-        x0 = np.atleast_1d(x0)
-    if not isinstance(x1, np.ndarray):
-        x1 = np.atleast_1d(x1)
-    assert x0.shape == x1.shape
-
-    # crop
-    if crop is None:
-        crop = True
-    if not isinstance(crop, bool):
-        msg = (
-            "Arg crop must be a bool!\n"
-            f"Provided: {crop}"
-        )
-        raise Exception(msg)
-    crop = crop and cropbs is not None and cropbs is not False
-
-    return x0, x1, crop
 
 
 def get_bs2d_x01(deg=None, knots0=None, knots1=None):

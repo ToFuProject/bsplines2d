@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+
+
+# Built-in
+import itertools as itt
 
 
 import numpy as np
@@ -98,20 +103,10 @@ class UnivariateSpline():
         self.nbs = nbs
         self.lbs = lbs
 
-    def _check_input(self, x0=None, coefs=None, axis=None):
-        if not isinstance(x0, np.ndarray):
-            x0 = np.atleast_1d(x0)
-
-        if x0.ndim != 1:
-            msg = "1d bsplines only accepts 1d x0!\nProvided: {x0.shape}"
-            raise Exception(msg)
-
-        shape = tuple([
-            x0.size if ii == axis else coefs.shape[ii]
-            for ii in range(coefs.ndim)
+    def _check_shape(self, x0=None, coefs=None, axis=None):
+        return tuple(np.r_[
+            coefs.shape[:axis], x0.shape, coefs.shape[axis+1]
         ])
-
-        return x0, shape
 
     def _check_coefs(self, coefs=None, axis=None):
         """ None for ev_details, (nt, shapebs) for sum """
@@ -119,7 +114,7 @@ class UnivariateSpline():
 
     def __call__(
         self,
-        # coordiantes
+        # interp points
         x0=None,
         # coefs
         coefs=None,
@@ -127,6 +122,12 @@ class UnivariateSpline():
         # options
         val_out=None,
         deriv=None,
+        # slicing
+        sli_c=None,
+        sli_v=None,
+        sli_o=None,
+        shape_v=None,
+        shape_o=None,
         # for compatibility (unused)
         **kwdargs,
     ):
@@ -139,40 +140,37 @@ class UnivariateSpline():
         # ------------
         # check inputs
 
-        if val_out is None:
-            val_out = np.nan
-        if deriv is None:
-            deriv = 0
-        if hasattr(axis, '__iter__'):
-            axis = axis[0]
+        # axis
+        axis = axis[0]
 
         # coefs
         self._check_coefs(coefs=coefs, axis=axis)
 
         # x0, shape, val
-        x0, shape = self._check_input(x0=x0, coefs=coefs, axis=axis)
-        val = np.zeros(shape, dtype=float)
+        val = np.zeros(shape_v, dtype=float)
 
         # ------------
         # compute
 
-        val = scpinterp.BSpline(
-            self.knots_with_mult,
-            coefs,
-            self.deg,
-            axis=axis,
-            extrapolate=False,
-        )(x0, nu=deriv)
+        for ind in itt.product(*[range(aa) for aa in shape_o]):
+
+            # slices
+            slic = sli_c(ind)
+            sliv = sli_v(ind)
+
+            # call be called on any shape of x0
+            val[sliv] = scpinterp.BSpline(
+                self.knots_with_mult,
+                coefs[slic],
+                self.deg,
+                axis=0,
+                extrapolate=False,
+            )(x0, nu=deriv)
 
         # clean out-of-mesh
-        if val_out not in [None, False]:
-            # pts out
-            indout = (x0 < self.knots[0]) | (x0 > self.knots[-1])
-            sli = tuple([
-                indout if ii == axis else slice(None)
-                for ii in range(len(shape))
-            ])
-            val[sli] = val_out
+        if val_out is not False:
+            slio = sli_o((x0 < self.knots[0]) | (x0 > self.knots[-1]))
+            val[slio] = val_out
 
         return val
 
@@ -197,8 +195,6 @@ class UnivariateSpline():
         # ------------
         # check inputs
 
-        x0 = self._check_input(x0)
-
         if indbs_tf is None:
             nbs = self.nbs
         else:
@@ -206,9 +202,6 @@ class UnivariateSpline():
             assert 'int' in indbs_tf.dtype.name, indbs_tf
             assert np.unique(indbs_tf).size == indbs_tf.size
             nbs = indbs_tf.size
-
-        if deriv is None:
-            deriv = 0
 
         # -------
         # prepare

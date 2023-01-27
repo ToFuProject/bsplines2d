@@ -335,92 +335,81 @@ def _get_apex_per_bs(
     return apex
 
 
-# #################################################################
-# #################################################################
-#                   Get apex positions per bsplines 1d
-# #################################################################
+# ###################################################
+# ###################################################
+#       Get apex positions per bsplines 1d
+# ####################################################
 
 
-def _get_slices_iter(
+def _get_shapes_ind(
     axis=None,
-    axis_x=None,
-    shape_coefs=None,
+    shape_c=None,
     shape_x=None,
-    ind=None,
-    ind_coefs=None,
-    ind_x=None,
-    return_as_list=None,
 ):
-    
-    sli_c = tuple([
-        slice(None) if ii in axis else ind[ind_coefs[ii]]
-        for ii in range(len(shape_coefs))
+
+    # shape of values
+    shape_v = tuple(np.r_[
+        shape_c[:axis[0]], shape_x, shape_c[axis[-1]+1:]
+    ].astype(int))
+
+    # axis_v
+    axis_v = axis[0] + np.arange(len(shape_x))
+
+    # ind for coefs
+    ind_c = np.arange(0, len(shape_c))
+    ind_c[axis[-1]:] -= len(axis)
+
+    # ind for values
+    ind_v = np.arange(0, len(shape_v))
+    ind_v[axis_v[-1]:] -= len(axis_v)
+
+    # shape of other dimensions (common to coefs and values)
+    shape_o = tuple([
+        ss for ii, ss in enumerate(shape_c)
+        if ii not in axis
     ])
 
-    sli_x = tuple([
-        slice(None) if ii in axis_x else ind[ind_x[ii]]
-        for ii in range(len(shape_x))
-    ])
-    
-    return sli_c, sli_x
+    return shape_v, axis_v, ind_c, ind_v, shape_o
 
 
-def _get_slices_iter_reverse_coefs(
+def _get_slice_cx(
     axis=None,
-    shape_coefs=None,
-    ind_coefs=None,
-    return_as_list=None,
+    shape=None,
+    ind_cv=None,
+    reverse=None,
 ):
-    
-    assert len(axis) == 1
-    
-    sli_c = [
-        ind_coefs if ii in axis else slice(None)
-        for ii in range(len(shape_coefs))
-    ]
-    
-    if return_as_list is True:
-        return sli_c
+    """ Return coefs slicing
+
+    For mtype = 'tri', revser=True
+        => return a list
+
+    for other cases, return a function that returns a tuple
+
+    """
+
+    if reverse is True:
+        sli = [
+            ind_cv if ii in axis else slice(None)
+            for ii in range(len(shape))
+        ]
+
     else:
-        return tuple(sli_c)
+        def sli(ind, axis=axis, shape=shape, ind_cv=ind_cv):
+            return tuple([
+                slice(None) if ii in axis else ind[ind_cv[ii]]
+                for ii in range(len(shape))
+            ])
+
+    return sli
 
 
-def _get_slices_iter_reverse_x(
-    axis_x=None,
-    shape_x=None,
-    ind_x=None,
-    return_as_list=None,
-):
-    
-    assert ind_x.ndim == len(axis_x)
+def _get_slice_out(axis=None, shape_c=None):
 
-    sli_x = []
-    for ii in range(len(shape_x)):
-        if ii == axis_x[0]:
-            sli_x.append(ind_x)
-        elif ii in axis_x:
-            pass
-        else:
-            sli_x.append(slice(None))
-            
-    if return_as_list is True:
-        return sli_x
-    else:
-        return tuple(sli_x)
-
-
-def _get_slice_out(indout=None, axis=None, shape_coefs=None):
-    
-    if len(axis) == 1:
-        sli_out = tuple([
+    def func(indout, axis=axis, shape_c=shape_c):
+        return tuple([
             indout if ii == axis[0] else slice(None)
-            for ii in range(len(shape_coefs))
-        ])
-    else:
-        sli_out = tuple([
-            indout if ii == axis[0] else slice(None)
-            for ii in range(len(shape_coefs))
+            for ii in range(len(shape_c))
             if ii not in axis[1:]
         ])
-    
-    return sli_out
+
+    return func

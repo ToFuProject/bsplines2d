@@ -287,12 +287,16 @@ class BSplines2D(Previous):
         domain=None,
         # bsplines-specific
         details=None,
+        indbs_tf=None,
+        # rect-specific
+        crop=None,
         # parameters
         grid=None,
         deg=None,
         deriv=None,
         log_log=None,
         return_params=None,
+        debug=None,
         # # bsplines
         # indbs=None,
         # # parameters
@@ -321,11 +325,15 @@ class BSplines2D(Previous):
             domain=domain,
             # bsplines-specific
             details=details,
+            indbs_tf=indbs_tf,
+            # rect-specific
+            crop=crop,
             # parameters
             deg=deg,
             deriv=deriv,
             log_log=log_log,
             return_params=return_params,
+            debug=debug,
         )
 
     """

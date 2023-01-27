@@ -19,6 +19,7 @@ from . import _class02_bsplines_rect
 from . import _class02_bsplines_tri
 from . import _class02_bsplines_polar
 from . import _class02_bsplines_1d
+from . import _utils_bsplines
 
 
 # #################################################################
@@ -40,11 +41,17 @@ def interpolate(
     domain=None,
     # bsplines-specific
     details=None,
+    indbs_tf=None,
+    # rect-specific
+    crop=None,
     # parameters
     deg=None,
     deriv=None,
+    val_out=None,
     log_log=None,
     return_params=None,
+    # debug or unit tests
+    debug=None,
 ):
     """ Interpolate at desired points on desired data
 
@@ -67,6 +74,9 @@ def interpolate(
 
     # -------------
     # check inputs
+
+    if debug is None:
+        debug = False
 
     # keys
     isbs, keys, ref_key, daxis, dunits, units_ref = _check_keys(
@@ -130,8 +140,23 @@ def interpolate(
         return_params=return_params,
     )
 
-    # ------------
-    # prepare
+    # ------------------------------
+    # check bsplines-specific params
+
+    (
+        details, val_out, crop, cropbs, indbs_tf, nbs
+    ) = _check_params_bsplines(
+        coll=coll,
+        details=details,
+        val_out=val_out,
+        crop=crop,
+        mtype=mtype,
+        keybs=keybs,
+        indbs_tf=indbs_tf,
+    )
+
+    # --------------------
+    # prepare data, dout
 
     ddata, dout = ds._class1_interpolate._prepare_ddata(
         coll=coll,
@@ -143,12 +168,14 @@ def interpolate(
         ref_key=ref_key,
     )
 
+    shape_x = x0.shape
+
     # ---------------
     # interpolate
 
     # loop on keys
     derr = {}
-    clas = coll.dobj[coll._which_bsplines][keyds]['class']
+    clas = coll.dobj[coll._which_bsplines][keybs]['class']
     for ii, k0 in enumerate(keys):
 
         try:
@@ -158,31 +185,73 @@ def interpolate(
                     x0=x0,
                     x1=x1,
                     # options
-                    val_out=0.,
+                    val_out=val_out,
                     deriv=deriv,
                     # indices
-                    indbs_tf=indbstf,
+                    indbs_tf=indbs_tf,
                     # rect-specific
                     crop=crop,
-                    cropbs=cropsbs,
+                    cropbs=cropbs,
                 )
 
             else:
-                dout[k0]['data'] = clas(
+
+                # --------------------
+                # prepare slicing func
+
+                shape_c = ddata[k0]['data'].shape
+                (
+                    shape_v, axis_v, ind_c, ind_v, shape_o,
+                ) = _utils_bsplines._get_shapes_ind(
+                    axis=daxis[k0],
+                    shape_c=shape_c,
+                    shape_x=shape_x,
+                )
+
+                sli_c = _utils_bsplines._get_slice_cx(
+                    axis=daxis[k0],
+                    shape=shape_c,
+                    ind_cv=ind_c,
+                    reverse=mtype == 'tri',
+                )
+
+                sli_v = _utils_bsplines._get_slice_cx(
+                    axis=axis_v,
+                    shape=shape_v,
+                    ind_cv=ind_v,
+                    reverse=mtype == 'tri',
+                )
+
+                sli_o = _utils_bsplines._get_slice_out(
+                    axis=daxis[k0],
+                    shape_c=shape_c,
+                )
+
+                # --------------------
+                # actual interpolation
+
+                dout[k0]['data'][...] = clas(
                     x0=x0,
                     x1=x1,
                     # coefs
                     coefs=ddata[k0]['data'],
                     axis=daxis[k0],
                     # options
-                    val_out=0.,
+                    val_out=val_out,
                     deriv=deriv,
                     # rect-specific
                     crop=crop,
-                    cropbs=cropsbs,
+                    cropbs=cropbs,
+                    # slicing
+                    sli_c=sli_c,
+                    sli_v=sli_v,
+                    sli_o=sli_o,
+                    shape_o=shape_o,
+                    shape_v=shape_v,
+                    axis_v=axis_v,
                 )
 
-            print('success')
+            print('success', k0)
 
         except Exception as err:
             raise err
@@ -216,7 +285,18 @@ def interpolate(
             'domain': domain,
             'crop': crop,
             'cropbs': cropbs,
+            'indbs_tf': indbs_tf,
         }
+
+        # debug
+        if debug is True:
+            dparam.update({
+                k0: v0 for k0, v0 in ddata[keys[0]].items()
+                if k0 not in ['data']
+            })
+            dparam['x0.shape'] = x0.shape
+            dparam['axis'] = daxis[keys[0]]
+
         return dout, dparam
     else:
         return dout
@@ -442,6 +522,89 @@ def _check_keys(
         units_ref = [coll.ddata[rr]['units'] for rr in ref_key]
 
     return isbs, keys, ref_key, daxis, dunits, units_ref
+
+
+def _check_params_bsplines(
+    coll=None,
+    details=None,
+    val_out=None,
+    crop=None,
+    mtype=None,
+    keybs=None,
+    indbs_tf=None,
+):
+    # -------------
+    # details
+
+    details = ds._generic_check._check_var(
+        details, 'details',
+        types=bool,
+        default=False,
+    )
+
+    # -------------
+    # val_out
+
+    val_out = ds._generic_check._check_var(
+        val_out, 'val_out',
+        default=np.nan,
+        allowed=[0., np.nan, False],
+    )
+
+    # ---------------
+    # cropping ?
+
+    wbs = coll._which_bsplines
+    cropbs = coll.dobj[wbs][keybs]['crop']
+    if cropbs is None:
+        cropbs = False
+    if cropbs is not False:
+        cropbs = coll.ddata[cropbs]['data']
+        nbs = cropbs.sum()
+    else:
+        nbs = np.prod(coll.dobj[wbs][keybs]['shape'])
+
+    # -------------
+    # crop
+
+    lok = [False]
+    if mtype == 'rect' and cropbs is not False:
+        lok.append(True)
+    else:
+        crop = False
+
+    crop = ds._generic_check._check_var(
+        crop, 'crop',
+        types=bool,
+        default=lok[-1],
+        allowed=lok,
+    )
+
+    # ---------------
+    # indbs_tf
+
+    if details is True:
+
+        if mtype == 'rect':
+            returnas = 'tuple-flat'
+            # returnas = 'array-flat'
+        else:
+            returnas = int
+
+        # compute validated indbs array with appropriate form
+        indbs_tf = coll.select_ind(
+            key=keybs,
+            returnas=returnas,
+            ind=indbs_tf,
+            crop=crop,
+        )
+
+        if isinstance(indbs_tf, tuple):
+            nbs = indbs_tf[0].size
+        else:
+            nbs = indbs_tf.size
+
+    return details, val_out, crop, cropbs, indbs_tf, nbs
 
 
 # #############################################################################

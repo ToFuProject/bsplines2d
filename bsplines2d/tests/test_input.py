@@ -506,23 +506,91 @@ def _interpolate(bs, nd=None, kind=None, details=None):
 
         ref_key = vd['bs'][0]
         vect = bs.dobj[wbs][ref_key]['apex'][0]
-        vect = bs.ddata[vect]['data']
+        vect = bs.ddata[vect]['data'][::2]
+        vect = np.array([vect, vect])
 
+        # kwdargs
+        shapebs = bs.dobj[bs._which_bsplines][ref_key]['shape']
         if nd == '1d':
-            dx = {'x0': vect}
+            kwd = {'x0': vect}
         else:
-            dx = {'x0': vect, 'x1': vect}
+            kwd = {'x0': vect, 'x1': vect}
 
-        dout = bs.interpolate(
+        # crop
+        if kind == 'rect' and ii % 2 == 0:
+            crop = isinstance(bs.dobj[wbs][ref_key]['crop'], str)
+        else:
+            crop = False
+
+        # indbs_tf
+        if kind == 'rect':
+            if ii%3 == 0:
+                indbs_tf = bs.select_ind(
+                    key=ref_key,
+                    ind=([1, 2, 5], [4, 5, 3]),
+                    crop=crop,
+                    returnas='tuple-flat',
+                )
+                nbs = len(indbs_tf[0])
+            else:
+                indbs_tf = None
+                if crop is True:
+                    kcrop = bs.dobj[wbs][ref_key]['crop']
+                    nbs = np.sum(bs.ddata[kcrop]['data'])
+                else:
+                    nbs = np.prod(shapebs)
+        else:
+            if ii%3 == 0:
+                indbs_tf = np.arange(0, np.prod(shapebs), 2)
+                nbs = indbs_tf.size
+            else:
+                indbs_tf = None
+                nbs = np.prod(shapebs)
+
+        kwd.update({
+            'domain': None,
+            'details': details,
+            'indbs_tf': indbs_tf,
+            'crop': crop,
+        })
+
+        # interpolate
+        dout, dparam = bs.interpolate(
             keys=kd,
             ref_key=ref_key,
-            details=details,
-            **dx,
+            return_params=True,
+            debug=True,
+            **kwd,
         )
 
-        shape = list(bs.ddata[kd]['shape'])
-        shape[0] = tuple(np.r_[shape[:], x0.shape, shape[:]])
-        assert dout[kd]['data'].shape == shape
+        # expected shape
+        if details is True:
+            shape = tuple(np.r_[vect.shape, nbs].astype(int))
+        else:
+            shape = list(bs.ddata[kd]['shape'])
+            ax0 = dparam['axis'][0]
+            ax1 = dparam['axis'][-1]
+            shape = tuple(np.r_[
+                shape[:ax0], vect.shape, shape[ax1+1:]
+            ].astype(int))
+
+        # error msg
+        if dout[kd]['data'].shape != shape:
+            lstr = [
+                f"\t- {k0}: {v0}"
+                for k0, v0 in dparam.items()
+                if k0 not in ['x0', 'x1']
+            ]
+            msg = (
+                f"Wrong shape for '{kd}':\n"
+                f"\t- expected: {shape}\n"
+                f"\t- obtained: {dout[kd]['data'].shape}\n\n"
+                f"\t- nd: {nd}\n"
+                f"\t- kind: {kind}\n"
+                f"\t- ddata['{kd}']['data'].shape: {bs.ddata[kd]['shape']}\n\n"
+                + "\n".join(lstr)
+            )
+            raise Exception(msg)
 
 
 def _bin_bs(bs, nd=None, kind=None):
