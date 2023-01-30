@@ -279,10 +279,10 @@ class BSplines2D(Previous):
         # interpolation base
         keys=None,
         ref_key=None,
-        ref_quant=None,
         # interpolation pts
         x0=None,
         x1=None,
+        grid=None,
         # domain limitation
         domain=None,
         # bsplines-specific
@@ -291,20 +291,14 @@ class BSplines2D(Previous):
         # rect-specific
         crop=None,
         # parameters
-        grid=None,
         deg=None,
         deriv=None,
+        val_out=None,
         log_log=None,
         return_params=None,
         debug=None,
         # # bsplines
-        # indbs=None,
-        # # parameters
-        # reshape=None,
         # res=None,
-        # crop=None,
-        # nan0=None,
-        # val_out=None,
         # imshow=None,
         # # storing
         # store=None,
@@ -331,6 +325,7 @@ class BSplines2D(Previous):
             # parameters
             deg=deg,
             deriv=deriv,
+            val_out=val_out,
             log_log=log_log,
             return_params=return_params,
             debug=debug,

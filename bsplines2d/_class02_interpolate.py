@@ -22,10 +22,10 @@ from . import _class02_bsplines_1d
 from . import _utils_bsplines
 
 
-# #################################################################
-# #################################################################
+# ################################################################
+# ################################################################
 #                                       Main
-# #################################################################
+# ################################################################
 
 
 def interpolate(
@@ -361,7 +361,7 @@ def _check_keys(
         # check vs maxd
         if (lc[0] and len(ref_key) > maxd) or (lc[1] and len(ref_key) != 1):
             msg = (
-                "Arg ref_key shall not more than {maxd} ref!\n"
+                f"Arg ref_key shall not more than {maxd} ref!\n"
                 "And can only contain one single bsplines!\n"
                 f"Provided: {ref_key}"
             )

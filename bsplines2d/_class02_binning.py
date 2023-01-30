@@ -47,13 +47,6 @@ def binning(
         only1d=True,
     )
 
-    # because 1d only
-    if not isbs:
-        ref_key = ref_key[0]
-        for k0, v0 in daxis.items():
-            daxis[k0] = v0[0]
-        units_ref = units_ref[0]
-
     # ----------
     # trivial
 
@@ -61,7 +54,7 @@ def binning(
         return ds._class1_binning.binning(
             coll=coll,
             keys=keys,
-            ref_key=ref_key,
+            ref_key=ref_key[0],
             bins=bins,
         )
 
@@ -103,18 +96,15 @@ def binning(
     # --------------
     # actual binning
 
-    clas = coll.dobj[coll._which_bsplines][ref_key]['class']
     for k0, v0 in dout.items():
 
         # interpolate
-        val = clas(
-            coefs=coll.ddata[k0]['data'],
-            xx=xx,
-            axis=daxis[k0],
+        val = coll.interpolate(
+            keys=k0,
+            ref_key=ref_key,
+            x0=xx,
             val_out=0.,
-        )
-
-        import pdb; pdb.set_trace() # DB
+        )[k0]['data']
 
         # bin
         dout[k0]['data'] = ds._class1_binning._bin(
@@ -122,10 +112,10 @@ def binning(
             db=db,
             vect=xx,
             data=val,
-            axis=daxis[k0],
+            axis=daxis[k0][0],
         )
         ref = list(coll.ddata[k0]['ref'])
-        ref[daxis[k0]] = None
+        ref[daxis[k0][0]] = None
         dout[k0]['ref'] = tuple(ref)
 
     return dout
