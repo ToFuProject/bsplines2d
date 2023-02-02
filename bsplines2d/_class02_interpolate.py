@@ -39,6 +39,8 @@ def interpolate(
     grid=None,
     # domain limitation
     domain=None,
+    # common ref
+    ref_com=None,
     # bsplines-specific
     details=None,
     indbs_tf=None,
@@ -101,6 +103,8 @@ def interpolate(
             grid=grid,
             # domain limitation
             domain=domain,
+            # common ref
+            ref_com=ref_com,
             # parameters
             deg=deg,
             deriv=deriv,
@@ -115,29 +119,6 @@ def interpolate(
         coll=coll,
         keys=keys,
         ref_key=ref_key,
-    )
-
-    # ---------------
-    # prepare x0, x1
-
-    (
-        _, deriv,
-        x0, x1,
-        log_log, grid, ndim, return_params,
-    ) = ds._class1_interpolate._check_params(
-        coll=coll,
-        # interpolation base
-        keys=keys,
-        ref_key=ref_key,      # ddata keys
-        # interpolation pts
-        x0=x0,
-        x1=x1,
-        # parameters
-        grid=grid,
-        deg=None,
-        deriv=deriv,
-        log_log=None,
-        return_params=return_params,
     )
 
     # ------------------------------
@@ -155,20 +136,47 @@ def interpolate(
         indbs_tf=indbs_tf,
     )
 
-    # --------------------
-    # prepare data, dout
+    if details is True:
+        ref_com, domain = None, None
 
-    ddata, dout = ds._class1_interpolate._prepare_ddata(
+    # ---------------
+    # prepare x0, x1
+
+    # params
+    (
+        deg, deriv,
+        kx0, kx1, x0, x1, refx, dref_com,
+        ddata, dout, dsh_other, sli_c, sli_x, sli_v,
+        log_log, grid, ndim, return_params,
+    ) = ds._class1_interpolate._check(
         coll=coll,
+        # interpolation base
         keys=keys,
+        ref_key=ref_key,      # ddata keys
+        # interpolation pts
+        x0=x0,
+        x1=x1,
+        # useful for shapes
         daxis=daxis,
         dunits=dunits,
-        x0=x0,
         domain=domain,
-        ref_key=ref_key,
+        # common ref
+        ref_com=ref_com,
+        # parameters
+        grid=grid,
+        deg=None,
+        deriv=deriv,
+        log_log=None,
+        return_params=return_params,
     )
 
-    shape_x = x0.shape
+    # ----------
+    # prepare
+
+    # indokx
+    indokx0 = np.isfinite(x0)
+    if x1 is not None:
+        indokx0 &= np.isfinite(x1)
 
     # ---------------
     # interpolate
@@ -199,32 +207,31 @@ def interpolate(
                 # --------------------
                 # prepare slicing func
 
-                shape_c = ddata[k0]['data'].shape
-                (
-                    shape_v, axis_v, ind_c, ind_v, shape_o,
-                ) = _utils_bsplines._get_shapes_ind(
-                    axis=daxis[k0],
-                    shape_c=shape_c,
-                    shape_x=shape_x,
-                )
+                # (
+                    # shape_v, axis_v, ind_c, ind_v, shape_o,
+                # ) = _utils_bsplines._get_shapes_ind(
+                    # axis=daxis[k0],
+                    # shape_c=shape_c,
+                    # shape_x=shape_x,
+                # )
 
-                sli_c = _utils_bsplines._get_slice_cx(
-                    axis=daxis[k0],
-                    shape=shape_c,
-                    ind_cv=ind_c,
-                    reverse=mtype == 'tri',
-                )
+                # sli_c = _utils_bsplines._get_slice_cx(
+                    # axis=daxis[k0],
+                    # shape=shape_c,
+                    # ind_cv=ind_c,
+                    # reverse=mtype == 'tri',
+                # )
 
-                sli_v = _utils_bsplines._get_slice_cx(
-                    axis=axis_v,
-                    shape=shape_v,
-                    ind_cv=ind_v,
-                    reverse=mtype == 'tri',
-                )
+                # sli_v = _utils_bsplines._get_slice_cx(
+                    # axis=axis_v,
+                    # shape=shape_v,
+                    # ind_cv=ind_v,
+                    # reverse=mtype == 'tri',
+                # )
 
                 sli_o = _utils_bsplines._get_slice_out(
                     axis=daxis[k0],
-                    shape_c=shape_c,
+                    shape_c=ddata[k0].shape,
                 )
 
                 # --------------------
@@ -234,7 +241,7 @@ def interpolate(
                     x0=x0,
                     x1=x1,
                     # coefs
-                    coefs=ddata[k0]['data'],
+                    coefs=ddata[k0],
                     axis=daxis[k0],
                     # options
                     val_out=val_out,
@@ -244,12 +251,14 @@ def interpolate(
                     cropbs=cropbs,
                     # slicing
                     sli_c=sli_c,
+                    sli_x=sli_x,
                     sli_v=sli_v,
                     sli_o=sli_o,
-                    shape_o=shape_o,
-                    shape_v=shape_v,
-                    shape_c=shape_c,
-                    axis_v=axis_v,
+                    indokx0=indokx0,
+                    shape_o=dsh_other[k0],
+                    shape_v=dout[k0]['data'].shape,
+                    dref_com=dref_com[k0],
+                    # axis_v=axis_v,
                 )
 
             print('success', k0)
@@ -275,6 +284,7 @@ def interpolate(
     if return_params is True:
         dparam = {
             'keys': keys,
+            'keybs': keybs,
             'ref_key': ref_key,
             'deg': deg,
             'deriv': deriv,
@@ -608,10 +618,10 @@ def _check_params_bsplines(
     return details, val_out, crop, cropbs, indbs_tf, nbs
 
 
-# #############################################################################
-# #############################################################################
+# ################################################################
+# ################################################################
 #                       Prepare bsplines
-# #############################################################################
+# ################################################################
 
 
 def _prepare_bsplines(
@@ -630,7 +640,7 @@ def _prepare_bsplines(
     wbs = coll._which_bsplines
     keybs = ref_key
     keym = coll.dobj[wbs][keybs]['mesh']
-    ref_key = coll.dobj[wbs][keybs]['ref']
+    ref_key = coll.dobj[wbs][keybs]['apex']
     mtype = coll.dobj[coll._which_mesh][keym]['type']
 
     # -------------

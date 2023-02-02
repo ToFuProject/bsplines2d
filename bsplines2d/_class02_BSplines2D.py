@@ -285,6 +285,8 @@ class BSplines2D(Previous):
         grid=None,
         # domain limitation
         domain=None,
+        # common ref
+        ref_com=None,
         # bsplines-specific
         details=None,
         indbs_tf=None,
@@ -317,6 +319,8 @@ class BSplines2D(Previous):
             grid=grid,
             # domain limitation
             domain=domain,
+            # common ref
+            ref_com=ref_com,
             # bsplines-specific
             details=details,
             indbs_tf=indbs_tf,

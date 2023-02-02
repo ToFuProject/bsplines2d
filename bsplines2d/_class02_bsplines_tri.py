@@ -470,7 +470,6 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
         sli_o=None,
         shape_v=None,
         shape_o=None,
-        shape_c=None,
         axis_v=None,
         # for compatibility (unused)
         **kwdargs,
@@ -491,7 +490,7 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
         heights, ind = self.get_heights_per_centsknots_pts(x0, x1)
         shape_height = tuple([
             x0.size if ii in axis else 1
-            for ii in range(len(shape_c))
+            for ii in range(len(coefs.shape))
         ])
 
         # -----------

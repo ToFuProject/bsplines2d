@@ -28,34 +28,34 @@ def _get_key_mesh_vs_bplines(
     which_bsplines=None,
 ):
 
-    
+
     if forcecat in [None, 'mesh'] and which_mesh in [None, coll._which_mesh]:
         lk1 = list(coll.dobj.get(coll._which_mesh, {}).keys())
     else:
         lk1 = []
-    
+
     if forcecat in [None, 'mesh'] and which_mesh in [None, coll._which_msp]:
         lk2 = list(coll.dobj.get(coll._which_msp, {}).keys())
     else:
         lk2 = []
-    
+
     if forcecat in [None, 'bsplines'] and which_bsplines in [None, 'bsplines']:
         lk3 = list(coll.dobj.get('bsplines', {}).keys())
     else:
         lk3 = []
-        
+
     if forcecat in [None, 'bsplines'] and which_bsplines in [None, coll._which_bssp]:
         lk4 = list(coll.dobj.get(coll._which_bssp, {}).keys())
     else:
         lk4 = []
-    
+
     # key
     key = ds._generic_check._check_var(
         key, 'key',
         allowed=lk1 + lk2 + lk3 + lk4,
         types=str,
     )
-    
+
     # which
     if key in lk1 + lk3:
         which_mesh = coll._which_mesh
@@ -63,13 +63,13 @@ def _get_key_mesh_vs_bplines(
     else:
         which_mesh = coll._which_msp
         which_bsplines = coll._which_bssp
-        
+
     # mesh vs bsplines
     if key in lk1 + lk2:
         cat = which_mesh
     else:
-        cat = which_bsplines        
-        
+        cat = which_bsplines
+
     # keys
     if cat == which_mesh:
         keym = key
@@ -77,9 +77,9 @@ def _get_key_mesh_vs_bplines(
     else:
         keym = coll.dobj[which_bsplines][key][which_mesh]
         keybs = key
-        
+
     return which_mesh, which_bsplines, keym, keybs, cat
-    
+
 
 # #############################################################################
 # #############################################################################
@@ -392,7 +392,7 @@ def _check_polar_2dquant(
     return dquant
 
 
-def _mesh_names(key=None, x_name=None): 
+def _mesh_names(key=None, x_name=None):
     kxk, kxc = f'{key}-{x_name}-nk', f'{key}-{x_name}-nc'
     kkx, kcx = f'{key}-k-{x_name}', f'{key}-c-{x_name}'
     return kxk, kxc, kkx, kcx
@@ -776,7 +776,7 @@ def _mesh2DRect_X_check(
 def _mesh1D_check(
     x=None,
     x_name=None,
-    uniform=None,        
+    uniform=None,
 ):
     # R, Z check
     c0 = (
@@ -792,11 +792,11 @@ def _mesh1D_check(
     x = np.unique(x)
     res = np.diff(x)
     ind = None
-    
+
     # check uniformity
     if np.allclose(res, np.mean(res), atol=1e-12, rtol=0):
         res = res[0]
-        
+
     elif uniform:
         msg = (
             "Non-uniform resolution for user-provided mesh {x_name}\n"
@@ -871,14 +871,14 @@ def _mesh2DRect_check(
         Z, resZ, indZ = _mesh2DRect_X_check(domain[1], res=res[1])
 
     elif lc[1]:
-        
+
         # R
         R, resR, indR = _mesh1D_check(
             x=R,
             x_name='R',
             uniform=True,
         )
-        
+
         # Z
         Z, resZ, indZ = _mesh1D_check(
             x=Z,

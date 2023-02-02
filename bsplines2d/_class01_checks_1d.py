@@ -58,10 +58,10 @@ def check(
     else:
         cents = 0.5*(knots[1:] + knots[:-1])
 
-    # ---------------------
-    # depend on 2d bsplines
+    # ------------------------
+    # depend on other bsplines
 
-    submesh, kwdargs = _defined_from(
+    submesh, _, kwdargs = _defined_from(
         coll=coll,
         subkey=subkey,
         # parameters
@@ -175,6 +175,7 @@ def _knots_angle(
 def _defined_from(
     coll=None,
     subkey=None,
+    nd=None,
     # parameters
     kwdargs=None,
 ):
@@ -183,31 +184,37 @@ def _defined_from(
     # trivial
 
     if subkey is None:
-        return None, kwdargs
+        return None, None, kwdargs
 
     # ------------
     # check key_on
 
+    wm = coll._which_mesh
     wbs = coll._which_bsplines
     if coll.dobj.get(wbs) is not None:
-        lok = [
-            k0 for k0, v0 in coll.ddata.items()
-            if v0.get(wbs) in coll.dobj[wbs].keys()
+        dbs, dref = coll.get_dict_bsplines()
+        lok =[
+            k0 for k0, v0 in dbs.items()
+            if len(v0) == 1
         ]
+
+        if nd is not None:
+            lok2 = []
+            for k0 in lok:
+                kbs = list(dbs[k0].keys())[0]
+                if coll.dobj[wm][coll.dobj[wbs][kbs]['mesh']]['nd'] == nd:
+                    lok2.append(k0)
+
+            lok = lok2
+
     else:
         lok = []
 
-    lc = [
-        callable(subkey),
-        isinstance(subkey, str) and subkey in lok
-    ]
-    if not any(lc):
-        msg = (
-            f"Arg {subkey} must be either:\n"
-            f"\t- key to existing bsplines data in {lok}\n"
-            f"Provided: {subkey}\n"
-        )
-        raise Exception(msg)
+    subkey = ds._generic_check._check_var(
+        subkey, 'subkey',
+        types=str,
+        allowed=lok,
+    )
 
     # ----------------
     # complete kwdargs
@@ -220,9 +227,10 @@ def _defined_from(
     # --------------
     # key_submesh
 
-    submesh = coll.dobj[wbs][coll.ddata[subkey][wbs]]['mesh']
+    subbs = coll.ddata[subkey][wbs][0]
+    submesh = coll.dobj[wbs][subbs]['mesh']
 
-    return submesh, kwdargs
+    return submesh, subbs, kwdargs
 
 
 # #############################################################################
@@ -270,6 +278,12 @@ def _to_dict(
     # attributes
     latt = ['dim', 'quant', 'name', 'units']
     dim, quant, name, units = [kwdargs.get(ss) for ss in latt]
+
+    # subkey
+    if subkey is not None:
+        subkey = (subkey,)
+    else:
+        subkey = None
 
     # -------------
     # prepare dict

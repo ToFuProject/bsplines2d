@@ -124,10 +124,13 @@ class UnivariateSpline():
         deriv=None,
         # slicing
         sli_c=None,
+        sli_x=None,
         sli_v=None,
         sli_o=None,
+        indokx0=None,
         shape_v=None,
         shape_o=None,
+        dref_com=None,
         # for compatibility (unused)
         **kwdargs,
     ):
@@ -139,9 +142,6 @@ class UnivariateSpline():
 
         # ------------
         # check inputs
-
-        # axis
-        axis = axis[0]
 
         # coefs
         self._check_coefs(coefs=coefs, axis=axis)
@@ -155,8 +155,25 @@ class UnivariateSpline():
         for ind in itt.product(*[range(aa) for aa in shape_o]):
 
             # slices
-            slic = sli_c(ind)
-            sliv = sli_v(ind)
+            slic = sli_c(
+                ind,
+                axis=axis,
+                ddim=coefs.ndim,
+            )
+
+            slix = sli_x(
+                ind,
+                indokx0=indokx0,
+                iother=None if ref_com is None else dref_com['iother'],
+            )
+
+            sliv = sli_v(
+                ind,
+                indokx0=indokx0,
+                ddim=coefs.ndim,
+                axis=axis,
+                iother=None if ref_com is None else dref_com['iother'],
+            )
 
             # call be called on any shape of x0
             val[sliv] = scpinterp.BSpline(
@@ -165,7 +182,7 @@ class UnivariateSpline():
                 self.deg,
                 axis=0,
                 extrapolate=False,
-            )(x0, nu=deriv)
+            )(x0[slix], nu=deriv)
 
         # clean out-of-mesh
         if val_out is not False:

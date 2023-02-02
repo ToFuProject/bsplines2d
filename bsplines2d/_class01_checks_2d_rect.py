@@ -27,6 +27,9 @@ def check(
     # automated
     domain=None,
     res=None,
+    # defined from pre-existing bsplines
+    subkey0=None,
+    subkey1=None,
     # attributes
     **kwdargs,
 ):
@@ -54,6 +57,40 @@ def check(
     cents0 = 0.5*(knots0[1:] + knots0[:-1])
     cents1 = 0.5*(knots1[1:] + knots1[:-1])
 
+    # ------------------------
+    # depend on other bsplines
+
+    submesh0, subbs0, kwdargs = _checks_1d._defined_from(
+        coll=coll,
+        subkey=subkey0,
+        # parameters
+        kwdargs=kwdargs,
+        nd='2d',
+    )
+
+    submesh1, subbs1, kwdargs = _checks_1d._defined_from(
+        coll=coll,
+        subkey=subkey1,
+        # parameters
+        kwdargs=kwdargs,
+        nd='2d',
+    )
+
+    if subbs0 != subbs1:
+        msg = (
+            "Args subkey0 and subkey1 must be refering to "
+            "2 data defined on the same 2d bsplines\n"
+            "Provided:\n"
+            "\t- subkey0: {subkey0}\n"
+            "\t- subkey1: {subkey1}\n"
+            "\t- subbs0: {subbs0}\n"
+            "\t- subbs1: {subbs1}\n"
+        )
+        raise Exception(msg)
+
+    subbs = subbs0
+    submesh = submesh0
+
     # --------------
     # to dict
 
@@ -66,6 +103,11 @@ def check(
         cents1=cents1,
         knots0_name=knots0_name,
         knots1_name=knots1_name,
+        # sub quantity
+        subkey0=subkey0,
+        subkey1=subkey1,
+        submesh=submesh,
+        # attributes
         **kwdargs,
     )
 
@@ -276,6 +318,10 @@ def _to_dict(
     knots1_name=None,
     res0=None,
     res1=None,
+    # submesh
+    subkey0=None,
+    subkey1=None,
+    submesh=None,
     # attributes
     **kwdargs,
 ):
@@ -313,6 +359,12 @@ def _to_dict(
     dim, quant, name, units = [kwdargs.get(ss) for ss in latt]
 
     variable = not (np.isscalar(res0) and np.isscalar(res1))
+
+    # subkey
+    if subkey0 is not None:
+        subkey = (subkey0, subkey1)
+    else:
+        subkey = None
 
     # --------------------
     # prepare dict
@@ -386,6 +438,8 @@ def _to_dict(
                 'shape-c': (cents0.size, cents1.size),
                 'shape-k': (knots0.size, knots1.size),
                 'variable': variable,
+                'subkey': subkey,
+                'submesh': submesh,
                 'crop': False,
             },
         }

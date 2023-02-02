@@ -29,7 +29,7 @@ __all__ = ['Mesh2D']
 
 # #############################################################################
 # #############################################################################
-#                       
+#
 # #############################################################################
 
 
@@ -48,7 +48,6 @@ class Mesh2D(ds.DataStock):
         knots_name=None,
         # defined from pre-existing bsplines
         subkey=None,
-        res=None,
         # direct addition of bsplines
         deg=None,
         # additional attributes
@@ -104,6 +103,9 @@ class Mesh2D(ds.DataStock):
         crop_poly=None,
         thresh_in=None,
         remove_isolated=None,
+        # defined from pre-existing bsplines
+        subkey0=None,
+        subkey1=None,
         # direct addition of bsplines
         deg=None,
         **kwdargs,
@@ -150,6 +152,9 @@ class Mesh2D(ds.DataStock):
             # rectangular
             domain=domain,
             res=res,
+            # defined from pre-existing bsplines
+            subkey0=subkey0,
+            subkey1=subkey1,
             # attributes
             **kwdargs,
         )

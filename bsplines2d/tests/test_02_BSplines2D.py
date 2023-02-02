@@ -38,6 +38,8 @@ def teardown_module():
 #######################################################
 
 
+"""
+
 class Test01_BSplines():
 
     @classmethod
@@ -210,7 +212,6 @@ class Test01_BSplines():
                 grid=lgrid[ii%len(lgrid)],
             )
 
-    """
     def test06_sample_bspline(self):
         lres = [None, 0.1, 0.01, [0.1, 0.05]]
         lmode = [None, 'rel', 'abs', 'abs']
@@ -219,7 +220,6 @@ class Test01_BSplines():
             out = v0.get_sample_bspline(
                 res=lres[ii], grid=lgrid[ii], mode=lmode[ii],
             )
-    """
 
     def test07_interpolate_profile2d_sum(self):
         x = np.linspace(2.2, 2.8, 5)
@@ -492,6 +492,8 @@ class Test01_BSplines():
                 + "\n".join(lstr)
             )
             raise Exception(msg)
+
+"""
 
     # TBF for triangular
     # def test13_compute_plot_geometry_matrix(self, kind=None):

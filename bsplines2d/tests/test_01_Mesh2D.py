@@ -229,24 +229,74 @@ class Test01_Mesh2D_Fixed():
     def test36_binning_1d(self):
         test_input._bin_bs(self.bs, nd='1d', kind=None)
 
-    # def test31_binning_2d_rect(self):
-        # test_input._bin_bs(self.bs, nd='2d', kind='rect')
-
-    # def test32_binning_2d_tri(self):
-        # test_input._bin_bs(self.bs, nd='2d', kind='tri')
-
     # ##############
     # plot bsplines
     # ##############
 
-    def testXX_plot_bsplines_1d(self):
+    def test37_plot_bsplines_1d(self):
         pass
 
-    def testXX_plot_bsplines_2d_rect(self):
+    def test38_plot_bsplines_2d_rect(self):
         pass
 
-    def testXX_plot_bsplines_2d_tri(self):
+    def test39_plot_bsplines_2d_tri(self):
         pass
+
+    # ####################
+    # add mesh with subkey
+    # ####################
+
+    def test40_add_mesh_1d_subkey_1d(self):
+        test_input._add_mesh_1d_subkey(self.bs, nd='1d', kind=None)
+
+    def test41_add_mesh_1d_subkey_rect(self):
+        test_input._add_mesh_1d_subkey(self.bs, nd='2d', kind='rect')
+
+    def test42_add_mesh_1d_subkey_tri(self):
+        test_input._add_mesh_1d_subkey(self.bs, nd='2d', kind='tri')
+
+    def test43_add_mesh_2d_rect_subkey_rect(self):
+        test_input._add_mesh_2d_rect_subkey(self.bs, nd='2d', kind='rect')
+
+    def test44_add_mesh_2d_rect_subkey_tri(self):
+        test_input._add_mesh_2d_rect_subkey(self.bs, nd='2d', kind='tri')
+
+    def test45_add_mesh_2d_rect_var_subkey_rect(self):
+        test_input._add_mesh_2d_rect_subkey(self.bs, nd='2d', kind='rect')
+
+    # ################################
+    # add bsplines on mesh with subkey
+    # ################################
+
+    def test46_add_bsplines_subkey(self):
+        test_input._add_bsplines(self.bs, subkey=True)
+
+    # ################################
+    # add data on bsplines with subkey
+    # ################################
+
+    def test47_add_data_subkey(self):
+        test_input._add_data_multibs_arrays(
+            self.bs,
+            nd=None,
+            kind=None,
+            subbs=True,
+            remove=False,
+        )
+
+    # ################################
+    # interpolate data with subkey
+    # ################################
+
+    # def test48_interpolate_data_subkey(self):
+        # test_input._interpolate_from_subkey(
+            # self.bs,
+        # )
+
+    # def test48_interpolate_data_subkey_from_subkey(self):
+        # test_input._interpolate_from_subkey(
+            # self.bs,
+        # )
 
 
 #######################################################
@@ -256,6 +306,7 @@ class Test01_Mesh2D_Fixed():
 #######################################################
 
 
+"""
 class Test02_Mesh2D_Subkey():
 
     @classmethod
@@ -327,3 +378,5 @@ class Test02_Mesh2D_Subkey():
         #     kind=['polar'],
         #     angle=np.pi*np.r_[-3./4., -1/4, 0, 1/4, 3/4],
         # )
+
+"""

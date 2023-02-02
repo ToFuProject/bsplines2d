@@ -38,7 +38,7 @@ for k0, fname in _DFNAME.items():
 
 #######################################################
 #
-#     Basic instanciation
+#     Add fixed meshes
 #
 #######################################################
 
@@ -143,23 +143,79 @@ def _add_tri_delaunay(bsplines, key=None):
     )
 
 
-def _add_mesh_1d_subkey_fixed(bsplines, key=None, keybs=None):
+#######################################################
+#
+#     Add variable meshes
+#
+#######################################################
 
-    ka = bsplines.dobj['bsplines'][keybs]['apex']
-    ap = bsplines.ddata[ka]['data']
-    rho = 1 - np.exp(-ap**2)
 
-    bsplines.add_data(
-        key='rho1d',
-        data=rho,
-        ref=keybs,
-    )
+def _add_mesh_1d_subkey(bs, nd=None, kind=None):
 
-    bsplines.add_mesh_1d(
-        key=key,
-        knots=np.linspace(0, 20, 5),
-        subkey='rho1d',
-    )
+    wbs = bs._which_bsplines
+    wm = bs._which_mesh
+
+    dkd = _get_data(bs, nd=nd, kind=kind)
+    dkd = {
+        k0: v0 for k0, v0 in dkd.items()
+        if len(bs.ddata[k0][wbs]) == 1
+    }
+
+    ni = 0
+    for ii, (k0, v0) in enumerate(dkd.items()):
+
+        kbs = bs.ddata[k0]['bsplines'][0]
+        km = bs.dobj[wbs][kbs]['mesh']
+        deg = bs.dobj[wbs][kbs]['deg']
+        if deg != 2 or ni > 0:
+            continue
+
+        nm = len(bs.dobj[wm])
+        key = f'm{nm:02.0f}'
+        bs.add_mesh_1d(
+            key=key,
+            knots=np.linspace(0, 20, 5),
+            subkey=k0,
+        )
+        ni += 1
+
+        assert bs.dobj[wm][key]['subkey'] == (k0,)
+        assert bs.dobj[wm][key]['submesh'] == km
+
+
+def _add_mesh_2d_rect_subkey(bs, nd=None, kind=None):
+
+    wbs = bs._which_bsplines
+    wm = bs._which_mesh
+
+    dkd = _get_data(bs, nd=nd, kind=kind)
+    dkd = {
+        k0: v0 for k0, v0 in dkd.items()
+        if len(bs.ddata[k0][wbs]) == 1
+    }
+
+    ni = 0
+    for ii, (k0, v0) in enumerate(dkd.items()):
+
+        kbs = bs.ddata[k0]['bsplines'][0]
+        km = bs.dobj[wbs][kbs]['mesh']
+        deg = bs.dobj[wbs][kbs]['deg']
+        if deg != 2 or ni > 0:
+            continue
+
+        nm = len(bs.dobj[wm])
+        key = f'm{nm:02.0f}'
+        bs.add_mesh_2d_rect(
+            key=key,
+            knots0=np.linspace(0, 20, 5),
+            knots1=np.linspace(0, 20, 5),
+            subkey0=k0,
+            subkey1=k0,
+        )
+        ni += 1
+
+        assert bs.dobj[wm][key]['subkey'] == (k0, k0)
+        assert bs.dobj[wm][key]['submesh'] == km
 
 
 def _add_polar1(bsplines, key=None):
@@ -260,7 +316,22 @@ def _add_polar2(bsplines, key=None):
     )
 
 
-def _add_bsplines(bs, key=None, nd=None, kind=None, deg=None, angle=None):
+#######################################################
+#
+#     Add bsplines
+#
+#######################################################
+
+
+def _add_bsplines(
+    bs,
+    key=None,
+    nd=None,
+    kind=None,
+    subkey=None,
+    deg=None,
+    angle=None,
+):
 
     lkm = _get_mesh(bs, nd=nd, kind=kind)
     if isinstance(deg, int):
@@ -275,45 +346,21 @@ def _add_bsplines(bs, key=None, nd=None, kind=None, deg=None, angle=None):
         'polar': [ii for ii in [0, 1, 2, 3] if ii in deg],
     }
 
+    wm = bs._which_mesh
     for km in lkm:
-        mtype = bs.dobj[bs._which_mesh][km]['type']
-        for dd in ddeg[mtype]:
-            bs.add_bsplines(key=km, deg=dd)
-
-def _get_mesh(bsplines, nd=None, kind=None):
-    return [
-        k0 for k0, v0 in bsplines.dobj[bsplines._which_mesh].items()
-        if nd in [None, v0['nd']]
-        and kind in [None, v0['type']]
-    ]
+        mtype = bs.dobj[wm][km]['type']
+        if subkey is None:
+            for dd in ddeg[mtype]:
+                bs.add_bsplines(key=km, deg=dd)
+        elif bs.dobj[wm][km]['subkey'] is not None:
+            bs.add_bsplines(key=km, deg=1)
 
 
-def _get_bs(bs, nd=None, kind=None):
-    return [
-        k0 for k0, v0 in bs.dobj[bs._which_bsplines].items()
-        if nd in [None, bs.dobj[bs._which_mesh][v0[bs._which_mesh]]['nd']]
-        and kind in [None, bs.dobj[bs._which_mesh][v0[bs._which_mesh]]['type']]
-    ]
-
-
-def _get_data(bs, nd=None, kind=None):
-
-    dkd = {}
-    dbs, dref = bs.get_dict_bsplines()
-    for k0 in sorted(dbs.keys()):
-        v0 = dbs[k0]
-        for kb in v0.keys():
-            km = bs.dobj[bs._which_bsplines][kb][bs._which_mesh]
-            c0 = (
-                nd in [None, bs.dobj[bs._which_mesh][km]['nd']]
-                and kind in [None, bs.dobj[bs._which_mesh][km]['type']]
-            )
-            if c0 and k0 not in dkd.keys():
-                dkd[k0] = {'bs': [kb], 'ref': dref[k0]}
-            elif c0:
-                dkd[k0]['bs'].append(kb)
-
-    return dkd
+#######################################################
+#
+#     Manipulate mesh and bsplines
+#
+#######################################################
 
 
 def _select_mesh_elements(bsplines, nd=None, kind=None):
@@ -390,6 +437,13 @@ def _plot_mesh(bsplines, nd=None, kind=None):
             plt.close('all')
 
 
+#######################################################
+#
+#     Add data on bsplines
+#
+#######################################################
+
+
 def _add_data_1bs_fix(bs, nd=None, kind=None, remove=None):
     lkb = _get_bs(bs, nd=nd, kind=kind)
 
@@ -447,8 +501,8 @@ def _add_data_1bs_arrays(bs, nd=None, kind=None, remove=None):
             bs.remove_data(kd)
 
 
-def _add_data_multibs_arrays(bs, nd=None, kind=None, remove=None):
-    lkb = _get_bs(bs, nd=nd, kind=kind)
+def _add_data_multibs_arrays(bs, nd=None, kind=None, subbs=None, remove=None):
+    lkb = _get_bs(bs, nd=nd, kind=kind, subbs=subbs)
 
     nt, nE = 10, 11
     if 'nt' not in bs.dref.keys():
@@ -457,6 +511,7 @@ def _add_data_multibs_arrays(bs, nd=None, kind=None, remove=None):
         bs.add_data(key='t', data=np.linspace(1, 1.1, nt), ref='nt', unit='s')
 
     lkd = []
+    wbs = bs._which_bsplines
     for ii, kb in enumerate(lkb):
 
         lkd.append(f'{kb}_var')
@@ -464,9 +519,9 @@ def _add_data_multibs_arrays(bs, nd=None, kind=None, remove=None):
         kb2 = lkb[(ii + int(len(lkb)/2)) % len(lkb)]
         shape = np.r_[
             nt,
-            bs.dobj[bs._which_bsplines][kb]['shape'],
+            bs.dobj[wbs][kb]['shape'],
             nE,
-            bs.dobj[bs._which_bsplines][kb2]['shape'],
+            bs.dobj[wbs][kb2]['shape'],
         ]
         data = np.random.random(shape)
 
@@ -474,21 +529,22 @@ def _add_data_multibs_arrays(bs, nd=None, kind=None, remove=None):
             key=lkd[-1],
             data=data,
             ref=['nt', kb, 'nE', kb2],
+            units='ph/m3/sr/eV/s',
         )
 
-        if bs.ddata[lkd[-1]][bs._which_bsplines] != (kb, kb2):
+        if bs.ddata[lkd[-1]][wbs] != (kb, kb2):
             msg = (
-                f"Wrong '{bs._which_bsplines}' for ddata['{lkd[-1]}']:\n"
-                f"{bs.ddata[lkd[-1]][bs._which_bsplines]} vs {(kb, kb2)}"
+                f"Wrong '{wbs}' for ddata['{lkd[-1]}']:\n"
+                f"{bs.ddata[lkd[-1]][wbs]} vs {(kb, kb2)}"
             )
             raise Exception(msg)
 
-        bsref = bs.dobj[bs._which_bsplines][kb]['ref']
-        bsref2 = bs.dobj[bs._which_bsplines][kb2]['ref']
+        bsref = bs.dobj[wbs][kb]['ref']
+        bsref2 = bs.dobj[wbs][kb2]['ref']
         ref = tuple(['nt'] + list(bsref) + ['nE'] + list(bsref2))
         if bs.ddata[lkd[-1]]['ref'] != ref:
             msg = (
-                f"Wrong '{bs._which_bsplines}' for ddata['{lkd[-1]}']:\n"
+                f"Wrong '{wbs}' for ddata['{lkd[-1]}']:\n"
                 f"{bs.ddata[lkd[-1]]['ref']} vs {ref}"
             )
             raise Exception(msg)
@@ -496,6 +552,13 @@ def _add_data_multibs_arrays(bs, nd=None, kind=None, remove=None):
     if remove:
         for kd in lkd:
             bs.remove_data(kd)
+
+
+#######################################################
+#
+#     Binning and interpolation
+#
+#######################################################
 
 
 def _interpolate(bs, nd=None, kind=None, details=None):
@@ -610,6 +673,8 @@ def _bin_bs(bs, nd=None, kind=None):
 
         vect = bs.dobj[bs._which_bsplines][vd['bs'][0]]['apex'][0]
         vect = bs.ddata[vect]['data']
+        if len(vect) > 6:
+            vect = vect[::3]
 
         dd = np.abs(np.mean(np.diff(vect)))
         DD = vect[-1] - vect[0]
@@ -650,3 +715,52 @@ def _add_data_var(bsplines, key):
         ref=('nt', key),
     )
     return kdata
+
+
+#######################################################
+#
+#     utilities
+#
+#######################################################
+
+
+def _get_mesh(bsplines, nd=None, kind=None):
+    return [
+        k0 for k0, v0 in bsplines.dobj[bsplines._which_mesh].items()
+        if nd in [None, v0['nd']]
+        and kind in [None, v0['type']]
+    ]
+
+
+def _get_bs(bs, nd=None, kind=None, subbs=None):
+    wm = bs._which_mesh
+    wbs = bs._which_bsplines
+    return [
+        k0 for k0, v0 in bs.dobj[wbs].items()
+        if nd in [None, bs.dobj[wm][v0[wm]]['nd']]
+        and kind in [None, bs.dobj[wm][v0[wm]]['type']]
+        and (
+            subbs in [None, bs.dobj[wbs][k0]['subbs']]
+            or (subbs is True and bs.dobj[wbs][k0]['subbs'] is not None)
+        )
+    ]
+
+
+def _get_data(bs, nd=None, kind=None):
+
+    dkd = {}
+    dbs, dref = bs.get_dict_bsplines()
+    for k0 in sorted(dbs.keys()):
+        v0 = dbs[k0]
+        for kb in v0.keys():
+            km = bs.dobj[bs._which_bsplines][kb][bs._which_mesh]
+            c0 = (
+                nd in [None, bs.dobj[bs._which_mesh][km]['nd']]
+                and kind in [None, bs.dobj[bs._which_mesh][km]['type']]
+            )
+            if c0 and k0 not in dkd.keys():
+                dkd[k0] = {'bs': [kb], 'ref': dref[k0]}
+            elif c0:
+                dkd[k0]['bs'].append(kb)
+
+    return dkd
