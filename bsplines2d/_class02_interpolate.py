@@ -1750,9 +1750,9 @@ def _prepare_bsplines(
         # return coll2
     # else:
         # if return_params is True:
-            return val, t, ref, dparams
-        else:
-            return val, t, ref
+            # return val, t, ref, dparams
+        # else:
+            # return val, t, ref
 
 
 # #############################################################################
