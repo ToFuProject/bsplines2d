@@ -60,7 +60,7 @@ def plot_mesh(
         bck=bck,
         color=color,
         dleg=dleg,
-    )    
+    )
 
     # ------------------------
     # call appropriate routine
@@ -81,7 +81,7 @@ def plot_mesh(
             dleg=dleg,
             connect=connect,
         )
-    
+
     elif mtype in ['rect', 'tri']:
         # time-fixed meshes
         return _plot_mesh_2d_recttri(
@@ -131,7 +131,7 @@ def _plot_mesh_check(
     color=None,
     dleg=None,
 ):
-    
+
     # key
     key = ds._generic_check._check_var(
         key, 'key',
@@ -139,7 +139,7 @@ def _plot_mesh_check(
         types=str,
         allowed=list(coll.dobj.get(coll._which_mesh, {}).keys()),
     )
-    
+
     nd = coll.dobj[coll._which_mesh][key]['nd']
     mtype = coll.dobj[coll._which_mesh][key]['type']
 
@@ -335,7 +335,7 @@ def _plot_mesh_prepare_2d_tri(
     # prepare
 
     grid_bck = None
-    
+
     kknots = coll.dobj[coll._which_mesh][key]['knots']
     R = coll.ddata[kknots[0]]['data']
     Z = coll.ddata[kknots[1]]['data']
@@ -564,17 +564,19 @@ def plot_mesh_1d(
         coll=coll,
         key=key,
     )
-    
-    if units not in [None, 'eV']:
-        xx, _, _, cat = _spectralunits.convert_spectral(
-            data_in=xx,
-            units_in='eV',
-            units_out=units,
-        )
-        xlab = cat + r" ($" + units + "$)"
-        
-    else:
-        xlab = r'energy ($eV$)'
+
+    # if units not in [None, 'eV']:
+        # xx, _, _, cat = _spectralunits.convert_spectral(
+            # data_in=xx,
+            # units_in='eV',
+            # units_out=units,
+        # )
+        # xlab = cat + r" ($" + units + "$)"
+
+    # else:
+        # xlab = r'energy ($eV$)'
+    xlab = None
+
 
     # --------------
     # plot - prepare
@@ -624,7 +626,7 @@ def plot_mesh_1d(
                 color=color,
                 label='knots',
             )
-            
+
             # if return_neighbours:
                 # ax.plot(
                 #     ind_knot[1][0, :, :],
@@ -644,7 +646,7 @@ def plot_mesh_1d(
                 color=color,
                 label='cents',
             )
-            
+
             # if return_neighbours:
                 # ax.plot(
                 #     ind_cent[1][0, :, :],
@@ -758,7 +760,7 @@ def _plot_mesh_2d_recttri(
                 color=color,
                 label='knots',
             )
-            
+
             if return_neighbours:
                 ax.plot(
                     ind_knot[1][0, :, :],
@@ -770,7 +772,7 @@ def _plot_mesh_2d_recttri(
                 )
 
         if ind_cent is not None:
-            
+
             ax.plot(
                 ind_cent[0][0],
                 ind_cent[0][1],
@@ -780,7 +782,7 @@ def _plot_mesh_2d_recttri(
                 color=color,
                 label='cents',
             )
-            
+
             if return_neighbours:
                 ax.plot(
                     ind_cent[1][0, :, :],

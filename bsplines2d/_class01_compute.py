@@ -295,86 +295,86 @@ def _simplify_polygon(pR=None, pZ=None, res=None):
 # #############################################################################
 
 
-def radius2d_special_points(
-    coll=None,
-    key=None,
-    keym0=None,
-    res=None,
-):
+# def radius2d_special_points(
+    # coll=None,
+    # key=None,
+    # keym0=None,
+    # res=None,
+# ):
 
-    keybs = coll.ddata[key]['bsplines']
-    keym = coll.dobj['bsplines'][keybs]['mesh']
-    mtype = coll.dobj[coll._which_mesh][keym]['type']
-    assert mtype in ['rect', 'tri']
+    # keybs = coll.ddata[key]['bsplines']
+    # keym = coll.dobj['bsplines'][keybs]['mesh']
+    # mtype = coll.dobj[coll._which_mesh][keym]['type']
+    # assert mtype in ['rect', 'tri']
 
-    # get map sampling
-    RR, ZZ = coll.get_sample_mesh(
-        key=keym,
-        res=res,
-        grid=True,
-    )
+    # # get map sampling
+    # RR, ZZ = coll.get_sample_mesh(
+        # key=keym,
+        # res=res,
+        # grid=True,
+    # )
 
-    # get map
-    val, t, _ = coll.interpolate_profile2d(
-        key=key,
-        R=RR,
-        Z=ZZ,
-        grid=False,
-        imshow=True,        # for contour
-    )
+    # # get map
+    # val, t, _ = coll.interpolate_profile2d(
+        # key=key,
+        # R=RR,
+        # Z=ZZ,
+        # grid=False,
+        # imshow=True,        # for contour
+    # )
 
-    # get min max values
-    rmin = np.nanmin(val)
-    rmax = np.nanmax(val)
+    # # get min max values
+    # rmin = np.nanmin(val)
+    # rmax = np.nanmax(val)
 
-    # get contour of 0
-    cR, cZ = _get_contours(
-        RR=RR,
-        ZZ=ZZ,
-        val=val,
-        levels=[rmin + 0.05*(rmax-rmin)],
-    )
+    # # get contour of 0
+    # cR, cZ = _get_contours(
+        # RR=RR,
+        # ZZ=ZZ,
+        # val=val,
+        # levels=[rmin + 0.05*(rmax-rmin)],
+    # )
 
-    # dref
-    ref_O = f'{keym0}-pts-O-n'
-    dref = {
-        ref_O: {'size': 1},
-    }
+    # # dref
+    # ref_O = f'{keym0}-pts-O-n'
+    # dref = {
+        # ref_O: {'size': 1},
+    # }
 
-    # get barycenter
-    if val.ndim == 3:
-        assert cR.shape[1] == 1
-        ax_R = np.nanmean(cR[:, 0, :], axis=-1)[:, None]
-        ax_Z = np.nanmean(cZ[:, 0, :], axis=-1)[:, None]
-        reft = coll.ddata[key]['ref'][0]
-        ref = (reft, ref_O)
-    else:
-        ax_R = np.r_[np.nanmean(cR)]
-        ax_Z = np.r_[np.nanmean(cZ)]
-        ref = (ref_O,)
+    # # get barycenter
+    # if val.ndim == 3:
+        # assert cR.shape[1] == 1
+        # ax_R = np.nanmean(cR[:, 0, :], axis=-1)[:, None]
+        # ax_Z = np.nanmean(cZ[:, 0, :], axis=-1)[:, None]
+        # reft = coll.ddata[key]['ref'][0]
+        # ref = (reft, ref_O)
+    # else:
+        # ax_R = np.r_[np.nanmean(cR)]
+        # ax_Z = np.r_[np.nanmean(cZ)]
+        # ref = (ref_O,)
 
-    kR = f'{keym0}-pts-O-R'
-    kZ = f'{keym0}-pts-O-Z'
-    ddata = {
-        kR: {
-            'ref': ref,
-            'data': ax_R,
-            'dim': 'distance',
-            'quant': 'R',
-            'name': 'O-points_R',
-            'units': 'm',
-        },
-        kZ: {
-            'ref': ref,
-            'data': ax_Z,
-            'dim': 'distance',
-            'quant': 'Z',
-            'name': 'O-points_Z',
-            'units': 'm',
-        },
-    }
+    # kR = f'{keym0}-pts-O-R'
+    # kZ = f'{keym0}-pts-O-Z'
+    # ddata = {
+        # kR: {
+            # 'ref': ref,
+            # 'data': ax_R,
+            # 'dim': 'distance',
+            # 'quant': 'R',
+            # 'name': 'O-points_R',
+            # 'units': 'm',
+        # },
+        # kZ: {
+            # 'ref': ref,
+            # 'data': ax_Z,
+            # 'dim': 'distance',
+            # 'quant': 'Z',
+            # 'name': 'O-points_Z',
+            # 'units': 'm',
+        # },
+    # }
 
-    return dref, ddata, kR, kZ
+    # return dref, ddata, kR, kZ
 
 
 # #############################################################################
@@ -383,284 +383,284 @@ def radius2d_special_points(
 # #############################################################################
 
 
-def angle2d_zone(
-    coll=None,
-    key=None,
-    keyrad2d=None,
-    key_ptsO=None,
-    res=None,
-    keym0=None,
-):
+# def angle2d_zone(
+    # coll=None,
+    # key=None,
+    # keyrad2d=None,
+    # key_ptsO=None,
+    # res=None,
+    # keym0=None,
+# ):
 
-    keybs = coll.ddata[key]['bsplines']
-    keym = coll.dobj['bsplines'][keybs]['mesh']
-    mtype = coll.dobj[coll._which_mesh][keym]['type']
-    assert mtype in ['rect', 'tri']
+    # keybs = coll.ddata[key]['bsplines']
+    # keym = coll.dobj['bsplines'][keybs]['mesh']
+    # mtype = coll.dobj[coll._which_mesh][keym]['type']
+    # assert mtype in ['rect', 'tri']
 
-    # --------------
-    # prepare
+    # # --------------
+    # # prepare
 
-    hastime, hasvect, reft, keyt = coll.get_time(key=key)[:4]
-    if hastime:
-        nt = coll.dref[reft]['size']
-    else:
-        msg = (
-            "Non time-dependent angle2d not implemented yet\n"
-            "=> ping @Didou09 on Github to open an issue"
-        )
-        raise NotImplementedError(msg)
+    # hastime, hasvect, reft, keyt = coll.get_time(key=key)[:4]
+    # if hastime:
+        # nt = coll.dref[reft]['size']
+    # else:
+        # msg = (
+            # "Non time-dependent angle2d not implemented yet\n"
+            # "=> ping @Didou09 on Github to open an issue"
+        # )
+        # raise NotImplementedError(msg)
 
-    if res is None:
-        res = _get_sample_mesh_res(
-            coll=coll,
-            keym=keym,
-            mtype=mtype,
-        )
+    # if res is None:
+        # res = _get_sample_mesh_res(
+            # coll=coll,
+            # keym=keym,
+            # mtype=mtype,
+        # )
 
-    # get map sampling
-    RR, ZZ = coll.get_sample_mesh(
-        key=keym,
-        res=res/2.,
-        grid=True,
-        imshow=True,    # for contour
-    )
+    # # get map sampling
+    # RR, ZZ = coll.get_sample_mesh(
+        # key=keym,
+        # res=res/2.,
+        # grid=True,
+        # imshow=True,    # for contour
+    # )
 
-    # get map
-    val, t, _ = coll.interpolate_profile2d(
-        key=key,
-        R=RR,
-        Z=ZZ,
-        grid=False,
-        azone=False,
-    )
-    val[np.isnan(val)] = 0.
-    amin = np.nanmin(val)
-    amax = np.nanmax(val)
+    # # get map
+    # val, t, _ = coll.interpolate_profile2d(
+        # key=key,
+        # R=RR,
+        # Z=ZZ,
+        # grid=False,
+        # azone=False,
+    # )
+    # val[np.isnan(val)] = 0.
+    # amin = np.nanmin(val)
+    # amax = np.nanmax(val)
 
-    # get contours of absolute value
-    cRmin, cZmin = _get_contours(
-        RR=RR,
-        ZZ=ZZ,
-        val=val,
-        levels=[amin + 0.10*(amax - amin)],
-        largest=True,
-        uniform=True,
-    )
-    cRmax, cZmax = _get_contours(
-        RR=RR,
-        ZZ=ZZ,
-        val=val,
-        levels=[amax - 0.10*(amax - amin)],
-        largest=True,
-        uniform=True,
-    )
+    # # get contours of absolute value
+    # cRmin, cZmin = _get_contours(
+        # RR=RR,
+        # ZZ=ZZ,
+        # val=val,
+        # levels=[amin + 0.10*(amax - amin)],
+        # largest=True,
+        # uniform=True,
+    # )
+    # cRmax, cZmax = _get_contours(
+        # RR=RR,
+        # ZZ=ZZ,
+        # val=val,
+        # levels=[amax - 0.10*(amax - amin)],
+        # largest=True,
+        # uniform=True,
+    # )
 
-    cRmin, cZmin = cRmin[:, 0, :], cZmin[:, 0, :]
-    cRmax, cZmax = cRmax[:, 0, :], cZmax[:, 0, :]
+    # cRmin, cZmin = cRmin[:, 0, :], cZmin[:, 0, :]
+    # cRmax, cZmax = cRmax[:, 0, :], cZmax[:, 0, :]
 
-    rmin = np.full(cRmin.shape, np.nan)
-    rmax = np.full(cRmax.shape, np.nan)
+    # rmin = np.full(cRmin.shape, np.nan)
+    # rmax = np.full(cRmax.shape, np.nan)
 
-    # get points inside contour
-    for ii in range(nt):
-        rmin[ii, :], _, _ = coll.interpolate_profile2d(
-            key=keyrad2d,
-            R=cRmin[ii, :],
-            Z=cZmin[ii, :],
-            grid=False,
-            indt=ii,
-        )
-        rmax[ii, :], _, _ = coll.interpolate_profile2d(
-            key=keyrad2d,
-            R=cRmax[ii, :],
-            Z=cZmax[ii, :],
-            grid=False,
-            indt=ii,
-        )
+    # # get points inside contour
+    # for ii in range(nt):
+        # rmin[ii, :], _, _ = coll.interpolate_profile2d(
+            # key=keyrad2d,
+            # R=cRmin[ii, :],
+            # Z=cZmin[ii, :],
+            # grid=False,
+            # indt=ii,
+        # )
+        # rmax[ii, :], _, _ = coll.interpolate_profile2d(
+            # key=keyrad2d,
+            # R=cRmax[ii, :],
+            # Z=cZmax[ii, :],
+            # grid=False,
+            # indt=ii,
+        # )
 
-    # get magnetic axis
-    kR, kZ = key_ptsO
-    axR = coll.ddata[kR]['data']
-    axZ = coll.ddata[kZ]['data']
-    assert coll.ddata[kR]['ref'][0] == coll.ddata[key]['ref'][0]
+    # # get magnetic axis
+    # kR, kZ = key_ptsO
+    # axR = coll.ddata[kR]['data']
+    # axZ = coll.ddata[kZ]['data']
+    # assert coll.ddata[kR]['ref'][0] == coll.ddata[key]['ref'][0]
 
-    start_min = np.nanargmin(rmin, axis=-1)
-    start_max = np.nanargmin(rmax, axis=-1)
+    # start_min = np.nanargmin(rmin, axis=-1)
+    # start_max = np.nanargmin(rmax, axis=-1)
 
-    # re-order from start_min, start_max
-    lpR, lpZ = [], []
-    for ii in range(rmin.shape[0]):
-        imin = np.r_[
-            np.arange(start_min[ii], rmin.shape[1]),
-            np.arange(0, start_min[ii]),
-        ]
+    # # re-order from start_min, start_max
+    # lpR, lpZ = [], []
+    # for ii in range(rmin.shape[0]):
+        # imin = np.r_[
+            # np.arange(start_min[ii], rmin.shape[1]),
+            # np.arange(0, start_min[ii]),
+        # ]
 
-        cRmin[ii] = cRmin[ii, imin]
-        cZmin[ii] = cZmin[ii, imin]
-        rmin[ii] = rmin[ii, imin]
-        # check it is counter-clockwise
-        clock = np.nansum(
-            (cRmin[ii, 1:] - cRmin[ii, :-1])
-            *(cZmin[ii, 1:] + cZmin[ii, :-1])
-        )
-        if clock > 0:
-            cRmin[ii, :] = cRmin[ii, ::-1]
-            cZmin[ii, :] = cZmin[ii, ::-1]
-            rmin[ii, :] = rmin[ii, ::-1]
+        # cRmin[ii] = cRmin[ii, imin]
+        # cZmin[ii] = cZmin[ii, imin]
+        # rmin[ii] = rmin[ii, imin]
+        # # check it is counter-clockwise
+        # clock = np.nansum(
+            # (cRmin[ii, 1:] - cRmin[ii, :-1])
+            # *(cZmin[ii, 1:] + cZmin[ii, :-1])
+        # )
+        # if clock > 0:
+            # cRmin[ii, :] = cRmin[ii, ::-1]
+            # cZmin[ii, :] = cZmin[ii, ::-1]
+            # rmin[ii, :] = rmin[ii, ::-1]
 
-        imax = np.r_[
-            np.arange(start_max[ii], rmax.shape[1]),
-            np.arange(0, start_max[ii])
-        ]
-        cRmax[ii] = cRmax[ii, imax]
-        cZmax[ii] = cZmax[ii, imax]
-        rmax[ii] = rmax[ii, imax]
-        # check it is clockwise
-        clock = np.nansum(
-            (cRmax[ii, 1:] - cRmax[ii, :-1])
-            *(cZmax[ii, 1:] + cZmax[ii, :-1])
-        )
-        if clock < 0:
-            cRmax[ii, :] = cRmax[ii, ::-1]
-            cZmax[ii, :] = cZmax[ii, ::-1]
-            rmax[ii, :] = rmax[ii, ::-1]
+        # imax = np.r_[
+            # np.arange(start_max[ii], rmax.shape[1]),
+            # np.arange(0, start_max[ii])
+        # ]
+        # cRmax[ii] = cRmax[ii, imax]
+        # cZmax[ii] = cZmax[ii, imax]
+        # rmax[ii] = rmax[ii, imax]
+        # # check it is clockwise
+        # clock = np.nansum(
+            # (cRmax[ii, 1:] - cRmax[ii, :-1])
+            # *(cZmax[ii, 1:] + cZmax[ii, :-1])
+        # )
+        # if clock < 0:
+            # cRmax[ii, :] = cRmax[ii, ::-1]
+            # cZmax[ii, :] = cZmax[ii, ::-1]
+            # rmax[ii, :] = rmax[ii, ::-1]
 
-        # i0
-        dr = np.diff(rmin[ii, :])
-        i0 = (np.isnan(dr) | (dr < 0)).nonzero()[0][0]
-        # rmin[ii, i0-1:] = np.nan
-        dr = np.diff(rmax[ii, :])
-        i1 = (np.isnan(dr) | (dr < 0)).nonzero()[0][0]
-        # rmax[ii, i1-1:] = np.nan
+        # # i0
+        # dr = np.diff(rmin[ii, :])
+        # i0 = (np.isnan(dr) | (dr < 0)).nonzero()[0][0]
+        # # rmin[ii, i0-1:] = np.nan
+        # dr = np.diff(rmax[ii, :])
+        # i1 = (np.isnan(dr) | (dr < 0)).nonzero()[0][0]
+        # # rmax[ii, i1-1:] = np.nan
 
-        # polygon
-        pR = np.r_[axR[ii], cRmin[ii, :i0-1], cRmax[ii, :i1-1][::-1]]
-        pZ = np.r_[axZ[ii], cZmin[ii, :i0-1], cZmax[ii, :i1-1][::-1]]
+        # # polygon
+        # pR = np.r_[axR[ii], cRmin[ii, :i0-1], cRmax[ii, :i1-1][::-1]]
+        # pZ = np.r_[axZ[ii], cZmin[ii, :i0-1], cZmax[ii, :i1-1][::-1]]
 
-        pR, pZ = _simplify_polygon(pR=pR, pZ=pZ, res=res)
+        # pR, pZ = _simplify_polygon(pR=pR, pZ=pZ, res=res)
 
-        lpR.append(pR)
-        lpZ.append(pZ)
+        # lpR.append(pR)
+        # lpZ.append(pZ)
 
-    # Ajust sizes
-    nb = np.array([pR.size for pR in lpR])
+    # # Ajust sizes
+    # nb = np.array([pR.size for pR in lpR])
 
-    #
-    nmax = np.max(nb)
-    pR = np.full((nt, nmax), np.nan)
-    pZ = np.full((nt, nmax), np.nan)
+    # #
+    # nmax = np.max(nb)
+    # pR = np.full((nt, nmax), np.nan)
+    # pZ = np.full((nt, nmax), np.nan)
 
-    for ii in range(nt):
-        pR[ii, :] = np.interp(
-            np.linspace(0, nb[ii], nmax),
-            np.arange(0, nb[ii]),
-            lpR[ii],
-        )
-        pZ[ii, :] = np.interp(
-            np.linspace(0, nb[ii], nmax),
-            np.arange(0, nb[ii]),
-            lpZ[ii],
-        )
+    # for ii in range(nt):
+        # pR[ii, :] = np.interp(
+            # np.linspace(0, nb[ii], nmax),
+            # np.arange(0, nb[ii]),
+            # lpR[ii],
+        # )
+        # pZ[ii, :] = np.interp(
+            # np.linspace(0, nb[ii], nmax),
+            # np.arange(0, nb[ii]),
+            # lpZ[ii],
+        # )
 
-    # ----------------
-    # prepare output dict
+    # # ----------------
+    # # prepare output dict
 
-    # ref
-    kref = f'{keym0}-azone-npt'
-    dref = {
-        kref: {'size': nmax}
-    }
+    # # ref
+    # kref = f'{keym0}-azone-npt'
+    # dref = {
+        # kref: {'size': nmax}
+    # }
 
-    # data
-    kR = f'{keym0}-azone-R'
-    kZ = f'{keym0}-azone-Z'
-    ddata = {
-        kR: {
-            'data': pR,
-            'ref': (reft, kref),
-            'units': 'm',
-            'dim': 'distance',
-            'quant': 'R',
-            'name': None,
-        },
-        kZ: {
-            'data': pZ,
-            'ref': (reft, kref),
-            'units': 'm',
-            'dim': 'distance',
-            'quant': 'R',
-            'name': None,
-        },
-    }
+    # # data
+    # kR = f'{keym0}-azone-R'
+    # kZ = f'{keym0}-azone-Z'
+    # ddata = {
+        # kR: {
+            # 'data': pR,
+            # 'ref': (reft, kref),
+            # 'units': 'm',
+            # 'dim': 'distance',
+            # 'quant': 'R',
+            # 'name': None,
+        # },
+        # kZ: {
+            # 'data': pZ,
+            # 'ref': (reft, kref),
+            # 'units': 'm',
+            # 'dim': 'distance',
+            # 'quant': 'R',
+            # 'name': None,
+        # },
+    # }
 
-    return dref, ddata, kR, kZ
-
-
-def angle2d_inzone(
-    coll=None,
-    keym0=None,
-    keya2d=None,
-    R=None,
-    Z=None,
-    t=None,
-    indt=None,
-):
+    # return dref, ddata, kR, kZ
 
 
-    # ------------
-    # prepare points
+# def angle2d_inzone(
+    # coll=None,
+    # keym0=None,
+    # keya2d=None,
+    # R=None,
+    # Z=None,
+    # t=None,
+    # indt=None,
+# ):
 
-    if R.ndim == 1:
-        shape0 = None
-        pts = np.array([R, Z]).T
-    else:
-        shape0 = R.shape
-        pts = np.array([R.ravel(), Z.ravel()]).T
 
-    # ------------
-    # prepare path
+    # # ------------
+    # # prepare points
 
-    kazR, kazZ = coll.dobj[coll._which_mesh][keym0]['azone']
-    pR = coll.ddata[kazR]['data']
-    pZ = coll.ddata[kazZ]['data']
+    # if R.ndim == 1:
+        # shape0 = None
+        # pts = np.array([R, Z]).T
+    # else:
+        # shape0 = R.shape
+        # pts = np.array([R.ravel(), Z.ravel()]).T
 
-    hastime, hasvect, reft, keyt, tnew, dind = coll.get_time(
-        key=kazR,
-        t=t,
-        indt=indt,
-    )
+    # # ------------
+    # # prepare path
 
-    # ------------
-    # test points
+    # kazR, kazZ = coll.dobj[coll._which_mesh][keym0]['azone']
+    # pR = coll.ddata[kazR]['data']
+    # pZ = coll.ddata[kazZ]['data']
 
-    if hastime:
-        if dind is None:
-            nt = coll.dref[reft]['size']
-            ind = np.zeros((nt, R.size), dtype=bool)
-            for ii in range(nt):
-                path = Path(np.array([pR[ii, :], pZ[ii, :]]).T)
-                ind[ii, :] = path.contains_points(pts)
-        else:
-            import pdb; pdb.set_trace()     # DB
-            raise NotImplementedError()
-            # TBC / TBF
-            nt = None
-            ind = np.zeros((nt, R.size), dtype=bool)
-            for ii in range(nt):
-                path = Path(np.array([pR[ii, :], pZ[ii, :]]).T)
-                ind[ii, :] = path.contains_points(pts)
+    # hastime, hasvect, reft, keyt, tnew, dind = coll.get_time(
+        # key=kazR,
+        # t=t,
+        # indt=indt,
+    # )
 
-    else:
-        path = Path(np.array([pR, pZ]).T)
-        ind = path.contains_points(pts)
+    # # ------------
+    # # test points
 
-    # -------------------------
-    # fromat output and return
+    # if hastime:
+        # if dind is None:
+            # nt = coll.dref[reft]['size']
+            # ind = np.zeros((nt, R.size), dtype=bool)
+            # for ii in range(nt):
+                # path = Path(np.array([pR[ii, :], pZ[ii, :]]).T)
+                # ind[ii, :] = path.contains_points(pts)
+        # else:
+            # import pdb; pdb.set_trace()     # DB
+            # raise NotImplementedError()
+            # # TBC / TBF
+            # nt = None
+            # ind = np.zeros((nt, R.size), dtype=bool)
+            # for ii in range(nt):
+                # path = Path(np.array([pR[ii, :], pZ[ii, :]]).T)
+                # ind[ii, :] = path.contains_points(pts)
 
-    if shape0 is not None:
-        if hastime:
-            ind = ind.reshape(tuple(np.r_[nt, shape0]))
-        else:
-            ind = ind.reshape(shape0)
+    # else:
+        # path = Path(np.array([pR, pZ]).T)
+        # ind = path.contains_points(pts)
 
-    return ind
+    # # -------------------------
+    # # fromat output and return
+
+    # if shape0 is not None:
+        # if hastime:
+            # ind = ind.reshape(tuple(np.r_[nt, shape0]))
+        # else:
+            # ind = ind.reshape(shape0)
+
+    # return ind

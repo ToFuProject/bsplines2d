@@ -549,28 +549,28 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
         )
 
     # TBD / TBF
-    def get_operator(
-        self,
-        operator=None,
-        geometry=None,
-        cropbs_flat=None,
-        # specific to deg = 0
-        cropbs=None,
-    ):
-        """ Get desired operator """
-        raise NotImplementedError()
-        return _class1_bsplines_operators_tri.get_mesh2dRect_operators(
-            deg=self.degrees[0],
-            operator=operator,
-            geometry=geometry,
-            knotsx_mult=self.tck[0],
-            knotsy_mult=self.tck[1],
-            knotsx_per_bs=self.knots_per_bs_x,
-            knotsy_per_bs=self.knots_per_bs_y,
-            overlap=self.get_overlap(),
-            cropbs_flat=cropbs_flat,
-            cropbs=cropbs,
-        )
+    # def get_operator(
+        # self,
+        # operator=None,
+        # geometry=None,
+        # cropbs_flat=None,
+        # # specific to deg = 0
+        # cropbs=None,
+    # ):
+        # """ Get desired operator """
+        # raise NotImplementedError()
+        # return _class1_bsplines_operators_tri.get_mesh2dRect_operators(
+            # deg=self.degrees[0],
+            # operator=operator,
+            # geometry=geometry,
+            # knotsx_mult=self.tck[0],
+            # knotsy_mult=self.tck[1],
+            # knotsx_per_bs=self.knots_per_bs_x,
+            # knotsy_per_bs=self.knots_per_bs_y,
+            # overlap=self.get_overlap(),
+            # cropbs_flat=cropbs_flat,
+            # cropbs=cropbs,
+        # )
 
 
 # #############################################################################

@@ -53,7 +53,7 @@ def _select_ind(
         coll=coll,
         key=key,
     )
-         
+
     meshtype = coll.dobj[coll._which_mesh][km]['type']
 
     shape2d = None
@@ -318,14 +318,14 @@ def _select_mesh(
         else:
             # TBF
             raise NotImplementedError()
-            neigh = _select_mesh_neighbours_polar(
-                coll=coll,
-                key=key,
-                ind=ind,
-                elements=elements,
-                returnas=returnas,
-                return_ind_as=return_ind_as,
-            )
+            # neigh = _select_mesh_neighbours_polar(
+                # coll=coll,
+                # key=key,
+                # ind=ind,
+                # elements=elements,
+                # returnas=returnas,
+                # return_ind_as=return_ind_as,
+            # )
 
         return out, neigh
     else:
@@ -442,75 +442,75 @@ def _select_mesh_neighbours_tri(
 
 
 # TBF
-def _select_mesh_neighbours_polar(
-    coll=None,
-    key=None,
-    ind=None,
-    elements=None,
-    returnas=None,
-    return_ind_as=None,
-):
-    """ ind is a bool
+# def _select_mesh_neighbours_polar(
+    # coll=None,
+    # key=None,
+    # ind=None,
+    # elements=None,
+    # returnas=None,
+    # return_ind_as=None,
+# ):
+    # """ ind is a bool
 
-    if returnas = 'ind', ind is returned as a bool array
-    (because the nb. of neighbours is not constant on a triangular mesh)
+    # if returnas = 'ind', ind is returned as a bool array
+    # (because the nb. of neighbours is not constant on a triangular mesh)
 
-    """
+    # """
 
-    elneig = 'cents' if elements == 'knots' else 'knots'
-    kneig = coll.dobj[coll._which_mesh][key][f'{elneig}']
-    rneig = coll.ddata[kneig[0]]['data']
-    nrneig = rneig.size
-
-
-    # ----------------
-    # radius + angle
-
-    if len(kneig) == 2:
-        aneig = coll.ddata[kneig[1]]['data']
-        naneig = aneig.size
-
-        # prepare indices
-        shape = tuple(np.r_[ind[0].shape, 2])
-        neig = (
-            np.zeros((nrneig, 2), dtype=bool),
-            np.zeros((naneig, 2), dtype=bool),
-        )
-
-        # get indices of neighbours
-        if elements == 'cents':
-            neig[0][...] = ind[0][..., None] + np.r_[0, 1, 1, 0].reshape(rsh)
-            neig[1][...] = ind[1][..., None] + np.r_[0, 0, 1, 1].reshape(rsh)
-        elif elements == 'knots':
-            neig[0][...] = ind[0][..., None] + np.r_[-1, 0, 0, -1].reshape(rsh)
-            neig[1][...] = ind[1][..., None] + np.r_[-1, -1, 0, 0].reshape(rsh)
-            neig[0][(neig[0] < 0) | (neig[0] >= nRneig)] = -1
-            neig[1][(neig[1] < 0) | (neig[1] >= nZneig)] = -1
+    # elneig = 'cents' if elements == 'knots' else 'knots'
+    # kneig = coll.dobj[coll._which_mesh][key][f'{elneig}']
+    # rneig = coll.ddata[kneig[0]]['data']
+    # nrneig = rneig.size
 
 
-    # ----------------
-    # radius only
+    # # ----------------
+    # # radius + angle
 
-    else:
-        # prepare indices
-        neig = np.zeros((nrneig, 2), dtype=bool)
+    # if len(kneig) == 2:
+        # aneig = coll.ddata[kneig[1]]['data']
+        # naneig = aneig.size
 
-        # get indices of neighbours
-        if elements == 'cents':
-            neig[0][...] = ind[0][..., None] + np.r_[0, 1, 1, 0].reshape(rsh)
-            neig[1][...] = ind[1][..., None] + np.r_[0, 0, 1, 1].reshape(rsh)
+        # # prepare indices
+        # shape = tuple(np.r_[ind[0].shape, 2])
+        # neig = (
+            # np.zeros((nrneig, 2), dtype=bool),
+            # np.zeros((naneig, 2), dtype=bool),
+        # )
 
-    # return neighbours in desired format
-    if returnas == 'ind':
-        neig_out = neig
-    else:
-        if len(kneig) == 2:
-            neig_out = np.array([rneig[neig[0]], zneig[neig[1]]])
-            neig_out[:, (neig[0] == -1) | (neig[1] == -1)] = np.nan
-        else:
-            neig_out = rneig[neig]
+        # # get indices of neighbours
+        # if elements == 'cents':
+            # neig[0][...] = ind[0][..., None] + np.r_[0, 1, 1, 0].reshape(rsh)
+            # neig[1][...] = ind[1][..., None] + np.r_[0, 0, 1, 1].reshape(rsh)
+        # elif elements == 'knots':
+            # neig[0][...] = ind[0][..., None] + np.r_[-1, 0, 0, -1].reshape(rsh)
+            # neig[1][...] = ind[1][..., None] + np.r_[-1, -1, 0, 0].reshape(rsh)
+            # neig[0][(neig[0] < 0) | (neig[0] >= nRneig)] = -1
+            # neig[1][(neig[1] < 0) | (neig[1] >= nZneig)] = -1
 
-    return neig_out
+
+    # # ----------------
+    # # radius only
+
+    # else:
+        # # prepare indices
+        # neig = np.zeros((nrneig, 2), dtype=bool)
+
+        # # get indices of neighbours
+        # if elements == 'cents':
+            # neig[0][...] = ind[0][..., None] + np.r_[0, 1, 1, 0].reshape(rsh)
+            # neig[1][...] = ind[1][..., None] + np.r_[0, 0, 1, 1].reshape(rsh)
+
+    # # return neighbours in desired format
+    # if returnas == 'ind':
+        # neig_out = neig
+    # else:
+        # if len(kneig) == 2:
+            # neig_out = np.array([rneig[neig[0]], zneig[neig[1]]])
+            # neig_out[:, (neig[0] == -1) | (neig[1] == -1)] = np.nan
+        # else:
+            # neig_out = rneig[neig]
+
+    # return neig_out
 
 
 # #############################################################################
@@ -598,7 +598,7 @@ def _select_bsplines(
             kpbs, cpbs = 'knots_per_bs', 'cents_per_bs'
         else:
             kpbs, cpbs = 'knots_per_bs_r', 'cents_per_bs_r'
-        
+
         if return_cents is True and return_knots is True:
             if shape2d:
                 out = (
