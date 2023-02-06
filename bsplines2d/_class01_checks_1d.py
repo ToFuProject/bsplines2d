@@ -131,7 +131,7 @@ def _check_knots(
 
     elif uniform is True:
         msg = (
-            "Non-uniform resolution for user-provided mesh {knots_name}\n"
+            f"Non-uniform resolution for user-provided mesh {knots_name}\n"
             f"\t- unique res: {np.unique(res)}\n"
             f"\t- diff res: {np.diff(np.unique(res))}\n"
             f"\t- res: {res}\n"

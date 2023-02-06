@@ -63,6 +63,7 @@ class Mesh2D(ds.DataStock):
         key=None,
         knots=None,
         knots_name=None,
+        uniform=None,
         # defined from pre-existing bsplines
         subkey=None,
         # direct addition of bsplines
@@ -94,6 +95,7 @@ class Mesh2D(ds.DataStock):
             # mesh knots
             knots=knots,
             knots_name=knots_name,
+            uniform=uniform,
             # defined from pre-existing bsplines
             subkey=subkey,
             # additional attributes
