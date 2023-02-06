@@ -106,6 +106,7 @@ def check(
         # sub quantity
         subkey0=subkey0,
         subkey1=subkey1,
+        subbs=subbs,
         submesh=submesh,
         # attributes
         **kwdargs,
@@ -321,6 +322,7 @@ def _to_dict(
     # submesh
     subkey0=None,
     subkey1=None,
+    subbs=None,
     submesh=None,
     # attributes
     **kwdargs,
@@ -439,6 +441,7 @@ def _to_dict(
                 'shape-k': (knots0.size, knots1.size),
                 'variable': variable,
                 'subkey': subkey,
+                'subbs': subbs,
                 'submesh': submesh,
                 'crop': False,
             },

@@ -35,11 +35,28 @@ __all__ = ['Mesh2D']
 
 class Mesh2D(ds.DataStock):
 
-    _show_in_summary = 'all'
-    _dshow = dict(ds.DataStock._dshow)
-
     _which_mesh = 'mesh'
     _which_bsplines = 'bsplines'
+
+    _show_in_summary = 'all'
+    _dshow = dict(ds.DataStock._dshow)
+    _dshow.update({
+        _which_mesh: [
+            'nd',
+            'type',
+            'variable',
+            'crop',
+            'crop-thresh',
+            'ntri',
+            'knots',
+            'cents',
+            'shape-k',
+            'shape-c',
+            'ind',
+            'subkey',
+            f'nb {_which_bsplines}',
+        ],
+    })
 
     def add_mesh_1d(
         self,

@@ -61,7 +61,7 @@ def check(
     # ------------------------
     # depend on other bsplines
 
-    submesh, _, kwdargs = _defined_from(
+    submesh, subbs, kwdargs = _defined_from(
         coll=coll,
         subkey=subkey,
         # parameters
@@ -80,6 +80,7 @@ def check(
         res=res,
         # sub quantity
         subkey=subkey,
+        subbs=subbs,
         submesh=submesh,
         # attributes
         **kwdargs,
@@ -248,6 +249,7 @@ def _to_dict(
     res=None,
     # submesh
     subkey=None,
+    subbs=None,
     submesh=None,
     # attributes
     **kwdargs,
@@ -332,6 +334,7 @@ def _to_dict(
                 'shape-k': (knots.size,),
                 'variable': variable,
                 'subkey': subkey,
+                'subbs': subbs,
                 'submesh': submesh,
                 'crop': False,
             },

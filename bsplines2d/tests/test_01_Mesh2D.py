@@ -288,10 +288,13 @@ class Test01_Mesh2D_Fixed():
     # interpolate data with subkey
     # ################################
 
-    # def test48_interpolate_data_subkey(self):
-        # test_input._interpolate_from_subkey(
-            # self.bs,
-        # )
+    def test48_interpolate_subkey_1d(self):
+        test_input._interpolate(
+            self.bs,
+            nd='1d',
+            kind=None,
+            submesh=True,
+        )
 
     # def test48_interpolate_data_subkey_from_subkey(self):
         # test_input._interpolate_from_subkey(

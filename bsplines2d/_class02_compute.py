@@ -50,11 +50,6 @@ def _mesh1d_bsplines(
     ref = (kbsn,)
     apex = (kbsap,)
 
-    # ------------
-    # submesh
-
-    subbs = _get_subbs(coll=coll, keym=keym)
-
     # ----------------
     # format into dict
 
@@ -88,7 +83,6 @@ def _mesh1d_bsplines(
                 'ref-bs': (kbsn,),
                 'apex': apex,
                 'shape': clas.shapebs,
-                'subbs': subbs,
                 'class': clas,
                 'crop': None,
             }
@@ -136,11 +130,6 @@ def _mesh2DRect_bsplines(coll=None, keym=None, keybs=None, deg=None):
         # knots_per_bs_Z=knots_per_bs_Z,
     )
 
-    # ------------
-    # submesh
-
-    subbs = _get_subbs(coll=coll, keym=keym)
-
     # ----------------
     # format into dict
 
@@ -184,7 +173,6 @@ def _mesh2DRect_bsplines(coll=None, keym=None, keybs=None, deg=None):
                 'ref-bs': (keybsr,),
                 'apex': (kRbsap, kZbsap),
                 'shape': shapebs,
-                'subbs': subbs,
                 'crop': False,
                 'class': clas,
             }
@@ -295,11 +283,6 @@ def _mesh2DTri_bsplines(coll=None, keym=None, keybs=None, deg=None):
 
     bs_cents = clas._get_bs_cents()
 
-    # ------------
-    # submesh
-
-    subbs = _get_subbs(coll=coll, keym=keym)
-
     # ----------------
     # format into dict
 
@@ -338,7 +321,6 @@ def _mesh2DTri_bsplines(coll=None, keym=None, keybs=None, deg=None):
                 'ref-bs': (keybsr,),
                 'apex': (kbscr, kbscz),
                 'shape': (clas.nbs,),
-                'subbs': subbs,
                 'crop': False,
                 'class': clas,
             }
@@ -346,23 +328,6 @@ def _mesh2DTri_bsplines(coll=None, keym=None, keybs=None, deg=None):
     }
 
     return dref, ddata, dobj
-
-
-# ##################################################################
-# ##################################################################
-#                      utilities
-# ##################################################################
-
-
-def _get_subbs(coll=None, keym=None):
-    wm = coll._which_mesh
-    wbs = coll._which_bsplines
-    subkey = coll.dobj[wm][keym]['subkey']
-    if subkey is not None:
-        subbs = coll.ddata[subkey[0]][wbs][0]
-    else:
-        subbs = None
-    return subbs
 
 
 # ##################################################################

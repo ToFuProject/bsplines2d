@@ -37,6 +37,7 @@ def interpolate(
     x0=None,
     x1=None,
     grid=None,
+    submesh=None,
     # domain limitation
     domain=None,
     # common ref
@@ -131,7 +132,7 @@ def interpolate(
     # check bsplines-specific params
 
     (
-        details, val_out, crop, cropbs, indbs_tf, nbs
+        details, val_out, crop, cropbs, indbs_tf, nbs, submesh,
     ) = _check_params_bsplines(
         coll=coll,
         details=details,
@@ -139,11 +140,78 @@ def interpolate(
         crop=crop,
         mtype=mtype,
         keybs=keybs,
+        keym=keym,
         indbs_tf=indbs_tf,
+        submesh=submesh,
     )
 
     if details is True:
         ref_com, domain = None, None
+
+    # ---------------
+    # submesh
+
+    if submesh is True:
+
+        # submesh
+        wm = coll._which_mesh
+        kd0 = coll.dobj[wm][keym]['subkey']
+        kbs0 = coll.dobj[wm][keym]['subbs']
+
+        # interpolate
+        dout_temp, dparams_temp = coll.interpolate(
+            # interpolation base
+            keys=kd0,
+            ref_key=kbs0,
+            # interpolation pts
+            x0=x0,
+            x1=x1,
+            grid=grid,
+            submesh=False,
+            # domain
+            domain=domain,
+            # common ref
+            ref_com=None,
+            # bsplines-specific
+            details=False,
+            indbs_tf=None,
+            # rect-specific
+            crop=crop,
+            return_params=True,
+        )
+
+        # ------------------------------------------
+        # handle ref_com, add ref and data if needed
+
+        ref_com, lr_add, ld_add = _submesh_ref_com(
+            coll=coll,
+            kd0=kd0,
+            keys=keys,
+            ref_com=ref_com,
+            # interp resut
+            dout_temp=dout_temp,
+            # coordinates
+            x0=x0,
+            x1=x1,
+        )
+
+        # --------
+        # substitue x0, x1
+
+        if ref_com is None:
+            x0 = dout_temp[kd0[0]]['data']
+            if len(kd0) > 1:
+                x1 = dout_temp[kd0[1]]['data']
+        else:
+            x0 = dout_temp[kd0[0]]['key']
+            if len(kd0) > 1:
+                x1 = dout_temp[kd0[1]]['key']
+
+        if len(kd0) == 1:
+            x1 = None
+
+    else:
+        lr_add, ld_add = None, None
 
     # ---------------
     # prepare x0, x1
@@ -289,6 +357,17 @@ def interpolate(
         )
         warnings.warn(msg)
 
+    # ----------------------------
+    # clean-up temporary storage
+
+    if lr_add is not None:
+        for rr in lr_add:
+            coll.remove_ref(rr)
+
+    if ld_add is not None:
+        for dd in ld_add:
+            coll.remove_data(dd)
+
     # -------
     # return
 
@@ -302,6 +381,8 @@ def interpolate(
             'log_log': log_log,
             'x0': x0,
             'x1': x1,
+            'kx0': kx0,
+            'kx1': kx1,
             'grid': grid,
             'ref_com': ref_com,
             'details': details,
@@ -447,7 +528,7 @@ def _check_keys(
     keys = ds._generic_check._check_var_iter(
         keys, 'keys',
         types_iter=str,
-        types=list,
+        types=(list, tuple),
         allowed=lok_nobs + lok_bs,
     )
 
@@ -550,7 +631,9 @@ def _check_params_bsplines(
     crop=None,
     mtype=None,
     keybs=None,
+    keym=None,
     indbs_tf=None,
+    submesh=None,
 ):
     # -------------
     # details
@@ -623,7 +706,143 @@ def _check_params_bsplines(
         else:
             nbs = indbs_tf.size
 
-    return details, val_out, crop, cropbs, indbs_tf, nbs
+    # ---------
+    # submesh
+
+    lok = [False]
+    if coll.dobj[coll._which_mesh][keym]['subkey'] is not None:
+        lok.append(True)
+    submesh = ds._generic_check._check_var(
+        submesh, 'submesh',
+        types=bool,
+        default=False,
+        allowed=lok,
+    )
+
+    return details, val_out, crop, cropbs, indbs_tf, nbs, submesh
+
+
+# ################################################################
+# ################################################################
+#               Handle ref_com for submesh
+# ################################################################
+
+
+def _submesh_ref_com(
+    coll=None,
+    kd0=None,
+    keys=None,
+    ref_com=None,
+    # interp resut
+    dout_temp=None,
+    # coordinates
+    x0=None,
+    x1=None,
+):
+
+    # ---------------------
+    # find possible matches
+
+    ref0 = coll.ddata[kd0[0]]['ref']
+    lrcom = [
+        (rr, ref0.index(rr))
+        for ii, rr in enumerate(ref0)
+        if rr in coll.ddata[keys[0]]['ref']
+        and ii in [0, len(ref0) - 1]
+    ]
+
+    # ----------
+    # unused options
+
+    if ref_com is None:
+        if len(lrcom) > 0:
+            msg = (
+                f"\nPossible common ref for data {keys} and subkey {kd0}:\n"
+                + "\n".join([f"\t- {rr}" for rr in lrcom])
+                + "\nIf you wish to use one, specify with ref_com=..."
+            )
+            warnings.warn(msg)
+
+        return None, None, None
+
+    # --------------
+    # if ref_com
+
+    lok = [rr[0] for rr in lrcom]
+    ref_com = ds._generic_check._check_var(
+        ref_com, 'ref_com',
+        types=str,
+        allowed=lok,
+    )
+
+    # -----------
+    # safety check vs assumptions
+
+    if isinstance(x0, str) and ref_com is coll.ddata[x0]['ref']:
+        msg = (
+            "For submesh=True, it is assumed that x0 '{x0}' has no common ref!"
+            f"\n\t- detected: {ref_com}"
+        )
+        raise NotImplementedError(msg)
+
+    # -------------
+    # trivial
+
+    if isinstance(x0, str):
+       assert not any([rr is None for rr in dout_temp[kd0[0]]['ref']])
+       dr_add, lr_add = None, None
+
+    # ----------------
+    # add ref and data
+
+    if not isinstance(x0, str):
+
+        # dref
+        ii, dr_add, lref = 0, {}, []
+        for jj, rr in enumerate(dout_temp[kd0[0]]['ref']):
+            if rr is None:
+                kk = f"r{len(coll.dref) + ii:03.0f}"
+                dr_add[kk] = {
+                    'key': kk,
+                    'size': dout_temp[kd0[0]]['data'].shape[jj],
+                }
+                lref.append(kk)
+                ii += 1
+            else:
+                lref.append(None)
+
+        for kk in dout_temp.keys():
+            dout_temp[kk]['ref'] = tuple([
+                rr if rr is not None else dout_temp[kd0[0]]['ref'][jj]
+                for jj, rr in enumerate(lref)
+            ])
+
+        lr_add = [vv['key'] for vv in dr_add.values()]
+
+    # --------------
+    # populate dd_add
+
+    dd_add = dout_temp
+    for ii, kk in enumerate(dd_add.keys()):
+        dd_add[kk]['key'] = f'd{len(coll.ddata) + ii:03.0f}'
+    ld_add = [vv['key'] for vv in dd_add.values()]
+
+    # --------
+    # add
+
+    # ref
+    if dr_add is not None:
+        for vv in dr_add.values():
+            coll.add_ref(**vv)
+
+    # data
+    for vv in dd_add.values():
+        coll.add_data(**vv)
+
+    # --------
+    # return
+
+    return ref_com, lr_add, ld_add
 
 
 # ################################################################
@@ -636,10 +855,6 @@ def _prepare_bsplines(
     coll=None,
     keys=None,
     ref_key=None,
-    details=None,
-    crop=None,
-    nan0=None,
-    val_out=None,
 ):
 
     # ----------------
@@ -650,43 +865,6 @@ def _prepare_bsplines(
     keym = coll.dobj[wbs][keybs]['mesh']
     ref_key = coll.dobj[wbs][keybs]['apex']
     mtype = coll.dobj[coll._which_mesh][keym]['type']
-
-    # -------------
-    # details
-
-    details = ds._generic_check._check_var(
-        details, 'details',
-        types=bool,
-        default=False,
-    )
-
-    # -------------
-    # crop
-
-    crop = ds._generic_check._check_var(
-        crop, 'crop',
-        types=bool,
-        default=mtype == 'rect',
-        allowed=[False, True] if mtype == 'rect' else [False],
-    )
-
-    # -------------
-    # nan0
-
-    nan0 = ds._generic_check._check_var(
-        nan0, 'nan0',
-        types=bool,
-        default=True,
-    )
-
-    # -------------
-    # val_out
-
-    val_out = ds._generic_check._check_var(
-        val_out, 'val_out',
-        default=np.nan,
-        allowed=[False, np.nan, 0.]
-    )
 
     # -------------
     # azone
@@ -700,30 +878,7 @@ def _prepare_bsplines(
     # -----------
     # indbs
 
-    if details is True:
-        if mtype == 'rect':
-            returnas = 'tuple-flat'
-        elif mtype == 'tri':
-            returnas = int
-        elif mtype == 'polar':
-            if len(coll.dobj['bsplines'][keybs]['shape']) == 2:
-                returnas = 'array-flat'
-            else:
-                returnas = int
-
-        # compute validated indbs array with appropriate form
-        indbs_tf = coll.select_ind(
-            key=keybs,
-            returnas=returnas,
-            ind=indbs,
-        )
-    else:
-        indbs_tf = None
-
     return keybs, keym, mtype, ref_key
-
-
-
 
 
 # #############################################################################

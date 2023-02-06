@@ -561,9 +561,10 @@ def _add_data_multibs_arrays(bs, nd=None, kind=None, subbs=None, remove=None):
 #######################################################
 
 
-def _interpolate(bs, nd=None, kind=None, details=None):
-    dkd = _get_data(bs, nd=nd, kind=kind)
+def _interpolate(bs, nd=None, kind=None, details=None, submesh=None):
+    dkd = _get_data(bs, nd=nd, kind=kind, submesh=submesh)
 
+    wm = bs._which_mesh
     wbs = bs._which_bsplines
     for ii, (kd, vd) in enumerate(dkd.items()):
 
@@ -575,7 +576,17 @@ def _interpolate(bs, nd=None, kind=None, details=None):
             crop = False
 
         # vect
-        vect = bs.dobj[wbs][ref_key]['apex'][0]
+        if submesh is True:
+            km = bs.dobj[wbs][ref_key][wm]
+            kd0 = bs.dobj[wm][km]['subkey']
+            kbs0 = bs.dobj[wm][km]['subbs']
+            km0 = bs.dobj[wm][km]['submesh']
+            nd0 = bs.dobj[wm][km0]['nd']
+            vect = bs.dobj[wbs][kbs0]['apex'][0]
+        else:
+            vect = bs.dobj[wbs][ref_key]['apex'][0]
+            nd0 = None
+
         vect = np.r_[bs.ddata[vect]['data'][0], bs.ddata[vect]['data'][-1]]
         vect = np.array([vect, vect])
 
@@ -603,10 +614,16 @@ def _interpolate(bs, nd=None, kind=None, details=None):
             x1 = 'x1'
 
             # ref_com
-            if ii % 3 == 0:
+            if kind != 'tri' and (ii % 3 != 0):
+                if submesh is True:
+                    if 'nt' in bs.ddata[kd0[0]]['ref']:
+                        ref_com = 'nt'
+                    else:
+                        ref_com = None
+                else:
+                    ref_com = 'nt'
+            else:
                 ref_com = None
-            elif kind != 'tri':
-                ref_com = 'nt'
 
         else:
             x0 = vect
@@ -615,7 +632,7 @@ def _interpolate(bs, nd=None, kind=None, details=None):
 
         # populate
         kwd = {'x0': x0, 'ref_com': ref_com}
-        if nd == '2d':
+        if nd == '2d' or nd0 == '2d':
             kwd['x1'] = x1
 
         # indbs_tf
@@ -649,7 +666,10 @@ def _interpolate(bs, nd=None, kind=None, details=None):
             'details': details,
             'indbs_tf': indbs_tf,
             'crop': crop,
+            'submesh': submesh,
         })
+
+        print('\n', kd)
 
         # interpolate
         dout, dparam = bs.interpolate(
@@ -668,9 +688,22 @@ def _interpolate(bs, nd=None, kind=None, details=None):
             ax0 = dparam['axis'][0]
             ax1 = dparam['axis'][-1]
             if ref_com is None:
-                shape = tuple(np.r_[
-                    shape[:ax0], vect.shape, shape[ax1+1:]
-                ].astype(int))
+                if submesh is True:
+                    refbs0 = bs.dobj[wbs][kbs0]['ref']
+                    ax00 = bs.ddata[kd0[0]]['ref'].index(refbs0[0])
+                    ax10 = bs.ddata[kd0[0]]['ref'].index(refbs0[-1])
+                    shape0 = bs.ddata[kd0[0]]['shape']
+                    vshape = tuple(np.r_[
+                        shape0[:ax00], vect.shape, shape0[ax10+1:]
+                    ].astype(int))
+                    shape = tuple(np.r_[
+                        shape[:ax0], vshape, shape[ax1+1:]
+                    ].astype(int))
+
+                else:
+                    shape = tuple(np.r_[
+                        shape[:ax0], vect.shape, shape[ax1+1:]
+                    ].astype(int))
             else:
                 shape = tuple(np.r_[
                     shape[:ax0], vect.shape[1:], shape[ax1+1:]
@@ -694,7 +727,8 @@ def _interpolate(bs, nd=None, kind=None, details=None):
                 f"\t- obtained: {dout[kd]['data'].shape}\n\n"
                 f"\t- nd: {nd}\n"
                 f"\t- kind: {kind}\n"
-                f"\t- ddata['{kd}']['data'].shape: {bs.ddata[kd]['shape']}\n\n"
+                f"\t- ddata['{kd}']['data'].shape: {bs.ddata[kd]['shape']}\n"
+                f"\t- ddata['{kd}']['ref'].shape: {bs.ddata[kd]['ref']}\n\n"
                 + "\n".join(lstr)
             )
             raise Exception(msg)
@@ -784,23 +818,32 @@ def _get_bs(bs, nd=None, kind=None, subbs=None):
         if nd in [None, bs.dobj[wm][v0[wm]]['nd']]
         and kind in [None, bs.dobj[wm][v0[wm]]['type']]
         and (
-            subbs in [None, bs.dobj[wbs][k0]['subbs']]
-            or (subbs is True and bs.dobj[wbs][k0]['subbs'] is not None)
+            subbs in [None, bs.dobj[wm][v0[wm]]['subbs']]
+            or (subbs is True and bs.dobj[wm][v0[wm]]['subbs'] is not None)
         )
     ]
 
 
-def _get_data(bs, nd=None, kind=None):
+def _get_data(bs, nd=None, kind=None, submesh=None):
 
     dkd = {}
+    wm = bs._which_mesh
+    wbs = bs._which_bsplines
     dbs, dref = bs.get_dict_bsplines()
     for k0 in sorted(dbs.keys()):
         v0 = dbs[k0]
         for kb in v0.keys():
-            km = bs.dobj[bs._which_bsplines][kb][bs._which_mesh]
+            km = bs.dobj[wbs][kb][wm]
             c0 = (
-                nd in [None, bs.dobj[bs._which_mesh][km]['nd']]
-                and kind in [None, bs.dobj[bs._which_mesh][km]['type']]
+                nd in [None, bs.dobj[wm][km]['nd']]
+                and kind in [None, bs.dobj[wm][km]['type']]
+                and (
+                    submesh is None
+                    or (
+                        submesh is True
+                        and bs.dobj[wm][km]['submesh'] is not None
+                    )
+                )
             )
             if c0 and k0 not in dkd.keys():
                 dkd[k0] = {'bs': [kb], 'ref': dref[k0]}
