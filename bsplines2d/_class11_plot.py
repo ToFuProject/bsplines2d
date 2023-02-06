@@ -85,7 +85,7 @@ def plot_mesh_spectral(
         coll=coll,
         key=key,
     )
-    
+
     if units not in [None, 'eV']:
         xx, _, _, cat = _spectralunits.convert_spectral(
             data_in=xx,
@@ -93,7 +93,7 @@ def plot_mesh_spectral(
             units_out=units,
         )
         xlab = cat + r" ($" + units + "$)"
-        
+
     else:
         xlab = r'energy ($eV$)'
 
@@ -194,9 +194,9 @@ def _plot_bspline_prepare_spectral(
     res=None,
     mode=None,
 ):
-    
+
     xx = coll.get_sample_mesh_spectral(key=keym, res=res, mode=mode)
-    
+
     # TBF depending on what is practical for LOS
     yy = coll.interpolate_spectrum(
         key=None,
@@ -215,7 +215,7 @@ def _plot_bspline_prepare_spectral(
         store=False,
         inplace=False,
     )
-    
+
     return xx, yy
 
 
@@ -355,7 +355,7 @@ def plot_bspline_spectral(
 
 # #############################################################################
 # #############################################################################
-#                           plot spectrum 
+#                           plot spectrum
 #               (1d or time-dependent and/or radius dependent)
 # #############################################################################
 
@@ -367,19 +367,19 @@ def plot_spectrum(
 
     # -----------
     # check input
-    
+
     key, keyX, keyY = None, None, None
-    
+
     # ------------------------
     # call appropriate routine
-    
+
     return coll.plot_as_array(
         key=key,
         keyX=keyX,
         keyY=keyY,
     )
-    
-    
+
+
 # #############################################################################
 # #############################################################################
 #                           plot profile2d
@@ -462,9 +462,10 @@ def _plot_profiles2d_prepare(
     deg = coll.dobj['bsplines'][keybs]['deg']
 
     # get dR, dZ
-    dR, dZ, Rminmax, Zminmax = _plot_bsplines_get_dRdZ(
-        coll=coll, km=keym, meshtype=mtype,
-    )
+    # dR, dZ, Rminmax, Zminmax = _plot_bsplines_get_dRdZ(
+        # coll=coll, km=keym, meshtype=mtype,
+    # )
+    dR, dZ, Rminmax. Zminmax = None, None, None, None
 
     if res is None:
         res_coef = 0.2
