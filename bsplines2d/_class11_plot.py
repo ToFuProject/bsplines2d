@@ -465,7 +465,7 @@ def _plot_profiles2d_prepare(
     # dR, dZ, Rminmax, Zminmax = _plot_bsplines_get_dRdZ(
         # coll=coll, km=keym, meshtype=mtype,
     # )
-    dR, dZ, Rminmax. Zminmax = None, None, None, None
+    dR, dZ, Rminmax, Zminmax = None, None, None, None
 
     if res is None:
         res_coef = 0.2
