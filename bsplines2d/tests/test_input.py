@@ -529,7 +529,7 @@ def _add_data_multibs_arrays(bs, nd=None, kind=None, subbs=None, remove=None):
             key=lkd[-1],
             data=data,
             ref=['nt', kb, 'nE', kb2],
-            units='ph/m3/sr/eV/s',
+            units='ph/(m3.sr.eV.s)',
         )
 
         if bs.ddata[lkd[-1]][wbs] != (kb, kb2):
