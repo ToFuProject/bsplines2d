@@ -669,8 +669,6 @@ def _interpolate(bs, nd=None, kind=None, details=None, submesh=None):
             'submesh': submesh,
         })
 
-        print('\n', kd)
-
         # interpolate
         dout, dparam = bs.interpolate(
             keys=kd,
@@ -687,12 +685,16 @@ def _interpolate(bs, nd=None, kind=None, details=None, submesh=None):
             shape = list(bs.ddata[kd]['shape'])
             ax0 = dparam['axis'][0]
             ax1 = dparam['axis'][-1]
+
+            # submesh
+            if submesh is True:
+                refbs0 = bs.dobj[wbs][kbs0]['ref']
+                ax00 = bs.ddata[kd0[0]]['ref'].index(refbs0[0])
+                ax10 = bs.ddata[kd0[0]]['ref'].index(refbs0[-1])
+                shape0 = bs.ddata[kd0[0]]['shape']
+
             if ref_com is None:
                 if submesh is True:
-                    refbs0 = bs.dobj[wbs][kbs0]['ref']
-                    ax00 = bs.ddata[kd0[0]]['ref'].index(refbs0[0])
-                    ax10 = bs.ddata[kd0[0]]['ref'].index(refbs0[-1])
-                    shape0 = bs.ddata[kd0[0]]['shape']
                     vshape = tuple(np.r_[
                         shape0[:ax00], vect.shape, shape0[ax10+1:]
                     ].astype(int))
@@ -705,9 +707,17 @@ def _interpolate(bs, nd=None, kind=None, details=None, submesh=None):
                         shape[:ax0], vect.shape, shape[ax1+1:]
                     ].astype(int))
             else:
-                shape = tuple(np.r_[
-                    shape[:ax0], vect.shape[1:], shape[ax1+1:]
-                ].astype(int))
+                if submesh is True:
+                    vshape = tuple(np.r_[
+                        shape0[:ax00], vect.shape[1:], shape0[ax10+1:]
+                    ].astype(int))
+                    shape = tuple(np.r_[
+                        shape[:ax0], vshape, shape[ax1+1:]
+                    ].astype(int))
+                else:
+                    shape = tuple(np.r_[
+                        shape[:ax0], vect.shape[1:], shape[ax1+1:]
+                    ].astype(int))
 
         # remove x0, x1
         if 'x0' in bs.ddata.keys():
@@ -834,20 +844,21 @@ def _get_data(bs, nd=None, kind=None, submesh=None):
         v0 = dbs[k0]
         for kb in v0.keys():
             km = bs.dobj[wbs][kb][wm]
-            c0 = (
-                nd in [None, bs.dobj[wm][km]['nd']]
-                and kind in [None, bs.dobj[wm][km]['type']]
-                and (
+            lc = [
+                nd in [None, bs.dobj[wm][km]['nd']],
+                kind in [None, bs.dobj[wm][km]['type']],
+                (
                     submesh is None
                     or (
                         submesh is True
                         and bs.dobj[wm][km]['submesh'] is not None
                     )
-                )
-            )
-            if c0 and k0 not in dkd.keys():
-                dkd[k0] = {'bs': [kb], 'ref': dref[k0]}
-            elif c0:
-                dkd[k0]['bs'].append(kb)
+                ),
+            ]
+            if all(lc):
+                if k0 not in dkd.keys():
+                    dkd[k0] = {'bs': [kb], 'ref': dref[k0]}
+                else:
+                    dkd[k0]['bs'].append(kb)
 
     return dkd

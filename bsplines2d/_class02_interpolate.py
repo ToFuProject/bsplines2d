@@ -340,8 +340,6 @@ def interpolate(
                     axis_v=axis_v,
                 )
 
-            print('success', k0)
-
         except Exception as err:
             raise err
             derr[k0] = str(err)
