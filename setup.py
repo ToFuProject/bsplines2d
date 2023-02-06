@@ -1,7 +1,7 @@
 """ A tomography library for fusion devices
 
 See:
-https://github.com/ToFuProject/datastock
+https://github.com/ToFuProject/bsplines2d
 """
 
 # Built-in
@@ -121,7 +121,7 @@ setup(
         "numpy",
         "scipy",
         "matplotlib",
-        "datastock",
+        "datastock>=0.0.23",
     ],
     python_requires=">=3.6",
 
