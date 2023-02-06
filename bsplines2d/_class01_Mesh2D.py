@@ -107,7 +107,7 @@ class Mesh2D(ds.DataStock):
 
         # optional bspline
         if deg is not None:
-            self.add_bsplines_1d(key=key, deg=deg)
+            self.add_bsplines(key=key, deg=deg)
 
     def add_mesh_2d_rect(
         self,
