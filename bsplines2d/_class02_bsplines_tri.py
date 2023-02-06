@@ -466,11 +466,14 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
         val_out=None,
         # slicing
         sli_c=None,
+        # sli_x=None,
         sli_v=None,
         sli_o=None,
+        # indokx0=None,
         shape_v=None,
         shape_o=None,
         axis_v=None,
+        dref_com=None,
         # for compatibility (unused)
         **kwdargs,
     ):
@@ -488,10 +491,6 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
 
         val = np.zeros(shape_v)
         heights, ind = self.get_heights_per_centsknots_pts(x0, x1)
-        shape_height = tuple([
-            x0.size if ii in axis else 1
-            for ii in range(len(coefs.shape))
-        ])
 
         # -----------
         # compute
@@ -503,13 +502,16 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
                 sli_v[axis_v[0]] = (ind == ii)
                 sli_c[axis[0]] = [ii]
                 val[tuple(sli_v)] += coefs[tuple(sli_c)]
-                # val[:, indi] += coefs[:, ii, ...]
 
         elif self.deg == 1:
             for ii in np.intersect1d(indu, indcent):
 
                 indi = ind == ii
                 sli_v[axis_v[0]] = indi
+                shape_height = tuple([
+                    indi.sum() if ii in axis else 1
+                    for ii in range(len(coefs.shape))
+                ])
 
                 # get bs
                 ibs = np.any(cents_per_bs == ii, axis=1).nonzero()[0]
@@ -523,16 +525,15 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
                 for jj, jbs in enumerate(ibs):
                     sli_c[axis[0]] = [jbs]
 
+                    if np.prod(shape_height) != heights[indi, inum[jj]].size:
+                        import pdb; pdb.set_trace()     # DB
                     val[tuple(sli_v)] += np.reshape(
                         1. - heights[indi, inum[jj]],
                         shape_height,
                     ) * coefs[tuple(sli_c)]
-                    # val[:, indi] += (
-                    #     1. - heights[indi, inum[jj]]
-                    # ) * coefs[:, jbs, ...]
 
         # clean out-of-mesh
-        if val_out not in [None, False]:
+        if dref_com is None and val_out is not False:
             slio = sli_o(ind == -1)
             val[slio] = val_out
         return val

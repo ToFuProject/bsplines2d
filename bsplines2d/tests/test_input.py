@@ -15,7 +15,6 @@ import matplotlib.pyplot as plt
 # tofu-specific
 
 
-
 _HERE = os.path.abspath(os.path.dirname(__file__))
 _PATH_DATA = os.path.join(_HERE, 'test_data')
 _DFNAME = {
@@ -23,6 +22,7 @@ _DFNAME = {
     'quad_tri': 'trimesh_quad.npz',
     'WEST_poly': 'WEST_Poly.npz',
 }
+
 
 _DDATA = {}
 for k0, fname in _DFNAME.items():
@@ -567,25 +567,59 @@ def _interpolate(bs, nd=None, kind=None, details=None):
     wbs = bs._which_bsplines
     for ii, (kd, vd) in enumerate(dkd.items()):
 
-        ref_key = vd['bs'][0]
-        vect = bs.dobj[wbs][ref_key]['apex'][0]
-        vect = bs.ddata[vect]['data'][::2]
-        vect = np.array([vect, vect])
-
-        # kwdargs
-        shapebs = bs.dobj[bs._which_bsplines][ref_key]['shape']
-        if nd == '1d':
-            kwd = {'x0': vect}
-        else:
-            kwd = {'x0': vect, 'x1': vect}
-
         # crop
-        if kind == 'rect' and ii % 2 == 0:
-            crop = isinstance(bs.dobj[wbs][ref_key]['crop'], str)
+        ref_key = vd['bs'][0]
+        if kind == 'rect' and isinstance(bs.dobj[wbs][ref_key]['crop'], str):
+            crop = (ii % 2 == 0)
         else:
             crop = False
 
+        # vect
+        vect = bs.dobj[wbs][ref_key]['apex'][0]
+        vect = np.r_[bs.ddata[vect]['data'][0], bs.ddata[vect]['data'][-1]]
+        vect = np.array([vect, vect])
+
+        # add x0, x1
+        if 'nt' in bs.ddata[kd]['ref'] and (ii % 4 != 0):
+
+            vect = np.tile(vect, (bs.dref['nt']['size'], 1, 1))
+
+            if 'n2' not in bs.dref.keys():
+                bs.add_ref(key='n2', size=2)
+
+            bs.add_data(
+                key='x0',
+                data=vect,
+                ref=('nt', 'n2', 'n2'),
+                units='blabla',
+            )
+            bs.add_data(
+                key='x1',
+                data=vect,
+                ref=('nt', 'n2', 'n2'),
+                units='blabla',
+            )
+            x0 = 'x0'
+            x1 = 'x1'
+
+            # ref_com
+            if ii % 3 == 0:
+                ref_com = None
+            elif kind != 'tri':
+                ref_com = 'nt'
+
+        else:
+            x0 = vect
+            x1 = vect
+            ref_com = None
+
+        # populate
+        kwd = {'x0': x0, 'ref_com': ref_com}
+        if nd == '2d':
+            kwd['x1'] = x1
+
         # indbs_tf
+        shapebs = bs.dobj[bs._which_bsplines][ref_key]['shape']
         if kind == 'rect':
             if ii%3 == 0:
                 indbs_tf = bs.select_ind(
@@ -633,9 +667,19 @@ def _interpolate(bs, nd=None, kind=None, details=None):
             shape = list(bs.ddata[kd]['shape'])
             ax0 = dparam['axis'][0]
             ax1 = dparam['axis'][-1]
-            shape = tuple(np.r_[
-                shape[:ax0], vect.shape, shape[ax1+1:]
-            ].astype(int))
+            if ref_com is None:
+                shape = tuple(np.r_[
+                    shape[:ax0], vect.shape, shape[ax1+1:]
+                ].astype(int))
+            else:
+                shape = tuple(np.r_[
+                    shape[:ax0], vect.shape[1:], shape[ax1+1:]
+                ].astype(int))
+
+        # remove x0, x1
+        if 'x0' in bs.ddata.keys():
+            bs.remove_data('x0')
+            bs.remove_data('x1')
 
         # error msg
         if dout[kd]['data'].shape != shape:

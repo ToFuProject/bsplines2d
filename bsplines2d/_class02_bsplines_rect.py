@@ -136,10 +136,13 @@ class BivariateSplineRect(scpinterp.BivariateSpline):
         val_out=None,
         # slicing
         sli_c=None,
+        sli_x=None,
         sli_v=None,
         sli_o=None,
+        indokx0=None,
         shape_v=None,
         shape_o=None,
+        dref_com=None,
         # for compatibility (unused)
         **kwdargs,
     ):
@@ -152,8 +155,25 @@ class BivariateSplineRect(scpinterp.BivariateSpline):
         for ind in itt.product(*[range(aa) for aa in shape_o]):
 
             # slices
-            slic = sli_c(ind)
-            sliv = sli_v(ind)
+            slic = sli_c(
+                ind,
+                axis=axis,
+                ddim=coefs.ndim,
+            )
+
+            slix = sli_x(
+                ind,
+                indokx0=indokx0,
+                iother=None if dref_com is None else dref_com['iother'],
+            )
+
+            sliv = sli_v(
+                ind,
+                indokx0=indokx0,
+                ddim=coefs.ndim,
+                axis=axis,
+                iother=None if dref_com is None else dref_com['iother'],
+            )
 
             self.set_coefs(
                 coefs=coefs[slic],
@@ -161,10 +181,10 @@ class BivariateSplineRect(scpinterp.BivariateSpline):
             )
 
             # can be called on any shape of x0, x1?
-            val[sliv] = super().__call__(x0, x1, grid=False)
+            val[sliv] = super().__call__(x0[slix], x1[slix], grid=False)
 
         # clean out-of-mesh
-        if val_out is not False:
+        if dref_com is None and val_out is not False:
             indout = (
                 (x0 < self.tck[0][0]) | (x0 > self.tck[0][-1])
                 | (x1 < self.tck[1][0]) | (x1 > self.tck[1][-1])

@@ -121,6 +121,12 @@ def interpolate(
         ref_key=ref_key,
     )
 
+    if mtype == 'tri' and ref_com is not None:
+        msg = (
+            "Arg ref_com cannot be used with a triangular mesh!"
+        )
+        raise NotImplementedError(msg)
+
     # ------------------------------
     # check bsplines-specific params
 
@@ -207,27 +213,32 @@ def interpolate(
                 # --------------------
                 # prepare slicing func
 
-                # (
-                    # shape_v, axis_v, ind_c, ind_v, shape_o,
-                # ) = _utils_bsplines._get_shapes_ind(
-                    # axis=daxis[k0],
-                    # shape_c=shape_c,
-                    # shape_x=shape_x,
-                # )
+                if mtype == 'tri':
+                    shape_c = ddata[k0].shape
 
-                # sli_c = _utils_bsplines._get_slice_cx(
-                    # axis=daxis[k0],
-                    # shape=shape_c,
-                    # ind_cv=ind_c,
-                    # reverse=mtype == 'tri',
-                # )
+                    (
+                        shape_v, axis_v, ind_c, ind_v, shape_o,
+                    ) = _utils_bsplines._get_shapes_ind(
+                        axis=daxis[k0],
+                        shape_c=shape_c,
+                        shape_x=x0.shape,
+                    )
 
-                # sli_v = _utils_bsplines._get_slice_cx(
-                    # axis=axis_v,
-                    # shape=shape_v,
-                    # ind_cv=ind_v,
-                    # reverse=mtype == 'tri',
-                # )
+                    sli_c = _utils_bsplines._get_slice_cx(
+                        axis=daxis[k0],
+                        shape=shape_c,
+                        ind_cv=ind_c,
+                        reverse=True,
+                    )
+
+                    sli_v = _utils_bsplines._get_slice_cx(
+                        axis=axis_v,
+                        shape=shape_v,
+                        ind_cv=ind_v,
+                        reverse=True,
+                    )
+                else:
+                    axis_v = None
 
                 sli_o = _utils_bsplines._get_slice_out(
                     axis=daxis[k0],
@@ -257,8 +268,8 @@ def interpolate(
                     indokx0=indokx0,
                     shape_o=dsh_other[k0],
                     shape_v=dout[k0]['data'].shape,
-                    dref_com=dref_com[k0],
-                    # axis_v=axis_v,
+                    dref_com=dref_com.get(k0),
+                    axis_v=axis_v,
                 )
 
             print('success', k0)
@@ -292,6 +303,7 @@ def interpolate(
             'x0': x0,
             'x1': x1,
             'grid': grid,
+            'ref_com': ref_com,
             'details': details,
             'domain': domain,
             'crop': crop,
@@ -301,10 +313,6 @@ def interpolate(
 
         # debug
         if debug is True:
-            dparam.update({
-                k0: v0 for k0, v0 in ddata[keys[0]].items()
-                if k0 not in ['data']
-            })
             dparam['x0.shape'] = x0.shape
             dparam['axis'] = daxis[keys[0]]
 

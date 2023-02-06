@@ -103,14 +103,15 @@ class UnivariateSpline():
         self.nbs = nbs
         self.lbs = lbs
 
-    def _check_shape(self, x0=None, coefs=None, axis=None):
-        return tuple(np.r_[
-            coefs.shape[:axis], x0.shape, coefs.shape[axis+1]
-        ])
-
     def _check_coefs(self, coefs=None, axis=None):
         """ None for ev_details, (nt, shapebs) for sum """
-        assert coefs.shape[axis] == self.nbs
+        if coefs.shape[axis[0]] != self.nbs:
+            msg = (
+                "Arg coefs has wrong shape!\n"
+                f"\t- coefs.shape = {coefs.shape}\n"
+                f"\t- coefs.shape[{axis[0]}] != {self.nbs}\n"
+            )
+            raise Exception(msg)
 
     def __call__(
         self,
@@ -164,7 +165,7 @@ class UnivariateSpline():
             slix = sli_x(
                 ind,
                 indokx0=indokx0,
-                iother=None if ref_com is None else dref_com['iother'],
+                iother=None if dref_com is None else dref_com['iother'],
             )
 
             sliv = sli_v(
@@ -172,7 +173,7 @@ class UnivariateSpline():
                 indokx0=indokx0,
                 ddim=coefs.ndim,
                 axis=axis,
-                iother=None if ref_com is None else dref_com['iother'],
+                iother=None if dref_com is None else dref_com['iother'],
             )
 
             # call be called on any shape of x0
@@ -185,7 +186,7 @@ class UnivariateSpline():
             )(x0[slix], nu=deriv)
 
         # clean out-of-mesh
-        if val_out is not False:
+        if dref_com is None and val_out is not False:
             slio = sli_o((x0 < self.knots[0]) | (x0 > self.knots[-1]))
             val[slio] = val_out
 
