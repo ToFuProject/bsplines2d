@@ -148,7 +148,7 @@ def _get_contours(
                         cj = np.concatenate(cj, axis=0)
                         cj = np.insert(cj, ij, np.nan, axis=0)
 
-                elif np.sum(np.all(~np.isnan(cc), axis=1)) < 3:
+                elif np.sum(np.all(~np.isnan(cj), axis=1)) < 3:
                     no_cont = True
             else:
                 no_cont = True
@@ -341,7 +341,7 @@ def radius2d_special_points(
         ref_O: {'size': 1},
     }
 
-    # get barycenter 
+    # get barycenter
     if val.ndim == 3:
         assert cR.shape[1] == 1
         ax_R = np.nanmean(cR[:, 0, :], axis=-1)[:, None]
@@ -461,7 +461,7 @@ def angle2d_zone(
     rmin = np.full(cRmin.shape, np.nan)
     rmax = np.full(cRmax.shape, np.nan)
 
-    # get points inside contour 
+    # get points inside contour
     for ii in range(nt):
         rmin[ii, :], _, _ = coll.interpolate_profile2d(
             key=keyrad2d,
@@ -545,7 +545,7 @@ def angle2d_zone(
     # Ajust sizes
     nb = np.array([pR.size for pR in lpR])
 
-    # 
+    #
     nmax = np.max(nb)
     pR = np.full((nt, nmax), np.nan)
     pZ = np.full((nt, nmax), np.nan)

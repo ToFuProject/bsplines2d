@@ -240,89 +240,89 @@ class Mesh2D(ds.DataStock):
         if deg is not None:
             self.add_bsplines(key=key, deg=deg)
 
-    def add_mesh_2d_polar(
-        self,
-        # polar mesh
-        key=None,
-        radius=None,
-        angle=None,
-        # Defined on
-        radius2d=None,
-        angle2d=None,
-        # res for contour discontinuity of angle2d
-        res=None,
-        # parameters
-        radius_dim=None,
-        radius_quant=None,
-        radius_name=None,
-        radius_units=None,
-        angle_dim=None,
-        angle_quant=None,
-        angle_name=None,
-        # direct addition of bsplines
-        deg=None,
-        **kwdargs,
-    ):
-        """ Add a 2d polar mesh
+    # def add_mesh_2d_polar(
+        # self,
+        # # polar mesh
+        # key=None,
+        # radius=None,
+        # angle=None,
+        # # Defined on
+        # radius2d=None,
+        # angle2d=None,
+        # # res for contour discontinuity of angle2d
+        # res=None,
+        # # parameters
+        # radius_dim=None,
+        # radius_quant=None,
+        # radius_name=None,
+        # radius_units=None,
+        # angle_dim=None,
+        # angle_quant=None,
+        # angle_name=None,
+        # # direct addition of bsplines
+        # deg=None,
+        # **kwdargs,
+    # ):
+        # """ Add a 2d polar mesh
 
-        For now only includes radial mesh
-        radius has to be backed-up by:
-            - a radius quantity from a pre-existing rect or tri mesh
-            - a function
+        # For now only includes radial mesh
+        # radius has to be backed-up by:
+            # - a radius quantity from a pre-existing rect or tri mesh
+            # - a function
 
-        """
+        # """
 
-        # check input data and get input dicts
-        dref, ddata, dmesh = _checks_2d_polar.check(
-            coll=self,
-            # key
-            key=key,
-            # polar
-            radius=radius,
-            angle=angle,
-            radius2d=radius2d,
-            angle2d=angle2d,
-            # parameters
-            radius_dim=radius_dim,
-            radius_quant=radius_quant,
-            radius_name=radius_name,
-            radius_units=radius_units,
-            angle_dim=angle_dim,
-            angle_quant=angle_quant,
-            angle_name=angle_name,
-        )
+        # # check input data and get input dicts
+        # dref, ddata, dmesh = _checks_2d_polar.check(
+            # coll=self,
+            # # key
+            # key=key,
+            # # polar
+            # radius=radius,
+            # angle=angle,
+            # radius2d=radius2d,
+            # angle2d=angle2d,
+            # # parameters
+            # radius_dim=radius_dim,
+            # radius_quant=radius_quant,
+            # radius_name=radius_name,
+            # radius_units=radius_units,
+            # angle_dim=angle_dim,
+            # angle_quant=angle_quant,
+            # angle_name=angle_name,
+        # )
 
-        # update dicts
-        self.update(dref=dref, ddata=ddata, dobj=dobj)
+        # # update dicts
+        # self.update(dref=dref, ddata=ddata, dobj=dobj)
 
-        # special treatment of angle2d
-        if dmesh[key]['angle2d'] is not None:
-            drefa, ddataa, kR, kZ = _compute.angle2d_zone(
-                coll=self,
-                key=dmesh[key]['angle2d'],
-                keyrad2d=dmesh[key]['radius2d'],
-                key_ptsO=dmesh[key]['pts_O'],
-                res=res,
-                keym0=key,
-            )
+        # # special treatment of angle2d
+        # if dmesh[key]['angle2d'] is not None:
+            # drefa, ddataa, kR, kZ = _compute.angle2d_zone(
+                # coll=self,
+                # key=dmesh[key]['angle2d'],
+                # keyrad2d=dmesh[key]['radius2d'],
+                # key_ptsO=dmesh[key]['pts_O'],
+                # res=res,
+                # keym0=key,
+            # )
 
-            # update dicts
-            self.update(dref=drefa, ddata=ddataa)
-            if 'azone' in self.get_lparam(self._which_mesh):
-                self.set_param(
-                    key=key,
-                    param='azone',
-                    value=(kR, kZ),
-                    which=self._which_mesh,
-                )
-            else:
-                self.add_param(
-                    'azone', value={key: (kR, kZ)}, which=self._which_mesh,
-                )
+            # # update dicts
+            # self.update(dref=drefa, ddata=ddataa)
+            # if 'azone' in self.get_lparam(self._which_mesh):
+                # self.set_param(
+                    # key=key,
+                    # param='azone',
+                    # value=(kR, kZ),
+                    # which=self._which_mesh,
+                # )
+            # else:
+                # self.add_param(
+                    # 'azone', value={key: (kR, kZ)}, which=self._which_mesh,
+                # )
 
-        # optional bspline
-        if deg is not None:
-            self.add_bsplines(key=key, deg=deg)
+        # # optional bspline
+        # if deg is not None:
+            # self.add_bsplines(key=key, deg=deg)
 
     # -----------------
     # crop
