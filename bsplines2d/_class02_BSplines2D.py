@@ -810,79 +810,79 @@ class BSplines2D(Previous):
     # plotting
     # ------------------
 
-    def plot_bsplines(
-        self,
-        key=None,
-        indbs=None,
-        indt=None,
-        knots=None,
-        cents=None,
-        res=None,
-        plot_mesh=None,
-        val_out=None,
-        nan0=None,
-        cmap=None,
-        dax=None,
-        dmargin=None,
-        fs=None,
-        dleg=None,
-    ):
+    # def plot_bsplines(
+        # self,
+        # key=None,
+        # indbs=None,
+        # indt=None,
+        # knots=None,
+        # cents=None,
+        # res=None,
+        # plot_mesh=None,
+        # val_out=None,
+        # nan0=None,
+        # cmap=None,
+        # dax=None,
+        # dmargin=None,
+        # fs=None,
+        # dleg=None,
+    # ):
 
-        return _plot.plot_bspline(
-            coll=self,
-            key=key,
-            indbs=indbs,
-            indt=indt,
-            knots=knots,
-            cents=cents,
-            res=res,
-            plot_mesh=plot_mesh,
-            val_out=val_out,
-            nan0=nan0,
-            cmap=cmap,
-            dax=dax,
-            dmargin=dmargin,
-            fs=fs,
-            dleg=dleg,
-        )
+        # return _plot.plot_bspline(
+            # coll=self,
+            # key=key,
+            # indbs=indbs,
+            # indt=indt,
+            # knots=knots,
+            # cents=cents,
+            # res=res,
+            # plot_mesh=plot_mesh,
+            # val_out=val_out,
+            # nan0=nan0,
+            # cmap=cmap,
+            # dax=dax,
+            # dmargin=dmargin,
+            # fs=fs,
+            # dleg=dleg,
+        # )
 
-    def plot_profile2d(
-        self,
-        # inputs
-        key=None,
-        coefs=None,
-        indt=None,
-        res=None,
-        # plot options
-        vmin=None,
-        vmax=None,
-        cmap=None,
-        dax=None,
-        dmargin=None,
-        fs=None,
-        dcolorbar=None,
-        dleg=None,
-        # interactivity
-        dinc=None,
-        connect=None,
-    ):
-        return _plot.plot_profile2d(
-            coll=self,
-            # inputs
-            key=key,
-            coefs=coefs,
-            indt=indt,
-            res=res,
-            # plot options
-            vmin=vmin,
-            vmax=vmax,
-            cmap=cmap,
-            dax=dax,
-            dmargin=dmargin,
-            fs=fs,
-            dcolorbar=dcolorbar,
-            dleg=dleg,
-            # interactivity
-            dinc=dinc,
-            connect=connect,
-        )
+    # def plot_profile2d(
+        # self,
+        # # inputs
+        # key=None,
+        # coefs=None,
+        # indt=None,
+        # res=None,
+        # # plot options
+        # vmin=None,
+        # vmax=None,
+        # cmap=None,
+        # dax=None,
+        # dmargin=None,
+        # fs=None,
+        # dcolorbar=None,
+        # dleg=None,
+        # # interactivity
+        # dinc=None,
+        # connect=None,
+    # ):
+        # return _plot.plot_profile2d(
+            # coll=self,
+            # # inputs
+            # key=key,
+            # coefs=coefs,
+            # indt=indt,
+            # res=res,
+            # # plot options
+            # vmin=vmin,
+            # vmax=vmax,
+            # cmap=cmap,
+            # dax=dax,
+            # dmargin=dmargin,
+            # fs=fs,
+            # dcolorbar=dcolorbar,
+            # dleg=dleg,
+            # # interactivity
+            # dinc=dinc,
+            # connect=connect,
+        # )

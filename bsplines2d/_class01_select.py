@@ -519,111 +519,111 @@ def _select_mesh_neighbours_tri(
 # #############################################################################
 
 
-def _select_bsplines(
-    coll=None,
-    key=None,
-    ind=None,
-    returnas=None,
-    return_cents=None,
-    return_knots=None,
-    crop=None,
-):
-    """ ind is a tuple """
+# def _select_bsplines(
+    # coll=None,
+    # key=None,
+    # ind=None,
+    # returnas=None,
+    # return_cents=None,
+    # return_knots=None,
+    # crop=None,
+# ):
+    # """ ind is a tuple """
 
-    # ------------
-    # check inputs
+    # # ------------
+    # # check inputs
 
-    _, returnas, _, _ = _checks._select_check(returnas=returnas)
+    # _, returnas, _, _ = _checks._select_check(returnas=returnas)
 
-    (
-     which_mesh, which_bsplines, keym, key, cat,
-     ) = _checks._get_key_mesh_vs_bplines(
-        coll=coll,
-        key=key,
-        forcecat='bsplines',
-    )
-    meshtype = coll.dobj[which_mesh][keym]['type']
+    # (
+     # which_mesh, which_bsplines, keym, key, cat,
+     # ) = _checks._get_key_mesh_vs_bplines(
+        # coll=coll,
+        # key=key,
+        # forcecat='bsplines',
+    # )
+    # meshtype = coll.dobj[which_mesh][keym]['type']
 
-    # ----
-    # ind
+    # # ----
+    # # ind
 
-    if meshtype == 'rect':
-        returnasind = tuple
-    elif meshtype == 'polar' and len(coll.dobj[which_bsplines][key]['shape']) == 2:
-        returnasind = tuple
-    else:
-        returnasind = bool
+    # if meshtype == 'rect':
+        # returnasind = tuple
+    # elif meshtype == 'polar' and len(coll.dobj[which_bsplines][key]['shape']) == 2:
+        # returnasind = tuple
+    # else:
+        # returnasind = bool
 
-    ind = _select_ind(
-        coll=coll,
-        key=key,
-        ind=ind,
-        elements=None,
-        returnas=returnasind,
-        crop=crop,
-    )
+    # ind = _select_ind(
+        # coll=coll,
+        # key=key,
+        # ind=ind,
+        # elements=None,
+        # returnas=returnasind,
+        # crop=crop,
+    # )
 
-    # ------------
-    # knots, cents
+    # # ------------
+    # # knots, cents
 
-    if meshtype == 'rect':
-        kRk, kZk = coll.dobj[which_mesh][keym]['knots']
-        kRc, kZc = coll.dobj[which_mesh][keym]['cents']
+    # if meshtype == 'rect':
+        # kRk, kZk = coll.dobj[which_mesh][keym]['knots']
+        # kRc, kZc = coll.dobj[which_mesh][keym]['cents']
 
-        out = _mesh2DRect_bsplines_knotscents(
-            returnas=returnas,
-            return_knots=return_knots,
-            return_cents=return_cents,
-            ind=ind,
-            deg=coll.dobj[which_bsplines][key]['deg'],
-            Rknots=coll.ddata[kRk]['data'],
-            Zknots=coll.ddata[kZk]['data'],
-            Rcents=coll.ddata[kRc]['data'],
-            Zcents=coll.ddata[kZc]['data'],
-        )
+        # out = _mesh2DRect_bsplines_knotscents(
+            # returnas=returnas,
+            # return_knots=return_knots,
+            # return_cents=return_cents,
+            # ind=ind,
+            # deg=coll.dobj[which_bsplines][key]['deg'],
+            # Rknots=coll.ddata[kRk]['data'],
+            # Zknots=coll.ddata[kZk]['data'],
+            # Rcents=coll.ddata[kRc]['data'],
+            # Zcents=coll.ddata[kZc]['data'],
+        # )
 
-    elif meshtype == 'tri':
-        clas = coll.dobj[which_bsplines][key]['class']
-        out = clas._get_knotscents_per_bs(
-            returnas=returnas,
-            return_knots=return_knots,
-            return_cents=return_cents,
-            ind=ind,
-        )
+    # elif meshtype == 'tri':
+        # clas = coll.dobj[which_bsplines][key]['class']
+        # out = clas._get_knotscents_per_bs(
+            # returnas=returnas,
+            # return_knots=return_knots,
+            # return_cents=return_cents,
+            # ind=ind,
+        # )
 
-    else:
-        clas = coll.dobj[which_bsplines][key]['class']
-        shape2d = len(coll.dobj[which_bsplines][key]['shape']) == 2
-        if which_bsplines == coll._which_bssp:
-            kpbs, cpbs = 'knots_per_bs', 'cents_per_bs'
-        else:
-            kpbs, cpbs = 'knots_per_bs_r', 'cents_per_bs_r'
+    # else:
+        # clas = coll.dobj[which_bsplines][key]['class']
+        # shape2d = len(coll.dobj[which_bsplines][key]['shape']) == 2
+        # if which_bsplines == coll._which_bssp:
+            # kpbs, cpbs = 'knots_per_bs', 'cents_per_bs'
+        # else:
+            # kpbs, cpbs = 'knots_per_bs_r', 'cents_per_bs_r'
 
-        if return_cents is True and return_knots is True:
-            if shape2d:
-                out = (
-                    (getattr(clas, kpbs), clas.knots_per_bs_a),
-                    (getattr(clas, cpbs), clas.cents_per_bs_a),
-                )
-            else:
-                out = ((getattr(clas, kpbs),), (getattr(clas, cpbs),))
-        elif return_cents is True:
-            if shape2d:
-                out = (getattr(clas, cpbs), clas.cents_per_bs_a)
-            else:
-                out = (getattr(clas, cpbs),)
-        elif return_knots is True:
-            if shape2d:
-                out = (getattr(clas, kpbs), clas.knots_per_bs_a)
-            else:
-                out = (getattr(clas, kpbs),)
+        # if return_cents is True and return_knots is True:
+            # if shape2d:
+                # out = (
+                    # (getattr(clas, kpbs), clas.knots_per_bs_a),
+                    # (getattr(clas, cpbs), clas.cents_per_bs_a),
+                # )
+            # else:
+                # out = ((getattr(clas, kpbs),), (getattr(clas, cpbs),))
+        # elif return_cents is True:
+            # if shape2d:
+                # out = (getattr(clas, cpbs), clas.cents_per_bs_a)
+            # else:
+                # out = (getattr(clas, cpbs),)
+        # elif return_knots is True:
+            # if shape2d:
+                # out = (getattr(clas, kpbs), clas.knots_per_bs_a)
+            # else:
+                # out = (getattr(clas, kpbs),)
 
-    # ------------
-    # return
+    # # ------------
+    # # return
 
-    if return_cents is True and return_knots is True:
-        return ind, out[0], out[1]
-    elif return_cents is True or return_knots is True:
-        return ind, out
-    else:
-        return ind
+    # if return_cents is True and return_knots is True:
+        # return ind, out[0], out[1]
+    # elif return_cents is True or return_knots is True:
+        # return ind, out
+    # else:
+        # return ind

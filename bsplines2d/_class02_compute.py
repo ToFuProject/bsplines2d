@@ -336,189 +336,189 @@ def _mesh2DTri_bsplines(coll=None, keym=None, keybs=None, deg=None):
 # ##################################################################
 
 
-def _mesh2Dpolar_bsplines(
-    coll=None,
-    keym=None,
-    keybs=None,
-    angle=None,
-    deg=None,
-):
+# def _mesh2Dpolar_bsplines(
+    # coll=None,
+    # keym=None,
+    # keybs=None,
+    # angle=None,
+    # deg=None,
+# ):
 
-    # ---------------
-    # create bsplines
+    # # ---------------
+    # # create bsplines
 
-    kknots = coll.dobj[coll._which_mesh][keym]['knots']
-    knotsr = coll.ddata[kknots[0]]['data']
-    if len(kknots) == 2:
-        angle = coll.ddata[kknots[1]]['data']
+    # kknots = coll.dobj[coll._which_mesh][keym]['knots']
+    # knotsr = coll.ddata[kknots[0]]['data']
+    # if len(kknots) == 2:
+        # angle = coll.ddata[kknots[1]]['data']
 
-    clas = _class02_bsplines_polar.get_bs2d_func(
-        deg=deg,
-        knotsr=knotsr,
-        angle=angle,
-        coll=coll,
-    )
+    # clas = _class02_bsplines_polar.get_bs2d_func(
+        # deg=deg,
+        # knotsr=knotsr,
+        # angle=angle,
+        # coll=coll,
+    # )
 
-    keybsnr = f'{keybs}-nr'
-    keybsn = f'{keybs}-nbs'
-    keybsapr = f'{keybs}-apr'
+    # keybsnr = f'{keybs}-nr'
+    # keybsn = f'{keybs}-nbs'
+    # keybsapr = f'{keybs}-apr'
 
-    # ------------
-    # refs
+    # # ------------
+    # # refs
 
-    if clas.knotsa is None:
-        ref = (keybsnr,)
-        apex = (keybsapr,)
-    elif len(clas.shapebs) == 2:
-        keybsna = f'{keybs}-na'
-        keybsapa = f'{keybs}-apa'
-        ref = (keybsnr, keybsna)
-        apex = (keybsapr, keybsapa)
-    else:
-        ref = (keybsn,)
-        apex = (keybsapr,)
+    # if clas.knotsa is None:
+        # ref = (keybsnr,)
+        # apex = (keybsapr,)
+    # elif len(clas.shapebs) == 2:
+        # keybsna = f'{keybs}-na'
+        # keybsapa = f'{keybs}-apa'
+        # ref = (keybsnr, keybsna)
+        # apex = (keybsapr, keybsapa)
+    # else:
+        # ref = (keybsn,)
+        # apex = (keybsapr,)
 
-        # check angle vs angle2d
-        mesh = coll._which_mesh
-        angle2d = coll.dobj[mesh][keym]['angle2d']
-        if angle2d is None:
-            msg = (
-                "Poloidal bsplines require mesh with angle2d!\n"
-                f"\t- self.dobj['{mesh}']['{keym}']['angle2d'] = {angle2d}"
-            )
-            raise Exception(msg)
+        # # check angle vs angle2d
+        # mesh = coll._which_mesh
+        # angle2d = coll.dobj[mesh][keym]['angle2d']
+        # if angle2d is None:
+            # msg = (
+                # "Poloidal bsplines require mesh with angle2d!\n"
+                # f"\t- self.dobj['{mesh}']['{keym}']['angle2d'] = {angle2d}"
+            # )
+            # raise Exception(msg)
 
-    # bs_cents = clas._get_bs_cents()
+    # # bs_cents = clas._get_bs_cents()
 
-    # ----------------
-    # format into dict
+    # # ----------------
+    # # format into dict
 
-    # dref
-    dref = {
-        # bs index
-        keybsnr: {'size': clas.nbs_r},
-        keybsn: {'size': clas.nbs},
-    }
-    if len(clas.shapebs) == 2:
-        dref[keybsna] = {'size': clas.nbs_a_per_r[0]}
+    # # dref
+    # dref = {
+        # # bs index
+        # keybsnr: {'size': clas.nbs_r},
+        # keybsn: {'size': clas.nbs},
+    # }
+    # if len(clas.shapebs) == 2:
+        # dref[keybsna] = {'size': clas.nbs_a_per_r[0]}
 
-    # ddata
-    ddata = {
-        keybsapr: {
-            'data': clas.apex_per_bs_r,
-            'units': '',
-            'dim': '',
-            'quant': '',
-            'name': '',
-            'ref': (keybsnr,),
-        },
-    }
-    if len(clas.shapebs) == 2:
-        ddata[keybsapa] = {
-            'data': clas.apex_per_bs_a[0],
-            'units': 'rad',
-            'dim': 'angle',
-            'quant': '',
-            'name': '',
-            'ref': (keybsna,),
-        }
+    # # ddata
+    # ddata = {
+        # keybsapr: {
+            # 'data': clas.apex_per_bs_r,
+            # 'units': '',
+            # 'dim': '',
+            # 'quant': '',
+            # 'name': '',
+            # 'ref': (keybsnr,),
+        # },
+    # }
+    # if len(clas.shapebs) == 2:
+        # ddata[keybsapa] = {
+            # 'data': clas.apex_per_bs_a[0],
+            # 'units': 'rad',
+            # 'dim': 'angle',
+            # 'quant': '',
+            # 'name': '',
+            # 'ref': (keybsna,),
+        # }
 
-    # dobj
-    dobj = {
-        'bsplines': {
-            keybs: {
-                'deg': deg,
-                'mesh': keym,
-                'ref': ref,
-                'ref-bs': (keybsn,),
-                'apex': apex,
-                'shape': clas.shapebs,
-                'class': clas,
-                'crop': coll.dobj[coll._which_mesh][keym]['crop'],
-            }
-        },
-    }
+    # # dobj
+    # dobj = {
+        # 'bsplines': {
+            # keybs: {
+                # 'deg': deg,
+                # 'mesh': keym,
+                # 'ref': ref,
+                # 'ref-bs': (keybsn,),
+                # 'apex': apex,
+                # 'shape': clas.shapebs,
+                # 'class': clas,
+                # 'crop': coll.dobj[coll._which_mesh][keym]['crop'],
+            # }
+        # },
+    # }
 
-    return dref, ddata, dobj
+    # return dref, ddata, dobj
 
 
-def _mesh2DPolar_bsplines_knotscents(
-    returnas=None,
-    return_knots=None,
-    return_cents=None,
-    ind=None,
-    deg=None,
-    # resources
-    clas=None,
-    rknots=None,
-    aknots=None,
-    rcents=None,
-    acents=None,
-):
+# def _mesh2DPolar_bsplines_knotscents(
+    # returnas=None,
+    # return_knots=None,
+    # return_cents=None,
+    # ind=None,
+    # deg=None,
+    # # resources
+    # clas=None,
+    # rknots=None,
+    # aknots=None,
+    # rcents=None,
+    # acents=None,
+# ):
 
-    # -------------
-    # check inputs
+    # # -------------
+    # # check inputs
 
-    return_knots = ds._generic_check._check_var(
-        return_knots, 'return_knots',
-        types=bool,
-        default=True,
-    )
-    return_cents = ds._generic_check._check_var(
-        return_cents, 'return_cents',
-        types=bool,
-        default=True,
-    )
-    if return_knots is False and return_cents is False:
-        return
+    # return_knots = ds._generic_check._check_var(
+        # return_knots, 'return_knots',
+        # types=bool,
+        # default=True,
+    # )
+    # return_cents = ds._generic_check._check_var(
+        # return_cents, 'return_cents',
+        # types=bool,
+        # default=True,
+    # )
+    # if return_knots is False and return_cents is False:
+        # return
 
-    # -------------
-    # compute
+    # # -------------
+    # # compute
 
-    if return_knots is True:
+    # if return_knots is True:
 
-        knots_per_bs_r = _utils_bsplines._get_knots_per_bs(
-            rknots, deg=deg, returnas=returnas,
-        )
-        knots_per_bs_Z = _utils_bsplines._get_knots_per_bs(
-            Zknots, deg=deg, returnas=returnas,
-        )
-        if ind is not None:
-            knots_per_bs_R = knots_per_bs_R[:, ind[0]]
-            knots_per_bs_Z = knots_per_bs_Z[:, ind[1]]
+        # knots_per_bs_r = _utils_bsplines._get_knots_per_bs(
+            # rknots, deg=deg, returnas=returnas,
+        # )
+        # knots_per_bs_Z = _utils_bsplines._get_knots_per_bs(
+            # Zknots, deg=deg, returnas=returnas,
+        # )
+        # if ind is not None:
+            # knots_per_bs_R = knots_per_bs_R[:, ind[0]]
+            # knots_per_bs_Z = knots_per_bs_Z[:, ind[1]]
 
-        nknots = knots_per_bs_R.shape[0]
-        knots_per_bs_R = np.tile(knots_per_bs_R, (nknots, 1))
-        knots_per_bs_Z = np.repeat(knots_per_bs_Z, nknots, axis=0)
+        # nknots = knots_per_bs_R.shape[0]
+        # knots_per_bs_R = np.tile(knots_per_bs_R, (nknots, 1))
+        # knots_per_bs_Z = np.repeat(knots_per_bs_Z, nknots, axis=0)
 
-    if return_cents is True:
+    # if return_cents is True:
 
-        cents_per_bs_R = _utils_bsplines._get_cents_per_bs(
-            Rcents, deg=deg, returnas=returnas,
-        )
-        cents_per_bs_Z = _utils_bsplines._get_cents_per_bs(
-            Zcents, deg=deg, returnas=returnas,
-        )
-        if ind is not None:
-            cents_per_bs_R = cents_per_bs_R[:, ind[0]]
-            cents_per_bs_Z = cents_per_bs_Z[:, ind[1]]
+        # cents_per_bs_R = _utils_bsplines._get_cents_per_bs(
+            # Rcents, deg=deg, returnas=returnas,
+        # )
+        # cents_per_bs_Z = _utils_bsplines._get_cents_per_bs(
+            # Zcents, deg=deg, returnas=returnas,
+        # )
+        # if ind is not None:
+            # cents_per_bs_R = cents_per_bs_R[:, ind[0]]
+            # cents_per_bs_Z = cents_per_bs_Z[:, ind[1]]
 
-        ncents = cents_per_bs_R.shape[0]
-        cents_per_bs_R = np.tile(cents_per_bs_R, (ncents, 1))
-        cents_per_bs_Z = np.repeat(cents_per_bs_Z, ncents, axis=0)
+        # ncents = cents_per_bs_R.shape[0]
+        # cents_per_bs_R = np.tile(cents_per_bs_R, (ncents, 1))
+        # cents_per_bs_Z = np.repeat(cents_per_bs_Z, ncents, axis=0)
 
-    # -------------
-    # return
+    # # -------------
+    # # return
 
-    if return_knots is True and return_cents is True:
-        out = (
-            (knots_per_bs_R, knots_per_bs_Z), (cents_per_bs_R, cents_per_bs_Z)
-        )
-    elif return_knots is True:
-        out = (knots_per_bs_R, knots_per_bs_Z)
-    else:
-        out = (cents_per_bs_R, cents_per_bs_Z)
-    return out
+    # if return_knots is True and return_cents is True:
+        # out = (
+            # (knots_per_bs_R, knots_per_bs_Z), (cents_per_bs_R, cents_per_bs_Z)
+        # )
+    # elif return_knots is True:
+        # out = (knots_per_bs_R, knots_per_bs_Z)
+    # else:
+        # out = (cents_per_bs_R, cents_per_bs_Z)
+    # return out
 
 
 # #############################################################################
