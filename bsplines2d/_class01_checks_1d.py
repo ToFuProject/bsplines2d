@@ -107,7 +107,7 @@ def _check_knots(
     uniform = ds._generic_check._check_var(
         uniform, 'uniform',
         types=bool,
-        default=True,
+        default=False,
     )
 
     # ---------
@@ -126,7 +126,7 @@ def _check_knots(
     # -----------------
     # check uniformity
 
-    if np.allclose(res, np.mean(res), atol=1e-12, rtol=0):
+    if np.allclose(res, np.mean(res), atol=1e-14, rtol=1e-6):
         res = res[0]
 
     elif uniform is True:
