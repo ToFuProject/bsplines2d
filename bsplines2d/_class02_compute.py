@@ -527,73 +527,73 @@ def _mesh2DTri_bsplines(coll=None, keym=None, keybs=None, deg=None):
 # #############################################################################
 
 
-def _get_keyingroup_ddata(
-    dd=None, dd_name='data',
-    key=None, monot=None,
-    msgstr=None, raise_=False,
-):
-    """ Return the unique data key matching key
+# def _get_keyingroup_ddata(
+    # dd=None, dd_name='data',
+    # key=None, monot=None,
+    # msgstr=None, raise_=False,
+# ):
+    # """ Return the unique data key matching key
 
-    Here, key can be interpreted as name / source / units / quant...
-    All are tested using select() and a unique match is returned
-    If not unique match an error message is either returned or raised
+    # Here, key can be interpreted as name / source / units / quant...
+    # All are tested using select() and a unique match is returned
+    # If not unique match an error message is either returned or raised
 
-    """
+    # """
 
-    # ------------------------
-    # Trivial case: key is actually a ddata key
+    # # ------------------------
+    # # Trivial case: key is actually a ddata key
 
-    if key in dd.keys():
-        return key, None
+    # if key in dd.keys():
+        # return key, None
 
-    # ------------------------
-    # Non-trivial: check for a unique match on other params
+    # # ------------------------
+    # # Non-trivial: check for a unique match on other params
 
-    dind = _select(
-        dd=dd, dd_name=dd_name,
-        dim=key, quant=key, name=key, units=key, source=key,
-        monot=monot,
-        log='raw',
-        returnas=bool,
-    )
-    ind = np.array([ind for kk, ind in dind.items()])
+    # dind = _select(
+        # dd=dd, dd_name=dd_name,
+        # dim=key, quant=key, name=key, units=key, source=key,
+        # monot=monot,
+        # log='raw',
+        # returnas=bool,
+    # )
+    # ind = np.array([ind for kk, ind in dind.items()])
 
-    # Any perfect match ?
-    nind = np.sum(ind, axis=1)
-    sol = (nind == 1).nonzero()[0]
-    key_out, msg = None, None
-    if sol.size > 0:
-        if np.unique(sol).size == 1:
-            indkey = ind[sol[0], :].nonzero()[0]
-            key_out = list(dd.keys())[indkey]
-        else:
-            lstr = "[dim, quant, name, units, source]"
-            msg = "Several possible matches in {} for {}".format(lstr, key)
-    else:
-        lstr = "[dim, quant, name, units, source]"
-        msg = "No match in {} for {}".format(lstr, key)
+    # # Any perfect match ?
+    # nind = np.sum(ind, axis=1)
+    # sol = (nind == 1).nonzero()[0]
+    # key_out, msg = None, None
+    # if sol.size > 0:
+        # if np.unique(sol).size == 1:
+            # indkey = ind[sol[0], :].nonzero()[0]
+            # key_out = list(dd.keys())[indkey]
+        # else:
+            # lstr = "[dim, quant, name, units, source]"
+            # msg = "Several possible matches in {} for {}".format(lstr, key)
+    # else:
+        # lstr = "[dim, quant, name, units, source]"
+        # msg = "No match in {} for {}".format(lstr, key)
 
-    # Complement error msg and optionally raise
-    if msg is not None:
-        lk = ['dim', 'quant', 'name', 'units', 'source']
-        dk = {
-            kk: (
-                dind[kk].sum(),
-                sorted(set([vv[kk] for vv in dd.values()]))
-            ) for kk in lk
-        }
-        msg += (
-            "\n\nRequested {} could not be identified!\n".format(msgstr)
-            + "Please provide a valid (unique) key/name/dim/quant/units:\n\n"
-            + '\n'.join([
-                '\t- {} ({} matches): {}'.format(kk, dk[kk][0], dk[kk][1])
-                for kk in lk
-            ])
-            + "\nProvided:\n\t'{}'".format(key)
-        )
-        if raise_:
-            raise Exception(msg)
-    return key_out, msg
+    # # Complement error msg and optionally raise
+    # if msg is not None:
+        # lk = ['dim', 'quant', 'name', 'units', 'source']
+        # dk = {
+            # kk: (
+                # dind[kk].sum(),
+                # sorted(set([vv[kk] for vv in dd.values()]))
+            # ) for kk in lk
+        # }
+        # msg += (
+            # "\n\nRequested {} could not be identified!\n".format(msgstr)
+            # + "Please provide a valid (unique) key/name/dim/quant/units:\n\n"
+            # + '\n'.join([
+                # '\t- {} ({} matches): {}'.format(kk, dk[kk][0], dk[kk][1])
+                # for kk in lk
+            # ])
+            # + "\nProvided:\n\t'{}'".format(key)
+        # )
+        # if raise_:
+            # raise Exception(msg)
+    # return key_out, msg
 
 """
 def _get_possible_ref12d(
