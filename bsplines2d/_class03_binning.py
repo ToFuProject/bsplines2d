@@ -112,7 +112,7 @@ def binning(
     # ----------
     # return
 
-    if returnas is dict:
+    if returnas is True:
         return dout
 
 

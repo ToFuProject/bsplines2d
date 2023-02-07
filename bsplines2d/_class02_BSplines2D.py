@@ -791,43 +791,43 @@ class BSplines2D(Previous):
     # plotting
     # ------------------
 
-    def plot_as_profile2d(
-        self,
-        key=None,
-        # parameters
-        res=None,
-        # plot options
-        vmin=None,
-        vmax=None,
-        cmap=None,
-        dax=None,
-        dmargin=None,
-        fs=None,
-        dcolorbar=None,
-        dleg=None,
-        # interactivity
-        dinc=None,
-        connect=None,
-    ):
+    # def plot_as_profile2d(
+        # self,
+        # key=None,
+        # # parameters
+        # res=None,
+        # # plot options
+        # vmin=None,
+        # vmax=None,
+        # cmap=None,
+        # dax=None,
+        # dmargin=None,
+        # fs=None,
+        # dcolorbar=None,
+        # dleg=None,
+        # # interactivity
+        # dinc=None,
+        # connect=None,
+    # ):
 
-        return _plot.plot_as_profile2d(
-            coll=self,
-            key=key,
-            # parameters
-            res=res,
-            # plot options
-            vmin=vmin,
-            vmax=vmax,
-            cmap=cmap,
-            dax=dax,
-            dmargin=dmargin,
-            fs=fs,
-            dcolorbar=dcolorbar,
-            dleg=dleg,
-            # interactivity
-            dinc=dinc,
-            connect=connect,
-        )
+        # return _plot.plot_as_profile2d(
+            # coll=self,
+            # key=key,
+            # # parameters
+            # res=res,
+            # # plot options
+            # vmin=vmin,
+            # vmax=vmax,
+            # cmap=cmap,
+            # dax=dax,
+            # dmargin=dmargin,
+            # fs=fs,
+            # dcolorbar=dcolorbar,
+            # dleg=dleg,
+            # # interactivity
+            # dinc=dinc,
+            # connect=connect,
+        # )
 
 
 

@@ -12,9 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-# tofu-specific
-
-
+# specific
 _HERE = os.path.abspath(os.path.dirname(__file__))
 _PATH_DATA = os.path.join(_HERE, 'test_data')
 _DFNAME = {
@@ -773,6 +771,9 @@ def _bin_bs(bs, nd=None, kind=None):
             keys=kd,
             ref_key=ref_key,
             bins=bins,
+            # store vs return
+            store=False,
+            returnas=True,
         )
 
         shape = list(bs.ddata[kd]['shape'])
