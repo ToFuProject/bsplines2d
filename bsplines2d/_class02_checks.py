@@ -69,7 +69,7 @@ def add_data_meshbsplines_ref(
 
             rbs = [(ii, rr) for ii, rr in enumerate(ref) if rr in dbsplines.keys()]
 
-            # repeat data if taken from ntri > 1 
+            # repeat data if taken from ntri > 1
             data = _repeat_data_ntri(
                 ref=ref,
                 rbs1=kb,
@@ -81,7 +81,9 @@ def add_data_meshbsplines_ref(
                 dbsplines=dbsplines,
             )
 
-    return tuple(ref), data
+        ref = tuple(ref)
+
+    return ref, data
 
 
 def _repeat_data_ntri(
@@ -128,7 +130,7 @@ def _set_data_bsplines(coll=None):
         for k0, v0 in coll._ddata.items():
 
             lbs = [
-                (v0['ref'].index(v1['ref'][0]), k1) 
+                (v0['ref'].index(v1['ref'][0]), k1)
                 for k1, v1 in coll.dobj[wbs].items()
                 if v1['ref'] == tuple([
                     rr for rr in v0['ref']

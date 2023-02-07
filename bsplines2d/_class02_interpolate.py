@@ -364,7 +364,18 @@ def interpolate(
 
     if ld_add is not None:
         for dd in ld_add:
-            coll.remove_data(dd)
+            if dd in coll.ddata.keys():
+                coll.remove_data(dd)
+
+    # ----------
+    # adjust ref
+
+    if lr_add is not None:
+        for k0, v0 in dout.items():
+            dout[k0]['ref'] = tuple([
+                None if rr in lr_add else rr
+                for rr in v0['ref']
+            ])
 
     # -------
     # return
@@ -486,7 +497,7 @@ def _check_keys(
                 if not (hasref and hasvect):
                     msg = (
                         f"Provided ref_key[{ii}] not a valid ref or ref vector!\n"
-                        "Provided: {rr}"
+                        f"Provided: {rr}"
                     )
                     raise Exception(msg)
 
