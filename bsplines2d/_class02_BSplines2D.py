@@ -207,6 +207,15 @@ class BSplines2D(Previous):
         )
 
     # -----------------
+    # utils
+    # ------------------
+
+    def get_profiles2d(self):
+        """ Return dict of data relying on 2d bsplines """
+
+        return _compute._get_profiles2d(self)
+
+    # -----------------
     # Integration operators
     # ------------------
 
@@ -279,14 +288,15 @@ class BSplines2D(Previous):
         deriv=None,
         val_out=None,
         log_log=None,
+        # store vs return
         return_params=None,
+        store=None,
+        inplace=None,
+        # debug
         debug=None,
         # # bsplines
         # res=None,
         # imshow=None,
-        # # storing
-        # store=None,
-        # inplace=None,
     ):
         """ Interpolate along a given ref or bspline, in 1d or 2d """
 
@@ -314,7 +324,11 @@ class BSplines2D(Previous):
             deriv=deriv,
             val_out=val_out,
             log_log=log_log,
+            # store vs return
             return_params=return_params,
+            store=store,
+            inplace=inplace,
+            # debug
             debug=debug,
         )
 
@@ -791,43 +805,43 @@ class BSplines2D(Previous):
     # plotting
     # ------------------
 
-    # def plot_as_profile2d(
-        # self,
-        # key=None,
-        # # parameters
-        # res=None,
-        # # plot options
-        # vmin=None,
-        # vmax=None,
-        # cmap=None,
-        # dax=None,
-        # dmargin=None,
-        # fs=None,
-        # dcolorbar=None,
-        # dleg=None,
-        # # interactivity
-        # dinc=None,
-        # connect=None,
-    # ):
+    def plot_as_profile2d(
+        self,
+        key=None,
+        # parameters
+        res=None,
+        # plot options
+        vmin=None,
+        vmax=None,
+        cmap=None,
+        dax=None,
+        dmargin=None,
+        fs=None,
+        dcolorbar=None,
+        dleg=None,
+        # interactivity
+        dinc=None,
+        connect=None,
+    ):
 
-        # return _plot.plot_as_profile2d(
-            # coll=self,
-            # key=key,
-            # # parameters
-            # res=res,
-            # # plot options
-            # vmin=vmin,
-            # vmax=vmax,
-            # cmap=cmap,
-            # dax=dax,
-            # dmargin=dmargin,
-            # fs=fs,
-            # dcolorbar=dcolorbar,
-            # dleg=dleg,
-            # # interactivity
-            # dinc=dinc,
-            # connect=connect,
-        # )
+        return _plot.plot_as_profile2d(
+            coll=self,
+            key=key,
+            # parameters
+            res=res,
+            # plot options
+            vmin=vmin,
+            vmax=vmax,
+            cmap=cmap,
+            dax=dax,
+            dmargin=dmargin,
+            fs=fs,
+            dcolorbar=dcolorbar,
+            dleg=dleg,
+            # interactivity
+            dinc=dinc,
+            connect=connect,
+        )
 
 
 

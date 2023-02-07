@@ -330,6 +330,39 @@ def _mesh2DTri_bsplines(coll=None, keym=None, keybs=None, deg=None):
     return dref, ddata, dobj
 
 
+# ##############################################################
+# ##############################################################
+#                   Utils
+# ##############################################################
+
+
+def _get_profiles2d(coll=None):
+
+    dout = {}
+    wm = coll._which_mesh
+    wbs = coll._which_bsplines
+    for k0, v0 in coll.ddata.items():
+
+        if v0.get(wbs) is None or v0.get(wbs) == '':
+            continue
+
+        lbs = []
+        for k1 in v0[wbs]:
+            km = coll.dobj[wbs][k1][wm]
+            if coll.dobj[wm][km]['submesh'] is None:
+                if coll.dobj[wm][km]['nd'] == '2d':
+                    lbs.append(k1)
+            else:
+                subkm = coll.dobj[wm][km]['submesh']
+                if coll.dobj[wm][subkm]['nd'] == '2d':
+                    lbs.append(k1)
+
+        if len(lbs) == 1:
+            dout[k0] = lbs[0]
+
+    return dout
+
+
 # ##################################################################
 # ##################################################################
 #                           Mesh2D - polar - bsplines

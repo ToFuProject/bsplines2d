@@ -51,26 +51,31 @@ def plot_as_profile2d(
         connect = True
 
     (
-        key, keybs, keym, cmap, dcolorbar, dleg, polar1d,
+        key, keybs, keym, mtype,
+        subbs,
+        cmap, dcolorbar, dleg,
+        connect,
     ) = _check(
         coll=coll,
         key=key,
+        # figure
         cmap=cmap,
         dcolorbar=dcolorbar,
         dleg=dleg,
+        # interactivity
+        connect=connect,
     )
-    mtype = coll.dobj[coll._which_mesh][keym]['type']
-    hastime = coll.get_time(key=key)[0]
 
     # --------------
     #  Prepare data
 
     (
         coll2, dkeys, interp, lcol,
-    ) = _plot_profiles2d_prepare(
+    ) = _prepare(
         coll=coll,
         key=key,
         keybs=keybs,
+        subbs=subbs,
         keym=keym,
         res=res,
         mtype=mtype,
@@ -229,20 +234,51 @@ def plot_as_profile2d(
 def _check(
     coll=None,
     key=None,
+    # figure
     cmap=None,
     dcolorbar=None,
     dleg=None,
+    # interactivity
+    connect=None,
 ):
+
+    # ----------
+    # keys
 
     # key
     dk = coll.get_profiles2d()
     key = ds._generic_check._check_var(
-        key, 'key', types=str, allowed=list(dk.keys())
+        key, 'key',
+        types=str,
+        allowed=list(dk.keys()),
     )
+
+    wm = coll._which_mesh
+    wbs = coll._which_bsplines
+
     keybs = dk[key]
-    refbs = coll.dobj['bsplines'][keybs]['ref']
-    keym = coll.dobj['bsplines'][keybs]['mesh']
-    mtype = coll.dobj[coll._which_mesh][keym]['type']
+    refbs = coll.dobj[wbs][keybs]['ref']
+
+    keym = coll.dobj[wbs][keybs][wm]
+    mtype = coll.dobj[wm][keym]['type']
+
+    submesh = coll.dobj[wm][keym]['submesh']
+    if submesh == '':
+        submesh = None
+
+    if submesh is None:
+        subbs = keybs
+        submtype = mtype
+    else:
+        subbs = coll.dobj[wm][keym]['subbs']
+        subkey = coll.dobj[wm][keym]['subkey']
+        submtype = coll.dobj[wm][keym]['type']
+
+    # ----------
+    # derived
+
+    # ----------
+    # figure
 
     # cmap
     if cmap is None:
@@ -272,19 +308,21 @@ def _check(
         types=(bool, dict),
     )
 
-    # polar1d
-    polar1d = False
-    if mtype  == 'polar':
-        if coll.dobj['bsplines'][keybs]['class'].knotsa is None:
-            polar1d = True
-        elif len(coll.dobj['bsplines'][keybs]['ref']) == 2:
-            polar1d = True
-        else:
-            apbs = coll.dobj['bsplines'][keybs]['class'].apex_per_bs_a
-            if np.sum([aa is not None for aa in apbs]) == 1:
-                polar1d = True
+    # ----------
+    # interactivity
 
-    return key, keybs, keym, cmap, dcolorbar, dleg, polar1d
+    connect = ds._generic_check._check_var(
+        connect, 'connect',
+        types=bool,
+        default=True,
+    )
+
+    return (
+        key, keybs, keym, mtype,
+        subbs, submtype,
+        cmap, dcolorbar, dleg,
+        connect,
+    )
 
 
 # #############################################################################
@@ -293,7 +331,7 @@ def _check(
 # #############################################################################
 
 
-def _plot_profiles2d_prepare(
+def _prepare(
     coll=None,
     key=None,
     keybs=None,
@@ -304,14 +342,28 @@ def _plot_profiles2d_prepare(
     mtype=None,
 ):
 
-    # check input
-    deg = coll.dobj['bsplines'][keybs]['deg']
+    # ------------
+    # misc
+
+    # deg and
+    wbs = coll._which_bsplines
+    deg = coll.dobj[wbs][subbs]['deg']
+    if deg == 0:
+        interp = 'nearest'
+    elif deg == 1:
+        interp = 'bilinear'
+    elif deg >= 2:
+        interp = 'bicubic'
+
+    # -----------------
+    # get plotting mesh
 
     # get dR, dZ
-    # dR, dZ, Rminmax, Zminmax = _plot_bsplines_get_dRdZ(
-        # coll=coll, km=keym, meshtype=mtype,
-    # )
-    dR, dZ, Rminmax, Zminmax = None, None, None
+    dx0, dx1, x0minmax, x1minmax = _plot_bsplines_get_dx01(
+        coll=coll,
+        km=keym,
+        mtype=submtype,
+    )
 
     if res is None:
         res_coef = 0.2
@@ -320,9 +372,6 @@ def _plot_profiles2d_prepare(
     # compute
     coll2 = coll.interpolate_profile2d(
         key=key,
-        R=None,
-        Z=None,
-        coefs=coefs,
         indt=indt,
         res=res,
         details=False,
@@ -352,22 +401,45 @@ def _plot_profiles2d_prepare(
         if not uniform:
             keyZ = None
 
-    if deg == 0:
-        interp = 'nearest'
-    elif deg == 1:
-        interp = 'bilinear'
-    elif deg >= 2:
-        interp = 'bicubic'
 
     # radial of polar
     if mtype == 'polar':
         # lcol
         lcol = ['k', 'r', 'b', 'g', 'm', 'c', 'y']
-
     else:
         lcol = None
 
     return coll2, dkeys, interp, lcol
+
+
+def _plot_bsplines_get_dx01(coll=None, km=None, mtype=None):
+    # Get minimum distances
+
+    wm = coll._which_mesh
+    if mtype == 'rect':
+        knots0, knots1 = coll.dobj[wm][km]['knots']
+        knots0 = coll.ddata[knots0]['data']
+        knots1 = coll.ddata[knots1]['data']
+        dx0 = np.min(np.diff(knots0))
+        dx1 = np.min(np.diff(knots1))
+
+    else mtype == 'tri':
+        indtri = coll.ddata[coll.dobj['mesh'][km]['ind']]['data']
+        kknots = coll.dobj['mesh'][km]['knots']
+        knots0 = coll.ddata[kknots[0]]['data']
+        knots1 = coll.ddata[kknots[1]]['data']
+        x0 = knots0[indtri]
+        x1 = knots1[indtri]
+        dist = np.mean(np.array([
+            np.sqrt((x0[:, 1] - x0[:, 0])**2 + (x1[:, 1] - x1[:, 0])**2),
+            np.sqrt((x0[:, 2] - x0[:, 1])**2 + (x1[:, 2] - x1[:, 1])**2),
+            np.sqrt((x0[:, 2] - x0[:, 0])**2 + (x1[:, 2] - x1[:, 0])**2),
+        ]))
+        dx0, dx1 = dist, dist
+
+    x0minmax = [knots0.min(), knots0.max()]
+    x1minmax = [knots1.min(), knots1.max()]
+    return dx0, dx1, x0minmax, x1minmax
 
 
 def _plot_profile2d_polar_add_radial(

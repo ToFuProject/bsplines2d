@@ -52,7 +52,10 @@ def interpolate(
     deriv=None,
     val_out=None,
     log_log=None,
+    # store vs return
     return_params=None,
+    store=None,
+    inplace=None,
     # debug or unit tests
     debug=None,
 ):
@@ -221,7 +224,8 @@ def interpolate(
         deg, deriv,
         kx0, kx1, x0, x1, refx, dref_com,
         ddata, dout, dsh_other, sli_c, sli_x, sli_v,
-        log_log, grid, ndim, return_params,
+        log_log, grid, ndim,
+        return_params, store, inplace,
     ) = ds._class1_interpolate._check(
         coll=coll,
         # interpolation base
@@ -241,7 +245,10 @@ def interpolate(
         deg=None,
         deriv=deriv,
         log_log=None,
+        # return vs store
         return_params=return_params,
+        store=store,
+        inplace=inplace,
     )
 
     # ----------
@@ -255,105 +262,29 @@ def interpolate(
     # ---------------
     # interpolate
 
-    # loop on keys
-    derr = {}
-    clas = coll.dobj[coll._which_bsplines][keybs]['class']
-    for ii, k0 in enumerate(keys):
-
-        try:
-
-            if details is True:
-                dout[k0]['data'] = clas.ev_details(
-                    x0=x0,
-                    x1=x1,
-                    # options
-                    val_out=val_out,
-                    deriv=deriv,
-                    # indices
-                    indbs_tf=indbs_tf,
-                    # rect-specific
-                    crop=crop,
-                    cropbs=cropbs,
-                )
-
-            else:
-
-                # --------------------
-                # prepare slicing func
-
-                if mtype == 'tri':
-                    shape_c = ddata[k0].shape
-
-                    (
-                        shape_v, axis_v, ind_c, ind_v, shape_o,
-                    ) = _utils_bsplines._get_shapes_ind(
-                        axis=daxis[k0],
-                        shape_c=shape_c,
-                        shape_x=x0.shape,
-                    )
-
-                    sli_c = _utils_bsplines._get_slice_cx(
-                        axis=daxis[k0],
-                        shape=shape_c,
-                        ind_cv=ind_c,
-                        reverse=True,
-                    )
-
-                    sli_v = _utils_bsplines._get_slice_cx(
-                        axis=axis_v,
-                        shape=shape_v,
-                        ind_cv=ind_v,
-                        reverse=True,
-                    )
-                else:
-                    axis_v = None
-
-                sli_o = _utils_bsplines._get_slice_out(
-                    axis=daxis[k0],
-                    shape_c=ddata[k0].shape,
-                )
-
-                # --------------------
-                # actual interpolation
-
-                dout[k0]['data'][...] = clas(
-                    x0=x0,
-                    x1=x1,
-                    # coefs
-                    coefs=ddata[k0],
-                    axis=daxis[k0],
-                    # options
-                    val_out=val_out,
-                    deriv=deriv,
-                    # rect-specific
-                    crop=crop,
-                    cropbs=cropbs,
-                    # slicing
-                    sli_c=sli_c,
-                    sli_x=sli_x,
-                    sli_v=sli_v,
-                    sli_o=sli_o,
-                    indokx0=indokx0,
-                    shape_o=dsh_other[k0],
-                    shape_v=dout[k0]['data'].shape,
-                    dref_com=dref_com.get(k0),
-                    axis_v=axis_v,
-                )
-
-        except Exception as err:
-            raise err
-            derr[k0] = str(err)
-
-    # ----------------------------
-    # raise warning if any failure
-
-    if len(derr) > 0:
-        lstr = [f"\t- '{k0}': {v0}" for k0, v0 in derr.items()]
-        msg = (
-            "The following keys could not be interpolated:\n"
-            + "\n".join(lstr)
-        )
-        warnings.warn(msg)
+    _interp(
+        coll=coll,
+        keybs=keybs,
+        keys=keys,
+        x0=x0,
+        x1=x1,
+        val_out=val_out,
+        deriv=deriv,
+        indbs_tf=indbs_tf,
+        crop=crop,
+        cropbs=cropbs,
+        details=details,
+        dout=dout,
+        mtype=mtype,
+        ddata=ddata,
+        daxis=daxis,
+        indokx0=indokx0,
+        sli_c=sli_c,
+        sli_x=sli_x,
+        sli_v=sli_v,
+        dsh_other=dsh_other,
+        dref_com=dref_com,
+    )
 
     # ----------------------------
     # clean-up temporary storage
@@ -376,6 +307,165 @@ def interpolate(
                 None if rr in lr_add else rr
                 for rr in v0['ref']
             ])
+
+    # ----------
+    # store
+
+    if store is True:
+
+        _store()
+
+        # Ru = np.unique(R)
+        # Zu = np.unique(Z)
+        # nR, nZ = Ru.size, Zu.size
+
+        # knR, knZ = f'{key}-nR', f'{key}-nZ'
+        # kR, kZ = f'{key}-R', f'{key}-Z'
+
+        # if inplace is True:
+            # coll2 = coll
+        # else:
+            # coll2 = ds.DataStock()
+
+        # # add ref nR, nZ
+        # coll2.add_ref(key=knR, size=nR)
+        # coll2.add_ref(key=knZ, size=nZ)
+
+        # # add data Ru, Zu
+        # coll2.add_data(
+            # key=kR,
+            # data=Ru,
+            # ref=knR,
+            # dim='distance',
+            # name='R',
+            # units='m',
+        # )
+        # coll2.add_data(
+            # key=kZ,
+            # data=Zu,
+            # ref=knZ,
+            # dim='distance',
+            # name='Z',
+            # units='m',
+        # )
+
+        # # ref
+        # if hastime or radius_vs_time:
+            # if ct:
+                # coll2.add_ref(key=reft, size=t.size)
+                # coll2.add_data(
+                    # key=f'{key}-t',
+                    # data=t,
+                    # ref=reft,
+                    # dim='time',
+                    # units='s',
+                # )
+            # else:
+                # if reft not in coll2.dref.keys():
+                    # coll2.add_ref(key=reft, size=coll.dref[reft]['size'])
+                # if keyt is not None and keyt not in coll2.ddata.keys():
+                    # coll2.add_data(
+                        # key=keyt,
+                        # data=coll.ddata[keyt]['data'],
+                        # dim='time',
+                    # )
+
+            # ref = (reft, knR, knZ)
+        # else:
+            # ref = (knR, knZ)
+
+        # coll2.add_data(
+            # data=val,
+            # key=f'{key}-map',
+            # ref=ref,
+            # dim=coll.ddata[key]['dim'],
+            # quant=coll.ddata[key]['quant'],
+            # name=coll.ddata[key]['name'],
+            # units=coll.ddata[key]['units'],
+        # )
+
+    # else:
+
+        # ref = []
+        # c0 = (
+            # reft not in [None, False]
+            # and (hastime or radius_vs_time)
+            # and not (
+                # meshtype == 'polar'
+                # and R is None
+                # and coefs is None
+                # and radius_vs_time is False
+            # )
+        # )
+        # if c0:
+            # ref.append(reft)
+
+        # if meshtype in ['rect', 'tri']:
+            # for ii in range(R.ndim):
+                # ref.append(None)
+            # if grid is True:
+                # for ii in range(Z.ndim):
+                    # ref.append(None)
+        # else:
+            # for ii in range(radius.ndim):
+                # if radius_vs_time and ii == 0:
+                    # continue
+                # ref.append(None)
+            # if grid is True and angle is not None:
+                # for ii in range(angle.ndim):
+                    # ref.append(None)
+
+        # if details is True:
+            # refbs = coll.dobj['bsplines'][keybs]['ref-bs'][0]
+            # if crop is True:
+                # refbs = f"{refbs}-crop"
+            # ref.append(refbs)
+        # ref = tuple(ref)
+
+        # if ref[0] == 'emiss-nt':
+            # import pdb; pdb.set_trace()     # DB
+
+        # if len(ref) != val.ndim:
+            # msg = (
+                # "Mismatching ref vs val.shape:\n"
+                # f"\t- key = {key}\n"
+                # f"\t- keybs = {keybs}\n"
+                # f"\t- val.shape = {val.shape}\n"
+                # f"\t- ref = {ref}\n"
+                # f"\t- reft = {reft}\n"
+                # f"\t- hastime = {hastime}\n"
+                # f"\t- radius_vs_time = {radius_vs_time}\n"
+                # f"\t- details = {details}\n"
+                # f"\t- indbs_tf = {indbs_tf}\n"
+                # f"\t- key = {key}\n"
+                # f"\t- meshtype = {meshtype}\n"
+                # f"\t- grid = {grid}\n"
+            # )
+            # if coefs is not None:
+                # msg += f"\t- coefs.shape = {coefs.shape}\n"
+            # if R is not None:
+                # msg += (
+                    # f"\t- R.shape = {R.shape}\n"
+                    # f"\t- Z.shape = {Z.shape}\n"
+                # )
+            # if meshtype == 'polar':
+                # msg += f"\t- radius.shape = {radius.shape}\n"
+                # if angle is not None:
+                    # msg += f"\t- angle.shape = {angle.shape}\n"
+            # raise Exception(msg)
+
+    # # ------
+    # # return
+
+    # if store and inplace is False:
+        # return coll2
+    # else:
+        # if return_params is True:
+            # return val, t, ref, dparams
+        # else:
+            # return val, t, ref
+
+
 
     # -------
     # return
@@ -882,6 +972,139 @@ def _prepare_bsplines(
     # indbs
 
     return keybs, keym, mtype, ref_key
+
+
+# #############################################################################
+# #############################################################################
+#                          core interpolation
+# #############################################################################
+
+
+def _interp(
+    coll=None,
+    keybs=None,
+    keys=None,
+    x0=None,
+    x1=None,
+    val_out=None,
+    deriv=None,
+    indbs_tf=None,
+    crop=None,
+    cropbs=None,
+    details=None,
+    dout=None,
+    mtype=None,
+    ddata=None,
+    daxis=None,
+    indokx0=None,
+    sli_c=None,
+    sli_x=None,
+    sli_v=None,
+    dsh_other=None,
+    dref_com=None,
+):
+
+    # loop on keys
+    derr = {}
+    clas = coll.dobj[coll._which_bsplines][keybs]['class']
+    for ii, k0 in enumerate(keys):
+
+        try:
+
+            if details is True:
+                dout[k0]['data'] = clas.ev_details(
+                    x0=x0,
+                    x1=x1,
+                    # options
+                    val_out=val_out,
+                    deriv=deriv,
+                    # indices
+                    indbs_tf=indbs_tf,
+                    # rect-specific
+                    crop=crop,
+                    cropbs=cropbs,
+                )
+
+            else:
+
+                # --------------------
+                # prepare slicing func
+
+                if mtype == 'tri':
+                    shape_c = ddata[k0].shape
+
+                    (
+                        shape_v, axis_v, ind_c, ind_v, shape_o,
+                    ) = _utils_bsplines._get_shapes_ind(
+                        axis=daxis[k0],
+                        shape_c=shape_c,
+                        shape_x=x0.shape,
+                    )
+
+                    sli_c = _utils_bsplines._get_slice_cx(
+                        axis=daxis[k0],
+                        shape=shape_c,
+                        ind_cv=ind_c,
+                        reverse=True,
+                    )
+
+                    sli_v = _utils_bsplines._get_slice_cx(
+                        axis=axis_v,
+                        shape=shape_v,
+                        ind_cv=ind_v,
+                        reverse=True,
+                    )
+                else:
+                    axis_v = None
+
+                sli_o = _utils_bsplines._get_slice_out(
+                    axis=daxis[k0],
+                    shape_c=ddata[k0].shape,
+                )
+
+                # --------------------
+                # actual interpolation
+
+                dout[k0]['data'][...] = clas(
+                    x0=x0,
+                    x1=x1,
+                    # coefs
+                    coefs=ddata[k0],
+                    axis=daxis[k0],
+                    # options
+                    val_out=val_out,
+                    deriv=deriv,
+                    # rect-specific
+                    crop=crop,
+                    cropbs=cropbs,
+                    # slicing
+                    sli_c=sli_c,
+                    sli_x=sli_x,
+                    sli_v=sli_v,
+                    sli_o=sli_o,
+                    indokx0=indokx0,
+                    shape_o=dsh_other[k0],
+                    shape_v=dout[k0]['data'].shape,
+                    dref_com=dref_com.get(k0),
+                    axis_v=axis_v,
+                )
+
+        except Exception as err:
+            raise err
+            derr[k0] = str(err)
+
+    # ----------------------------
+    # raise warning if any failure
+
+    if len(derr) > 0:
+        lstr = [f"\t- '{k0}': {v0}" for k0, v0 in derr.items()]
+        msg = (
+            "The following keys could not be interpolated:\n"
+            + "\n".join(lstr)
+        )
+        warnings.warn(msg)
+
+    return
 
 
 # #############################################################################
