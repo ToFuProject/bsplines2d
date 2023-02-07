@@ -72,8 +72,6 @@ def plot_as_profile2d(
         key=key,
         keybs=keybs,
         keym=keym,
-        coefs=coefs,
-        indt=indt,
         res=res,
         mtype=mtype,
     )
@@ -310,9 +308,10 @@ def _plot_profiles2d_prepare(
     deg = coll.dobj['bsplines'][keybs]['deg']
 
     # get dR, dZ
-    dR, dZ, Rminmax, Zminmax = _plot_bsplines_get_dRdZ(
-        coll=coll, km=keym, meshtype=mtype,
-    )
+    # dR, dZ, Rminmax, Zminmax = _plot_bsplines_get_dRdZ(
+        # coll=coll, km=keym, meshtype=mtype,
+    # )
+    dR, dZ, Rminmax, Zminmax = None, None, None
 
     if res is None:
         res_coef = 0.2

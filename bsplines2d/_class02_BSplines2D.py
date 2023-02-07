@@ -16,6 +16,7 @@ from . import _class02_compute as _compute
 from . import _class01_rect_cropping as _cropping
 from . import _class02_interpolate as _interpolate
 from . import _class02_operators as _operators
+from . import _class02_plot as _plot
 
 
 __all__ = ['BSplines2D']

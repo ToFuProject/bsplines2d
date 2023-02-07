@@ -78,6 +78,9 @@ def binning(
             keys=keys,
             ref_key=ref_key,
             bins=bins,
+            dunits=dunits,
+            units_ref=units_ref,
+            daxis=daxis,
         )
 
     # ------------
@@ -185,6 +188,9 @@ def _binning(
     keys=None,
     ref_key=None,
     bins=None,
+    dunits=None,
+    units_ref=None,
+    daxis=None,
 ):
 
     # ---------

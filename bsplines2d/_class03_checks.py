@@ -66,7 +66,7 @@ def check(
         if not (
             v0['shape'] == (nb,)
             and key_ref in coll.dref.keys()
-            and v0['ref'] == (ref_key,)
+            and v0['ref'] == (key_ref,)
             and v0['monot'] == (True,)
         )
     ]
