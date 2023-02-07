@@ -360,12 +360,12 @@ def interpolate(
 
     if lr_add is not None:
         for rr in lr_add:
-            coll.remove_ref(rr)
+            coll.remove_ref(rr, propagate=False)
 
     if ld_add is not None:
         for dd in ld_add:
             if dd in coll.ddata.keys():
-                coll.remove_data(dd)
+                coll.remove_data(dd, propagate=False)
 
     # ----------
     # adjust ref
@@ -594,12 +594,6 @@ def _check_keys(
             for k0 in keys
         }
 
-        # dunits
-        dunits = {
-            k0: coll.ddata[coll.dobj[wbs][ref_key]['apex'][0]]['units']
-            for k0 in keys
-        }
-
         # units_ref
         wbs = coll._which_bsplines
         units_ref = coll.ddata[coll.dobj[wbs][ref_key]['apex'][0]]['units']
@@ -624,11 +618,11 @@ def _check_keys(
             for k0 in keys
         }
 
-        # dunits
-        dunits = {k0: coll.ddata[k0]['units'] for k0 in keys}
-
         # units_ref
         units_ref = [coll.ddata[rr]['units'] for rr in ref_key]
+
+    # dunits
+    dunits = {k0: coll.ddata[k0]['units'] for k0 in keys}
 
     return isbs, keys, ref_key, daxis, dunits, units_ref
 

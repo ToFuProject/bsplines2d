@@ -15,7 +15,6 @@ from . import _class02_checks as _checks
 from . import _class02_compute as _compute
 from . import _class01_rect_cropping as _cropping
 from . import _class02_interpolate as _interpolate
-from . import _class02_binning as _binning
 from . import _class02_operators as _operators
 
 
@@ -249,25 +248,6 @@ class BSplines2D(Previous):
             centered=centered,
             # to return gradR, gradZ, for D1N2 deg 0, for tomotok
             returnas_element=returnas_element,
-        )
-
-    # -----------------
-    # binning tools
-    # ------------------
-
-    def binning(
-        self,
-        keys=None,
-        ref_key=None,
-        bins=None,
-    ):
-        """ Return binned data along the desired axis """
-
-        return _binning.binning(
-            coll=self,
-            keys=keys,
-            ref_key=ref_key,
-            bins=bins,
         )
 
     # -----------------
@@ -809,6 +789,47 @@ class BSplines2D(Previous):
     # -----------------
     # plotting
     # ------------------
+
+    def plot_as_profile2d(
+        self,
+        key=None,
+        # parameters
+        res=None,
+        # plot options
+        vmin=None,
+        vmax=None,
+        cmap=None,
+        dax=None,
+        dmargin=None,
+        fs=None,
+        dcolorbar=None,
+        dleg=None,
+        # interactivity
+        dinc=None,
+        connect=None,
+    ):
+
+        return _plot.plot_as_profile2d(
+            coll=self,
+            key=key,
+            # parameters
+            res=res,
+            # plot options
+            vmin=vmin,
+            vmax=vmax,
+            cmap=cmap,
+            dax=dax,
+            dmargin=dmargin,
+            fs=fs,
+            dcolorbar=dcolorbar,
+            dleg=dleg,
+            # interactivity
+            dinc=dinc,
+            connect=connect,
+        )
+
+
+
 
     # def plot_bsplines(
         # self,

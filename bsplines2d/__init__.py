@@ -18,5 +18,5 @@ sys.path.pop(0)
 # #####################
 
 
-from ._class02_BSplines2D import BSplines2D
+from ._class03_Bins import Bins as BSplines2D
 from . import tests
