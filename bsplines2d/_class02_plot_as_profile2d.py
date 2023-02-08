@@ -52,7 +52,7 @@ def plot_as_profile2d(
 
     (
         key, keybs, keym, mtype,
-        subbs,
+        subbs, submtype,
         cmap, dcolorbar, dleg,
         connect,
     ) = _check(
@@ -79,6 +79,9 @@ def plot_as_profile2d(
         keym=keym,
         res=res,
         mtype=mtype,
+        # submesh
+        subbs=subbs,
+        submtype=submtype,
     )
 
     # ---------------
@@ -340,12 +343,16 @@ def _prepare(
     indt=None,
     res=None,
     mtype=None,
+    # submesh
+    subbs=None,
+    submtype=None,
 ):
 
     # ------------
     # misc
 
     # deg and
+    wm = coll._which_mesh
     wbs = coll._which_bsplines
     deg = coll.dobj[wbs][subbs]['deg']
     if deg == 0:
@@ -361,8 +368,7 @@ def _prepare(
     # get dR, dZ
     dx0, dx1, x0minmax, x1minmax = _plot_bsplines_get_dx01(
         coll=coll,
-        km=keym,
-        mtype=submtype,
+        km=coll.dobj[wbs][subbs][wm],
     )
 
     if res is None:
@@ -380,6 +386,7 @@ def _prepare(
         store=True,
         inplace=False,
     )
+
 
     keymap = [k0 for k0, v0 in coll2.ddata.items() if v0['data'].ndim > 1][0]
     ndim = coll2.ddata[keymap]['data'].ndim
@@ -411,10 +418,11 @@ def _prepare(
     return coll2, dkeys, interp, lcol
 
 
-def _plot_bsplines_get_dx01(coll=None, km=None, mtype=None):
+def _plot_bsplines_get_dx01(coll=None, km=None):
     # Get minimum distances
 
     wm = coll._which_mesh
+    mtype = coll.dobj[wm][km]
     if mtype == 'rect':
         knots0, knots1 = coll.dobj[wm][km]['knots']
         knots0 = coll.ddata[knots0]['data']

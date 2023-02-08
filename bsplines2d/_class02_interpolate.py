@@ -37,6 +37,8 @@ def interpolate(
     x0=None,
     x1=None,
     grid=None,
+    res=None,
+    mode=None,
     submesh=None,
     # domain limitation
     domain=None,
@@ -134,12 +136,38 @@ def interpolate(
             ref_com, domain = None, None
 
         # ---------------
+        # no x0 => mesh
+
+        wm = coll._which_mesh
+        if x0 is None:
+            if submesh is True:
+                km = coll.dobj[wm][keym]['submesh']
+            else:
+                km = keym
+
+            out = coll.get_sample_mesh(
+                key=km,
+                res=res,
+                grid=True,
+                mode=mode,
+                x0=None,
+                x1=None,
+                Dx0=None,
+                Dx1=None,
+                imshow=False,
+            )
+
+            if coll.dobj[wm][km]['nd'] == '1d':
+                x0 = out
+            else:
+                x0, x1 = out
+
+        # ---------------
         # submesh
 
         if submesh is True:
 
             # submesh
-            wm = coll._which_mesh
             kd0 = coll.dobj[wm][keym]['subkey']
             kbs0 = coll.dobj[wm][keym]['subbs']
 

@@ -287,6 +287,8 @@ class BSplines2D(Previous):
         x0=None,
         x1=None,
         grid=None,
+        res=None,
+        mode=None,
         submesh=None,
         # domain limitation
         domain=None,
@@ -323,6 +325,8 @@ class BSplines2D(Previous):
             x0=x0,
             x1=x1,
             grid=grid,
+            res=res,
+            mode=mode,
             submesh=submesh,
             # domain limitation
             domain=domain,
