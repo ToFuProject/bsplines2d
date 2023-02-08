@@ -206,7 +206,7 @@ def interpolate(
         deg, deriv,
         kx0, kx1, x0, x1, refx, dref_com,
         ddata, dout, dsh_other, sli_c, sli_x, sli_v,
-        log_log, grid, ndim,
+        log_log, grid, ndim, xunique,
         returnas, return_params, store, inplace,
     ) = ds._class1_interpolate._check(
         coll=coll,
@@ -285,6 +285,12 @@ def interpolate(
             sli_c=sli_c,
             sli_v=sli_v,
         )
+
+    # ------------------------------
+    # adjust data and ref if xunique
+
+    if xunique:
+        ds._class1_interpolate._xunique(dout)
 
     # ----------
     # store
