@@ -215,6 +215,20 @@ class BSplines2D(Previous):
 
         return _compute._get_profiles2d(self)
 
+    def extract(self, keys=None, vectors=None):
+        """ Extract some selected data and return as new instance
+
+        Includes:
+            - all desired data keys
+            - all relevant ref
+            - all associated monotonous vectors (optional)
+            - all relevant bsplines and meshes
+
+        """
+
+        coll2 = super().extract(keys=keys, vectors=vectors)
+        return _compute.extract(self, coll2=coll2, keys=keys, vectors=vectors)
+
     # -----------------
     # Integration operators
     # ------------------
