@@ -371,12 +371,18 @@ def _get_profiles2d(coll=None):
 # ##################################################################
 
 
-def extract(coll=None, coll2=None, keys=None, vectors=None):
+def extract(coll=None, coll2=None, vectors=None):
+
+    wm = coll._which_mesh
+    wbs = coll._which_bsplines
 
     # -------------
     # find bsplines and meshes
 
-    lbs, lmesh, ldata = _extract_bsplines_mesh(coll=coll, coll2=coll2)
+    lbs, lmesh, ldata = _extract_bsplines_mesh(
+        coll=coll,
+        coll2=coll2,
+    )
 
     # ---------------
     # trivial
@@ -387,8 +393,6 @@ def extract(coll=None, coll2=None, keys=None, vectors=None):
     # ---------------
     # extract data
 
-    wm = coll._which_mesh
-    wbs = coll._which_bsplines
     dmesh = _extract_refdata_from_obj(coll=coll, which=wm, keys=lmesh)
     dbs = _extract_refdata_from_obj(coll=coll, which=wbs, keys=lbs)
 
@@ -405,14 +409,6 @@ def extract(coll=None, coll2=None, keys=None, vectors=None):
         coll=coll,
         keys=list(set(kmesh + kbs + ldata)),
         vectors=vectors
-    )
-
-    # add to instance
-    coll2 = ds._class1_compute._extract_instance(
-        coll=coll,
-        lref=lref,
-        ldata=ldata,
-        coll2=coll2,
     )
 
     # ---------------
@@ -433,6 +429,16 @@ def extract(coll=None, coll2=None, keys=None, vectors=None):
         for k0 in lbs
     }
 
+    # ----------------
+    # add ref and data
+
+    coll2 = ds._class1_compute._extract_instance(
+        coll=coll,
+        lref=lref,
+        ldata=ldata,
+        coll2=coll2,
+    )
+
     return coll2
 
 
@@ -441,11 +447,24 @@ def _extract_bsplines_mesh(coll=None, coll2=None):
     # -------------
     # find bsplines
 
+    # bs from data['bsplines']
     wbs = coll._which_bsplines
     lbs = list(set(itt.chain.from_iterable([
         v0[wbs] for v0 in coll2.ddata.values()
         if isinstance(v0.get(wbs), tuple)
     ])))
+
+    # bs from ref
+    lbs2 = []
+    for k0, v0 in coll.dobj[wbs].items():
+        for k1 in coll2.dref.keys():
+            if k1 in v0['ref'] + v0['ref-bs']:
+                lbs2.append(k0)
+        for k1 in coll2.ddata.keys():
+            if k1 in v0['apex']:
+                lbs2.append(k0)
+
+    lbs = list(set(lbs + lbs2))
 
     # -----------
     # find meshes

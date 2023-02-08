@@ -53,6 +53,7 @@ def interpolate(
     val_out=None,
     log_log=None,
     # store vs return
+    returnas=None,
     return_params=None,
     store=None,
     inplace=None,
@@ -93,128 +94,109 @@ def interpolate(
     )
 
     # -----------
-    # trivial
+    # isbs
 
-    if not isbs:
-        return ds._class1_interpolate.interpolate(
+    if isbs:
+
+        # -----------------
+        # prepare bsplines
+
+        keybs, keym, mtype, ref_key = _prepare_bsplines(
             coll=coll,
-            # interpolation base
             keys=keys,
             ref_key=ref_key,
-            # interpolation pts
-            x0=x0,
-            x1=x1,
-            grid=grid,
-            # domain limitation
-            domain=domain,
-            # common ref
-            ref_com=ref_com,
-            # parameters
-            deg=deg,
-            deriv=deriv,
-            log_log=log_log,
-            return_params=return_params,
         )
 
-    # -----------------
-    # prepare bsplines
+        if mtype == 'tri' and ref_com is not None:
+            msg = (
+                "Arg ref_com cannot be used with a triangular mesh!"
+            )
+            raise NotImplementedError(msg)
 
-    keybs, keym, mtype, ref_key = _prepare_bsplines(
-        coll=coll,
-        keys=keys,
-        ref_key=ref_key,
-    )
+        # ------------------------------
+        # check bsplines-specific params
 
-    if mtype == 'tri' and ref_com is not None:
-        msg = (
-            "Arg ref_com cannot be used with a triangular mesh!"
-        )
-        raise NotImplementedError(msg)
-
-    # ------------------------------
-    # check bsplines-specific params
-
-    (
-        details, val_out, crop, cropbs, indbs_tf, nbs, submesh,
-    ) = _check_params_bsplines(
-        coll=coll,
-        details=details,
-        val_out=val_out,
-        crop=crop,
-        mtype=mtype,
-        keybs=keybs,
-        keym=keym,
-        indbs_tf=indbs_tf,
-        submesh=submesh,
-    )
-
-    if details is True:
-        ref_com, domain = None, None
-
-    # ---------------
-    # submesh
-
-    if submesh is True:
-
-        # submesh
-        wm = coll._which_mesh
-        kd0 = coll.dobj[wm][keym]['subkey']
-        kbs0 = coll.dobj[wm][keym]['subbs']
-
-        # interpolate
-        dout_temp, dparams_temp = coll.interpolate(
-            # interpolation base
-            keys=kd0,
-            ref_key=kbs0,
-            # interpolation pts
-            x0=x0,
-            x1=x1,
-            grid=grid,
-            submesh=False,
-            # domain
-            domain=domain,
-            # common ref
-            ref_com=None,
-            # bsplines-specific
-            details=False,
-            indbs_tf=None,
-            # rect-specific
-            crop=crop,
-            return_params=True,
-        )
-
-        # ------------------------------------------
-        # handle ref_com, add ref and data if needed
-
-        ref_com, lr_add, ld_add = _submesh_ref_com(
+        (
+            details, val_out, crop, cropbs, indbs_tf, nbs, submesh,
+        ) = _check_params_bsplines(
             coll=coll,
-            kd0=kd0,
-            keys=keys,
-            ref_com=ref_com,
-            # interp resut
-            dout_temp=dout_temp,
-            # coordinates
-            x0=x0,
-            x1=x1,
+            details=details,
+            val_out=val_out,
+            crop=crop,
+            mtype=mtype,
+            keybs=keybs,
+            keym=keym,
+            indbs_tf=indbs_tf,
+            submesh=submesh,
         )
 
-        # --------
-        # substitue x0, x1
+        if details is True:
+            ref_com, domain = None, None
 
-        if ref_com is None:
-            x0 = dout_temp[kd0[0]]['data']
-            if len(kd0) > 1:
-                x1 = dout_temp[kd0[1]]['data']
+        # ---------------
+        # submesh
+
+        if submesh is True:
+
+            # submesh
+            wm = coll._which_mesh
+            kd0 = coll.dobj[wm][keym]['subkey']
+            kbs0 = coll.dobj[wm][keym]['subbs']
+
+            # interpolate
+            dout_temp, dparams_temp = coll.interpolate(
+                # interpolation base
+                keys=kd0,
+                ref_key=kbs0,
+                # interpolation pts
+                x0=x0,
+                x1=x1,
+                grid=grid,
+                submesh=False,
+                # domain
+                domain=domain,
+                # common ref
+                ref_com=None,
+                # bsplines-specific
+                details=False,
+                indbs_tf=None,
+                # rect-specific
+                crop=crop,
+                return_params=True,
+            )
+
+            # ------------------------------------------
+            # handle ref_com, add ref and data if needed
+
+            ref_com, lr_add, ld_add = _submesh_ref_com(
+                coll=coll,
+                kd0=kd0,
+                keys=keys,
+                ref_com=ref_com,
+                # interp resut
+                dout_temp=dout_temp,
+                # coordinates
+                x0=x0,
+                x1=x1,
+            )
+
+            # --------
+            # substitue x0, x1
+
+            if ref_com is None:
+                x0 = dout_temp[kd0[0]]['data']
+                if len(kd0) > 1:
+                    x1 = dout_temp[kd0[1]]['data']
+            else:
+                x0 = dout_temp[kd0[0]]['key']
+                if len(kd0) > 1:
+                    x1 = dout_temp[kd0[1]]['key']
+
+            if len(kd0) == 1:
+                x1 = None
+
         else:
-            x0 = dout_temp[kd0[0]]['key']
-            if len(kd0) > 1:
-                x1 = dout_temp[kd0[1]]['key']
-
-        if len(kd0) == 1:
-            x1 = None
-
-    else:
-        lr_add, ld_add = None, None
+            lr_add, ld_add = None, None
 
     # ---------------
     # prepare x0, x1
@@ -225,7 +207,7 @@ def interpolate(
         kx0, kx1, x0, x1, refx, dref_com,
         ddata, dout, dsh_other, sli_c, sli_x, sli_v,
         log_log, grid, ndim,
-        return_params, store, inplace,
+        returnas, return_params, store, inplace,
     ) = ds._class1_interpolate._check(
         coll=coll,
         # interpolation base
@@ -246,259 +228,116 @@ def interpolate(
         deriv=deriv,
         log_log=None,
         # return vs store
+        returnas=returnas,
         return_params=return_params,
         store=store,
         inplace=inplace,
     )
 
-    # ----------
-    # prepare
-
-    # indokx
-    indokx0 = np.isfinite(x0)
-    if x1 is not None:
-        indokx0 &= np.isfinite(x1)
-
     # ---------------
     # interpolate
 
-    _interp(
-        coll=coll,
-        keybs=keybs,
-        keys=keys,
-        x0=x0,
-        x1=x1,
-        val_out=val_out,
-        deriv=deriv,
-        indbs_tf=indbs_tf,
-        crop=crop,
-        cropbs=cropbs,
-        details=details,
-        dout=dout,
-        mtype=mtype,
-        ddata=ddata,
-        daxis=daxis,
-        indokx0=indokx0,
-        sli_c=sli_c,
-        sli_x=sli_x,
-        sli_v=sli_v,
-        dsh_other=dsh_other,
-        dref_com=dref_com,
-    )
+    if isbs:
 
-    # ----------------------------
-    # clean-up temporary storage
+        _interp(
+            coll=coll,
+            keybs=keybs,
+            keys=keys,
+            x0=x0,
+            x1=x1,
+            val_out=val_out,
+            deriv=deriv,
+            indbs_tf=indbs_tf,
+            crop=crop,
+            cropbs=cropbs,
+            details=details,
+            dout=dout,
+            mtype=mtype,
+            ddata=ddata,
+            daxis=daxis,
+            sli_c=sli_c,
+            sli_x=sli_x,
+            sli_v=sli_v,
+            dsh_other=dsh_other,
+            dref_com=dref_com,
+            lr_add=lr_add,
+            ld_add=ld_add,
+        )
 
-    if lr_add is not None:
-        for rr in lr_add:
-            coll.remove_ref(rr, propagate=False)
+    else:
 
-    if ld_add is not None:
-        for dd in ld_add:
-            if dd in coll.ddata.keys():
-                coll.remove_data(dd, propagate=False)
-
-    # ----------
-    # adjust ref
-
-    if lr_add is not None:
-        for k0, v0 in dout.items():
-            dout[k0]['ref'] = tuple([
-                None if rr in lr_add else rr
-                for rr in v0['ref']
-            ])
+        ds._class1_interpolate._interp(
+            coll=coll,
+            keys=keys,
+            ref_key=ref_key,
+            x0=x0,
+            x1=x1,
+            ndim=ndim,
+            log_log=log_log,
+            dout=dout,
+            ddata=ddata,
+            dsh_other=dsh_other,
+            daxis=daxis,
+            deg=deg,
+            deriv=deriv,
+            dref_com=dref_com,
+            sli_x=sli_x,
+            sli_c=sli_c,
+            sli_v=sli_v,
+        )
 
     # ----------
     # store
 
     if store is True:
 
-        _store()
-
-        # Ru = np.unique(R)
-        # Zu = np.unique(Z)
-        # nR, nZ = Ru.size, Zu.size
-
-        # knR, knZ = f'{key}-nR', f'{key}-nZ'
-        # kR, kZ = f'{key}-R', f'{key}-Z'
-
-        # if inplace is True:
-            # coll2 = coll
-        # else:
-            # coll2 = ds.DataStock()
-
-        # # add ref nR, nZ
-        # coll2.add_ref(key=knR, size=nR)
-        # coll2.add_ref(key=knZ, size=nZ)
-
-        # # add data Ru, Zu
-        # coll2.add_data(
-            # key=kR,
-            # data=Ru,
-            # ref=knR,
-            # dim='distance',
-            # name='R',
-            # units='m',
-        # )
-        # coll2.add_data(
-            # key=kZ,
-            # data=Zu,
-            # ref=knZ,
-            # dim='distance',
-            # name='Z',
-            # units='m',
-        # )
-
-        # # ref
-        # if hastime or radius_vs_time:
-            # if ct:
-                # coll2.add_ref(key=reft, size=t.size)
-                # coll2.add_data(
-                    # key=f'{key}-t',
-                    # data=t,
-                    # ref=reft,
-                    # dim='time',
-                    # units='s',
-                # )
-            # else:
-                # if reft not in coll2.dref.keys():
-                    # coll2.add_ref(key=reft, size=coll.dref[reft]['size'])
-                # if keyt is not None and keyt not in coll2.ddata.keys():
-                    # coll2.add_data(
-                        # key=keyt,
-                        # data=coll.ddata[keyt]['data'],
-                        # dim='time',
-                    # )
-
-            # ref = (reft, knR, knZ)
-        # else:
-            # ref = (knR, knZ)
-
-        # coll2.add_data(
-            # data=val,
-            # key=f'{key}-map',
-            # ref=ref,
-            # dim=coll.ddata[key]['dim'],
-            # quant=coll.ddata[key]['quant'],
-            # name=coll.ddata[key]['name'],
-            # units=coll.ddata[key]['units'],
-        # )
-
-    # else:
-
-        # ref = []
-        # c0 = (
-            # reft not in [None, False]
-            # and (hastime or radius_vs_time)
-            # and not (
-                # meshtype == 'polar'
-                # and R is None
-                # and coefs is None
-                # and radius_vs_time is False
-            # )
-        # )
-        # if c0:
-            # ref.append(reft)
-
-        # if meshtype in ['rect', 'tri']:
-            # for ii in range(R.ndim):
-                # ref.append(None)
-            # if grid is True:
-                # for ii in range(Z.ndim):
-                    # ref.append(None)
-        # else:
-            # for ii in range(radius.ndim):
-                # if radius_vs_time and ii == 0:
-                    # continue
-                # ref.append(None)
-            # if grid is True and angle is not None:
-                # for ii in range(angle.ndim):
-                    # ref.append(None)
-
-        # if details is True:
-            # refbs = coll.dobj['bsplines'][keybs]['ref-bs'][0]
-            # if crop is True:
-                # refbs = f"{refbs}-crop"
-            # ref.append(refbs)
-        # ref = tuple(ref)
-
-        # if ref[0] == 'emiss-nt':
-            # import pdb; pdb.set_trace()     # DB
-
-        # if len(ref) != val.ndim:
-            # msg = (
-                # "Mismatching ref vs val.shape:\n"
-                # f"\t- key = {key}\n"
-                # f"\t- keybs = {keybs}\n"
-                # f"\t- val.shape = {val.shape}\n"
-                # f"\t- ref = {ref}\n"
-                # f"\t- reft = {reft}\n"
-                # f"\t- hastime = {hastime}\n"
-                # f"\t- radius_vs_time = {radius_vs_time}\n"
-                # f"\t- details = {details}\n"
-                # f"\t- indbs_tf = {indbs_tf}\n"
-                # f"\t- key = {key}\n"
-                # f"\t- meshtype = {meshtype}\n"
-                # f"\t- grid = {grid}\n"
-            # )
-            # if coefs is not None:
-                # msg += f"\t- coefs.shape = {coefs.shape}\n"
-            # if R is not None:
-                # msg += (
-                    # f"\t- R.shape = {R.shape}\n"
-                    # f"\t- Z.shape = {Z.shape}\n"
-                # )
-            # if meshtype == 'polar':
-                # msg += f"\t- radius.shape = {radius.shape}\n"
-                # if angle is not None:
-                    # msg += f"\t- angle.shape = {angle.shape}\n"
-            # raise Exception(msg)
-
-    # # ------
-    # # return
-
-    # if store and inplace is False:
-        # return coll2
-    # else:
-        # if return_params is True:
-            # return val, t, ref, dparams
-        # else:
-            # return val, t, ref
-
-
+        coll2 = ds._class1_interpolate._store(
+            coll=coll,
+            dout=dout,
+            inplace=inplace,
+            kx0=kx0,
+            kx1=kx1,
+            refx=refx,
+            ndim=ndim,
+        )
 
     # -------
     # return
 
-    if return_params is True:
-        dparam = {
-            'keys': keys,
-            'keybs': keybs,
-            'ref_key': ref_key,
-            'deg': deg,
-            'deriv': deriv,
-            'log_log': log_log,
-            'x0': x0,
-            'x1': x1,
-            'kx0': kx0,
-            'kx1': kx1,
-            'grid': grid,
-            'ref_com': ref_com,
-            'details': details,
-            'domain': domain,
-            'crop': crop,
-            'cropbs': cropbs,
-            'indbs_tf': indbs_tf,
-        }
+    if returnas is object:
+        return coll2
 
-        # debug
-        if debug is True:
-            dparam['x0.shape'] = x0.shape
-            dparam['axis'] = daxis[keys[0]]
+    elif returnas is dict:
 
-        return dout, dparam
-    else:
-        return dout
+        if return_params is True:
+            dparam = {
+                'keys': keys,
+                'keybs': keybs,
+                'ref_key': ref_key,
+                'deg': deg,
+                'deriv': deriv,
+                'log_log': log_log,
+                'x0': x0,
+                'x1': x1,
+                'kx0': kx0,
+                'kx1': kx1,
+                'grid': grid,
+                'ref_com': ref_com,
+                'details': details,
+                'domain': domain,
+                'crop': crop,
+                'cropbs': cropbs,
+                'indbs_tf': indbs_tf,
+            }
+
+            # debug
+            if debug is True:
+                dparam['x0.shape'] = x0.shape
+                dparam['axis'] = daxis[keys[0]]
+
+            return dout, dparam
+        else:
+            return dout
 
 
 # ####################################
@@ -996,13 +835,22 @@ def _interp(
     mtype=None,
     ddata=None,
     daxis=None,
-    indokx0=None,
     sli_c=None,
     sli_x=None,
     sli_v=None,
     dsh_other=None,
     dref_com=None,
+    lr_add=None,
+    ld_add=None,
 ):
+
+    # ----------
+    # prepare
+
+    # indokx
+    indokx0 = np.isfinite(x0)
+    if x1 is not None:
+        indokx0 &= np.isfinite(x1)
 
     # loop on keys
     derr = {}
@@ -1103,6 +951,28 @@ def _interp(
             + "\n".join(lstr)
         )
         warnings.warn(msg)
+
+    # ----------------------------
+    # clean-up temporary storage
+
+    if lr_add is not None:
+        for rr in lr_add:
+            coll.remove_ref(rr, propagate=False)
+
+    if ld_add is not None:
+        for dd in ld_add:
+            if dd in coll.ddata.keys():
+                coll.remove_data(dd, propagate=False)
+
+    # ----------
+    # adjust ref
+
+    if lr_add is not None:
+        for k0, v0 in dout.items():
+            dout[k0]['ref'] = tuple([
+                None if rr in lr_add else rr
+                for rr in v0['ref']
+            ])
 
     return
 

@@ -227,7 +227,7 @@ class BSplines2D(Previous):
         """
 
         coll2 = super().extract(keys=keys, vectors=vectors)
-        return _compute.extract(self, coll2=coll2, keys=keys, vectors=vectors)
+        return _compute.extract(self, coll2=coll2, vectors=vectors)
 
     # -----------------
     # Integration operators
