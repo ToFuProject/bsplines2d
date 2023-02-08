@@ -367,16 +367,15 @@ def _prepare(
 
     if res is None:
         res_coef = 0.2
-        res = [res_coef*dR, res_coef*dZ]
+        res = [res_coef*dx0, res_coef*dx1]
 
     # compute
     coll2 = coll.interpolate_profile2d(
         key=key,
-        indt=indt,
         res=res,
         details=False,
-        nan0=True,
-        imshow=False,
+        # return vs store
+        returnas=object,
         return_params=False,
         store=True,
         inplace=False,
@@ -423,7 +422,7 @@ def _plot_bsplines_get_dx01(coll=None, km=None, mtype=None):
         dx0 = np.min(np.diff(knots0))
         dx1 = np.min(np.diff(knots1))
 
-    else mtype == 'tri':
+    elif mtype == 'tri':
         indtri = coll.ddata[coll.dobj['mesh'][km]['ind']]['data']
         kknots = coll.dobj['mesh'][km]['knots']
         knots0 = coll.ddata[kknots[0]]['data']
