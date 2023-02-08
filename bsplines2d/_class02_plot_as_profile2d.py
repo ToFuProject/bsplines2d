@@ -75,7 +75,6 @@ def plot_as_profile2d(
         coll=coll,
         key=key,
         keybs=keybs,
-        subbs=subbs,
         keym=keym,
         res=res,
         mtype=mtype,
@@ -375,10 +374,26 @@ def _prepare(
         res_coef = 0.2
         res = [res_coef*dx0, res_coef*dx1]
 
-    # compute
-    coll2 = coll.interpolate_profile2d(
-        key=key,
+    # get 2d mesh
+    x0, x1 = coll.get_sample_mesh(
+        key=coll.dobj[wbs][subbs][wm],
         res=res,
+        mode='abs',
+        grid=False,
+    )
+
+    # add ref and data
+    coll.add_ref(key='nx0', size=x0.size)
+    coll.add_ref(key='nx1', size=x1.size)
+    coll.add_data(key='x0', data=x0, ref='nx0')
+    coll.add_data(key='x1', data=x1, ref='nx1')
+
+    # compute
+    coll2 = coll.interpolate(
+        keys=key,
+        x0='x0',
+        x1='x1',
+        grid=True,
         details=False,
         # return vs store
         returnas=object,
@@ -387,6 +402,11 @@ def _prepare(
         inplace=False,
     )
 
+    # remove
+    coll.remove_ref('nx0')
+    coll.remove_ref('nx1')
+
+    import pdb; pdb.set_trace() # DB
 
     keymap = [k0 for k0, v0 in coll2.ddata.items() if v0['data'].ndim > 1][0]
     ndim = coll2.ddata[keymap]['data'].ndim
@@ -422,7 +442,7 @@ def _plot_bsplines_get_dx01(coll=None, km=None):
     # Get minimum distances
 
     wm = coll._which_mesh
-    mtype = coll.dobj[wm][km]
+    mtype = coll.dobj[wm][km]['type']
     if mtype == 'rect':
         knots0, knots1 = coll.dobj[wm][km]['knots']
         knots0 = coll.ddata[knots0]['data']

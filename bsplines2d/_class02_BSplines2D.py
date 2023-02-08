@@ -16,7 +16,7 @@ from . import _class02_compute as _compute
 from . import _class01_rect_cropping as _cropping
 from . import _class02_interpolate as _interpolate
 from . import _class02_operators as _operators
-from . import _class02_plot as _plot
+from . import _class02_plot_as_profile2d as _plot_as_profile2d
 
 
 __all__ = ['BSplines2D']
@@ -305,6 +305,7 @@ class BSplines2D(Previous):
         val_out=None,
         log_log=None,
         # store vs return
+        returnas=None,
         return_params=None,
         store=None,
         inplace=None,
@@ -343,6 +344,7 @@ class BSplines2D(Previous):
             val_out=val_out,
             log_log=log_log,
             # store vs return
+            returnas=returnas,
             return_params=return_params,
             store=store,
             inplace=inplace,
@@ -842,7 +844,7 @@ class BSplines2D(Previous):
         connect=None,
     ):
 
-        return _plot.plot_as_profile2d(
+        return _plot_as_profile2d.plot_as_profile2d(
             coll=self,
             key=key,
             # parameters
