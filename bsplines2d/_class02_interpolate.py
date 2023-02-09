@@ -98,6 +98,7 @@ def interpolate(
     # -----------
     # isbs
 
+    x0_str = None
     if isbs:
 
         # -----------------
@@ -191,6 +192,7 @@ def interpolate(
                 # rect-specific
                 crop=crop,
                 return_params=True,
+                store=False,
             )
 
             # ------------------------------------------
@@ -211,6 +213,7 @@ def interpolate(
             # --------
             # substitue x0, x1
 
+            x0_str = isinstance(x0, str)
             if ref_com is None:
                 x0 = dout_temp[kd0[0]]['data']
                 if len(kd0) > 1:
@@ -260,7 +263,17 @@ def interpolate(
         return_params=return_params,
         store=store,
         inplace=inplace,
+        x0_str=x0_str,
     )
+
+    if store is True and submesh is True:
+        # TBF
+        import pdb; pdb.set_trace() # DB
+        kx0 = dparams_temp['kx0']
+        kx1 = dparams_temp['kx1']
+        refx = dparams_temp['refx']
+        for k0 in dout.keys():
+            dout[k0]['ref'] = dparams_temp['doutref'][k0]
 
     # ---------------
     # interpolate
@@ -351,14 +364,17 @@ def interpolate(
                 'deg': deg,
                 'deriv': deriv,
                 'log_log': log_log,
-                'x0': x0,
-                'x1': x1,
                 'kx0': kx0,
                 'kx1': kx1,
+                'x0': x0,
+                'x1': x1,
                 'grid': grid,
-                'ref_com': ref_com,
-                'details': details,
+                'refx': refx,
+                'dref_com': dref_com,
+                'daxis': daxis,
+                'dsh_other': dsh_other,
                 'domain': domain,
+                'details': details,
                 'crop': crop,
                 'cropbs': cropbs,
                 'indbs_tf': indbs_tf,

@@ -354,7 +354,12 @@ class BSplines2D(Previous):
             debug=debug,
         )
 
-    def interpolate_all_bsplines(self, key=None, dres=None):
+    def interpolate_all_bsplines(
+        self,
+        key=None,
+        dres=None,
+        submesh=None,
+    ):
         """ Return a new instance with fully interpolated data
 
         """
@@ -363,6 +368,7 @@ class BSplines2D(Previous):
             coll=self,
             key=key,
             dres=dres,
+            submesh=submesh,
         )
 
     """
