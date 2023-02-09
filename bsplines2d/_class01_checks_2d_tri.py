@@ -383,11 +383,11 @@ def _to_dict(
 
     _, _, kk0, kc0 = _generic_mesh.names_knots_cents(
         key=key,
-        knots_name=knots0_name,
+        knots_name='0',
     )
     _, _, kk1, kc1 = _generic_mesh.names_knots_cents(
         key=key,
-        knots_name=knots1_name,
+        knots_name='1',
     )
 
     kii = f"{key}-ind"

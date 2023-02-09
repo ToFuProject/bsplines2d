@@ -375,24 +375,23 @@ def _prepare(
         res = [res_coef*dx0, res_coef*dx1]
 
     # get 2d mesh
-    x0, x1 = coll.get_sample_mesh(
+    dout = coll.get_sample_mesh(
         key=coll.dobj[wbs][subbs][wm],
         res=res,
         mode='abs',
         grid=False,
+        # store
+        store=True,
+        kx0=None,
+        kx1=None,
+        returnas=dict,
     )
-
-    # add ref and data
-    coll.add_ref(key='nx0', size=x0.size)
-    coll.add_ref(key='nx1', size=x1.size)
-    coll.add_data(key='x0', data=x0, ref='nx0')
-    coll.add_data(key='x1', data=x1, ref='nx1')
 
     # compute
     coll2 = coll.interpolate(
         keys=key,
-        x0='x0',
-        x1='x1',
+        x0=dout['x0']['key'],
+        x1=dout['x1']['key'],
         grid=True,
         details=False,
         # return vs store
@@ -402,11 +401,86 @@ def _prepare(
         inplace=False,
     )
 
-    # remove
-    coll.remove_ref('nx0')
-    coll.remove_ref('nx1')
+    # remove / replace
+    for k0, v0 in dout.items():
+        coll.remove_ref(v0['ref'])
+
+    # rename
+    keynew = f'{key}_interp'
+    coll2.add_data(
+        key=keynew,
+        **{k0: v0 for k0, v0 in coll.ddata[keynew].keys()},
+    )
+    coll2.remove_data(key_new)
+
+    import pdb; pdb.set_tarce()     # DB
+
+    # no other bs
+    lbs = coll2.ddata[keynew][wbs]
+    if isinstance(lbs, tuple):
+        dbs = {}
+        for bs in lbs:
+
+            # check vs 2d
+            km = coll.dobj[wbs][bs][wm]
+            if coll.dobj[wm][km]['nd'] == '2d':
+                msg = "Cannot handle 2 different 2d bsplines!"
+                raise NotImplementedError(msg)
+
+            # sample mesh
+            coll2.get_sample_mesh(
+                key=km,
+                # res=,
+                # store
+                store=True,
+                # kx0=,
+            )
+
+            # interpolate
+            coll2 = coll2.interpolate(
+                key=key,
+                ref_key=bs,
+                x0=kx0,
+                details=False,
+                # return vs store
+                returnas=object,
+                return_params=False,
+                store=True,
+                inplace=True,
+            )
+
+            keynew = f'{key}_interp'
+
+            # rename
+            coll.add_data(
+                key=keynew,
+                **{k0: v0 for k0, v0 in coll.ddata[keynew].keys()},
+            )
+
+    # rename
+
 
     import pdb; pdb.set_trace() # DB
+    # case with no submesh, no other bs
+    if 0:
+        pass
+
+    # case with no submesh, other bs
+    elif 1:
+        pass
+
+    # case with submesh, no other bs
+    elif 2:
+        pass
+
+    # case with submesh, other bs
+    elif 3:
+        pass
+
+    else:
+        raise NotImplementedError()
+
+
 
     keymap = [k0 for k0, v0 in coll2.ddata.items() if v0['data'].ndim > 1][0]
     ndim = coll2.ddata[keymap]['data'].ndim
@@ -428,12 +502,12 @@ def _prepare(
             keyZ = None
 
 
-    # radial of polar
-    if mtype == 'polar':
-        # lcol
-        lcol = ['k', 'r', 'b', 'g', 'm', 'c', 'y']
-    else:
-        lcol = None
+    # # radial of polar
+    # if mtype == 'polar':
+        # # lcol
+        # lcol = ['k', 'r', 'b', 'g', 'm', 'c', 'y']
+    # else:
+        # lcol = None
 
     return coll2, dkeys, interp, lcol
 

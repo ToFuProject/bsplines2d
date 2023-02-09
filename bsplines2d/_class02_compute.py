@@ -110,10 +110,10 @@ def _mesh2DRect_bsplines(coll=None, keym=None, keybs=None, deg=None):
     knots1 = coll.ddata[k1]['data']
 
     keybsr = f'{keybs}_nbs'
-    kRbsapn = f'{keybs}_nR'
-    kZbsapn = f'{keybs}_nZ'
-    kRbsap = f'{keybs}_apR'
-    kZbsap = f'{keybs}_apZ'
+    kRbsapn = f'{keybs}_n0'
+    kZbsapn = f'{keybs}_n1'
+    kRbsap = f'{keybs}_ap0'
+    kZbsap = f'{keybs}_ap1'
 
     (
         shapebs, Rbs_apex, Zbs_apex,

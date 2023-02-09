@@ -20,9 +20,11 @@ _ELEMENTS = 'knots'
 # #############################################################################
 
 
-def names_knots_cents(key=None, knots_name=None):
-    kkr, kcr = f'{key}-{knots_name}-nk', f'{key}-{knots_name}-nc'
-    kk, kc = f'{key}-k-{knots_name}', f'{key}-c-{knots_name}'
+def names_knots_cents(key=None, knots_name=''):
+
+    kkr, kcr = f'{key}_nk{knots_name}', f'{key}_nc{knots_name}'
+    kk, kc = f'{key}_k{knots_name}', f'{key}_c{knots_name}'
+
     return kkr, kcr, kk, kc
 
 
@@ -37,24 +39,24 @@ def _get_key_mesh_vs_bplines(
     key=None,
     which=None,
 ):
-    
+
     if which in [None, coll._which_mesh]:
         lk1 = list(coll.dobj.get(coll._which_mesh, {}).keys())
     else:
         lk1 = []
-    
+
     if which in [None, coll._which_bsplines]:
         lk2 = list(coll.dobj.get(coll._which_bsplines, {}).keys())
     else:
         lk2 = []
-        
+
     # key
     key = ds._generic_check._check_var(
         key, 'key',
         allowed=lk1 + lk2,
         types=str,
     )
-    
+
     # which
     if key in lk1:
         cat = coll._which_mesh
@@ -69,9 +71,9 @@ def _get_key_mesh_vs_bplines(
     else:
         keym = key
         keybs = None
-        
+
     return keym, keybs, cat
-    
+
 
 # #############################################################################
 # #############################################################################
