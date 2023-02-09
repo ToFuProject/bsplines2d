@@ -336,20 +336,7 @@ def _to_dict(
 
     # attributes
     latt = ['dim', 'quant', 'name', 'units']
-    for k0 in latt:
-        if kwdargs.get(k0) is None:
-            kwdargs[k0] = [None, None]
-        elif isinstance(kwdargs.get(k0), str):
-            kwdargs[k0] = [kwdargs[k0], kwdargs[k0]]
-        elif not (isinstance(kwdargs[k0], list) and len(kwdargs[k0]) == 2):
-            msg = (
-                f"Wrong attributes for 2d rect mesh '{key}':\n"
-                "Please provide units, dim, quant, name as list of len() = 2"
-                f"Provided:\n{kwdargs}"
-            )
-            raise Exception(msg)
-
-    dim, quant, name, units = [kwdargs[ss] for ss in latt]
+    dim, quant, name, units = _generic_mesh._get_kwdargs_2d(kwdargs, latt)
 
     variable = not (np.isscalar(res0) and np.isscalar(res1))
 

@@ -39,59 +39,71 @@ def sample_mesh(
     Dx1=None,
     grid=None,
     imshow=None,
+    # store
+    store=None,
+    kx0=None,
+    kx1=None,
 ):
 
     # -------------
     # check inputs
-    
+
     # key
     key, _, cat = _generic_mesh._get_key_mesh_vs_bplines(
         coll=coll,
         key=key,
         which=coll._which_mesh,
     )
-     
+
     nd = coll.dobj[cat][key]['nd']
     mtype = coll.dobj[cat][key]['type']
-    
+
     # mode
     mode = ds._generic_check._check_var(
         mode, 'mode',
         types=str,
         default='abs',
     )
-    
+
     # res
     if res is None:
         res = _get_sample_mesh_res(coll=coll, keym=key, mtype=mtype)
-    
+
     # ------------
     # sample
-    
+
     if nd == '1d':
-        
+
         # check
-        key, mode, Dx, knots = _sample_mesh_check_1d(
+        key, mode, Dx, knots, store = _sample_mesh_check_1d(
             coll=coll,
             key=key,
             res=res,
             mode=mode,
             Dx=Dx0,
+            store=store,
         )
-        
+
         # compute
-        return sample_mesh_1d(
+        dref, ddata = sample_mesh_1d(
+            coll=coll,
+            key=key,
             res=res,
             mode=mode,
             Dx=Dx,
             knots=knots,
+            # store
+            store=store,
+            kx0=kx0,
         )
-        
+
     else:
 
         # check
         (
-            key, res, mode, grid, imshow, x0, x1, Dx0, Dx1, x0k, x1k,
+            key, res, mode, grid, imshow,
+            x0, x1, Dx0, Dx1, x0k, x1k,
+            store,
         ) = _sample_mesh_check_2d(
             coll=coll,
             key=key,
@@ -103,9 +115,12 @@ def sample_mesh(
             Z=x1,
             DR=Dx0,
             DZ=Dx1,
+            store=store,
         )
-            
-        return sample_mesh_2d(
+
+        dref, ddata = sample_mesh_2d(
+            coll=coll,
+            key=key,
             res=res,
             mode=mode,
             x0=x0,
@@ -116,46 +131,32 @@ def sample_mesh(
             x1k=x1k,
             grid=grid,
             imshow=imshow,
+            # store
+            store=store,
+            kx0=kx0,
+            kx1=kx1,
         )
 
+    # -------------
+    # format output
 
-# #############################################################################
-# #############################################################################
-#                           sub-routines
-# #############################################################################
+    # -------------
+    # store
+
+    if store is True:
+
+        _store(coll=coll, dref=dref, ddata=ddata)
+
+    # --------
+    # return
+
+    return ddata
 
 
-def _get_sample_mesh_res(
-    coll=None,
-    keym=None,
-    nd=None,
-    mtype=None,
-):
-
-    if nd == '1d':
-        kknots = coll.dobj[coll._which_msp][keym]['knots'][0]
-        res = np.min(np.diff(coll.ddata[kknots]['data']))
-        
-    elif mtype == 'rect':
-        kR, kZ = coll.dobj[coll._which_mesh][keym]['knots']
-        res = min(
-            np.min(np.diff(coll.ddata[kR]['data'])),
-            np.min(np.diff(coll.ddata[kZ]['data'])),
-        )
-    elif mtype == 'tri':
-        res = 0.02
-
-    elif mtype == 'polar':
-        keyr2d = coll.dobj[coll._which_mesh][keym]['radius2d']
-        keybs0 = coll.ddata[keyr2d]['bsplines']
-        keym0 = coll.dobj['bsplines'][keybs0]['mesh']
-        mtype0 = coll.dobj[coll._which_mesh][keym0]['type']
-        res = _get_sample_mesh_res(coll=coll, keym=keym0, mtype=mtype0)
-
-    else:
-        raise Exception("Wrong mtype: {mtype}")
-        
-    return res
+# ###################################################################
+# ###################################################################
+#                       checks
+# ###################################################################
 
 
 def _sample_mesh_check_1d(
@@ -165,6 +166,7 @@ def _sample_mesh_check_1d(
     mode=None,
     Dx=None,
     mtype=None,
+    store=None,
 ):
 
     # -----------
@@ -206,7 +208,16 @@ def _sample_mesh_check_1d(
     if Dx is None:
         Dx = [knots.min(), knots.max()]
 
-    return key, mode, Dx, knots
+    # ------
+    # store
+
+    store = ds._generic_check._check_var(
+        store, 'store',
+        types=bool,
+        default=False,
+    )
+
+    return key, mode, Dx, knots, store
 
 
 def _sample_mesh_check_2d(
@@ -221,6 +232,7 @@ def _sample_mesh_check_2d(
     Z=None,
     DR=None,
     DZ=None,
+    store=None,
 ):
 
     # -----------
@@ -315,10 +327,134 @@ def _sample_mesh_check_2d(
     if DZ is None:
         DZ = [Zk.min(), Zk.max()]
 
-    return key, res, mode, grid, imshow, R, Z, DR, DZ, Rk, Zk
+    # ------
+    # store
+
+    lok = [False]
+    if grid is False and imshow is False:
+        if R is None and Z is None:
+            lok.append(True)
+
+    store = ds._generic_check._check_var(
+        store, 'store',
+        types=bool,
+        default=False,
+        allowed=lok,
+    )
+
+    return key, res, mode, grid, imshow, R, Z, DR, DZ, Rk, Zk, store
+
+
+# ###################################################################
+# ###################################################################
+#                       utility
+# ###################################################################
+
+
+def _get_sample_mesh_res(
+    coll=None,
+    keym=None,
+    nd=None,
+    mtype=None,
+):
+
+    if nd == '1d':
+        kknots = coll.dobj[coll._which_msp][keym]['knots'][0]
+        res = np.min(np.diff(coll.ddata[kknots]['data']))
+
+    elif mtype == 'rect':
+        kR, kZ = coll.dobj[coll._which_mesh][keym]['knots']
+        res = min(
+            np.min(np.diff(coll.ddata[kR]['data'])),
+            np.min(np.diff(coll.ddata[kZ]['data'])),
+        )
+    elif mtype == 'tri':
+        res = 0.02
+
+    elif mtype == 'polar':
+        keyr2d = coll.dobj[coll._which_mesh][keym]['radius2d']
+        keybs0 = coll.ddata[keyr2d]['bsplines']
+        keym0 = coll.dobj['bsplines'][keybs0]['mesh']
+        mtype0 = coll.dobj[coll._which_mesh][keym0]['type']
+        res = _get_sample_mesh_res(coll=coll, keym=keym0, mtype=mtype0)
+
+    else:
+        raise Exception("Wrong mtype: {mtype}")
+
+    return res
+
+
+# ###################################################################
+# ###################################################################
+#                       sample 1d
+# ###################################################################
 
 
 def sample_mesh_1d(
+    coll=None,
+    key=None,
+    res=None,
+    mode=None,
+    Dx=None,
+    knots=None,
+    # store
+    store=None,
+    kx0=None,
+):
+
+    # --------
+    # sample
+
+    x0 = _sample_mesh_1d(
+        res=res,
+        mode=mode,
+        Dx=Dx,
+        knots=knots,
+    )
+
+    # -----------
+    # check key
+
+    if store is True:
+        lout = list(coll.ddata.keys())
+    else:
+        lout = []
+
+    kx0 = ds._generic_check._check_var(
+        kx0, 'kx0',
+        types=str,
+        default=f'{key}_x0',
+        excluded=lout,
+    )
+
+    # -----------
+    # format dict
+
+    wm = coll._which_mesh
+    kknots = coll.dobj[wm][key]['knots'][0]
+
+    # dref
+    kr = f'{kx0}_n'
+    dref = {kr: {'size': x0.size}}
+
+    # ddata
+    ddata = {
+        kx0: {
+            'data': x0,
+            'dim': coll.ddata[kknots]['dim'],
+            'quant': coll.ddata[kknots]['quant'],
+            'name': coll.ddata[kknots]['name'],
+            'units': coll.ddata[kknots]['units'],
+        },
+    }
+
+    if store:
+        ddata[kx0]['ref'] = kr
+
+    return dref, ddata
+
+
+def _sample_mesh_1d(
     res=None,
     mode=None,
     Dx=None,
@@ -338,9 +474,110 @@ def sample_mesh_1d(
         ))
 
     return xx
-    
-    
+
+
+# ###################################################################
+# ###################################################################
+#                       sample 2d
+# ###################################################################
+
+
 def sample_mesh_2d(
+    coll=None,
+    key=None,
+    res=None,
+    mode=None,
+    x0=None,
+    x1=None,
+    Dx0=None,
+    Dx1=None,
+    x0k=None,
+    x1k=None,
+    grid=None,
+    imshow=None,
+    # store
+    store=None,
+    kx0=None,
+    kx1=None,
+):
+
+    # --------
+    # sample
+
+    x0, x1 = _sample_mesh_2d(
+        res=res,
+        mode=mode,
+        x0=x0,
+        x1=x1,
+        Dx0=Dx0,
+        Dx1=Dx1,
+        x0k=x0k,
+        x1k=x1k,
+        grid=grid,
+        imshow=imshow,
+    )
+
+    # -----------
+    # check key
+
+    if store is True:
+        lout = list(coll.ddata.keys())
+    else:
+        lout = []
+
+    kx0 = ds._generic_check._check_var(
+        kx0, 'kx0',
+        types=str,
+        default=f'{key}_x0',
+        excluded=lout,
+    )
+
+    kx1 = ds._generic_check._check_var(
+        kx1, 'kx1',
+        types=str,
+        default=f'{key}_x1',
+        excluded=lout,
+    )
+
+    # -----------
+    # format dict
+
+    wm = coll._which_mesh
+    kk0, kk1 = coll.dobj[wm][key]['knots']
+
+    # dref
+    k0r, k1r = f'{kx0}_n', f'{kx1}_n'
+    dref = {
+        k0r: {'size': x0.size},
+        k1r: {'size': x1.size},
+    }
+
+    # ddata
+    ddata = {
+        kx0: {
+            'data': x0,
+            'dim': coll.ddata[kk0]['dim'],
+            'quant': coll.ddata[kk0]['quant'],
+            'name': coll.ddata[kk0]['name'],
+            'units': coll.ddata[kk0]['units'],
+        },
+        kx1: {
+            'data': x1,
+            'dim': coll.ddata[kk1]['dim'],
+            'quant': coll.ddata[kk1]['quant'],
+            'name': coll.ddata[kk1]['name'],
+            'units': coll.ddata[kk1]['units'],
+        },
+    }
+
+    if store is True:
+        ddata[kx0]['ref'] = k0r
+        ddata[kx1]['ref'] = k1r
+
+    return dref, ddata
+
+
+def _sample_mesh_2d(
     res=None,
     mode=None,
     x0=None,
@@ -396,3 +633,20 @@ def sample_mesh_2d(
             x1 = np.tile(x1, (n0, 1))
 
     return x0, x1
+
+
+# ###################################################################
+# ###################################################################
+#                       store
+# ###################################################################
+
+
+def _store(coll=None, dref=None, ddata=None):
+
+    # dref
+    for k0, v0 in dref.items():
+        coll.add_ref(key=k0, **v0)
+
+    # ddata
+    for k0, v0 in ddata.items():
+        coll.add_data(key=k0, **v0)

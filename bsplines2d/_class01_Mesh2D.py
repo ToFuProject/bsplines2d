@@ -451,6 +451,10 @@ class Mesh2D(ds.DataStock):
         Dx0=None,
         Dx1=None,
         imshow=None,
+        # store
+        store=None,
+        kx0=None,
+        kx1=None,
     ):
         """ Return a sampled version of the chosen mesh """
         return _sample.sample_mesh(
@@ -464,6 +468,10 @@ class Mesh2D(ds.DataStock):
             Dx0=Dx0,
             Dx1=Dx1,
             imshow=imshow,
+            # store
+            store=store,
+            kx0=kx0,
+            kx1=kx1,
         )
 
     # -----------------
