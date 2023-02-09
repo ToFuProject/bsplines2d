@@ -374,111 +374,11 @@ def _prepare(
         res_coef = 0.2
         res = [res_coef*dx0, res_coef*dx1]
 
-    # get 2d mesh
-    dout = coll.get_sample_mesh(
-        key=coll.dobj[wbs][subbs][wm],
-        res=res,
-        mode='abs',
-        grid=False,
-        # store
-        store=True,
-        kx0=None,
-        kx1=None,
-        returnas=dict,
+    coll2 = coll.interpolate_all_bsplines(
+        key=key,
+        dres=dres,
+        submesh=True,
     )
-
-    # compute
-    coll2 = coll.interpolate(
-        keys=key,
-        x0=dout['x0']['key'],
-        x1=dout['x1']['key'],
-        grid=True,
-        details=False,
-        # return vs store
-        returnas=object,
-        return_params=False,
-        store=True,
-        inplace=False,
-    )
-
-    # remove / replace
-    for k0, v0 in dout.items():
-        coll.remove_ref(v0['ref'])
-
-    # rename
-    keynew = f'{key}_interp'
-    coll2.add_data(
-        key=keynew,
-        **{k0: v0 for k0, v0 in coll.ddata[keynew].keys()},
-    )
-    coll2.remove_data(key_new)
-
-    import pdb; pdb.set_tarce()     # DB
-
-    # no other bs
-    lbs = coll2.ddata[keynew][wbs]
-    if isinstance(lbs, tuple):
-        dbs = {}
-        for bs in lbs:
-
-            # check vs 2d
-            km = coll.dobj[wbs][bs][wm]
-            if coll.dobj[wm][km]['nd'] == '2d':
-                msg = "Cannot handle 2 different 2d bsplines!"
-                raise NotImplementedError(msg)
-
-            # sample mesh
-            coll2.get_sample_mesh(
-                key=km,
-                # res=,
-                # store
-                store=True,
-                # kx0=,
-            )
-
-            # interpolate
-            coll2 = coll2.interpolate(
-                key=key,
-                ref_key=bs,
-                x0=kx0,
-                details=False,
-                # return vs store
-                returnas=object,
-                return_params=False,
-                store=True,
-                inplace=True,
-            )
-
-            keynew = f'{key}_interp'
-
-            # rename
-            coll.add_data(
-                key=keynew,
-                **{k0: v0 for k0, v0 in coll.ddata[keynew].keys()},
-            )
-
-    # rename
-
-
-    import pdb; pdb.set_trace() # DB
-    # case with no submesh, no other bs
-    if 0:
-        pass
-
-    # case with no submesh, other bs
-    elif 1:
-        pass
-
-    # case with submesh, no other bs
-    elif 2:
-        pass
-
-    # case with submesh, other bs
-    elif 3:
-        pass
-
-    else:
-        raise NotImplementedError()
 
 
 

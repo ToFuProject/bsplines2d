@@ -2,7 +2,9 @@
 
 
 # Built-in
+import copy
 import warnings
+
 
 # Common
 import numpy as np
@@ -67,7 +69,12 @@ def sample_mesh(
 
     # res
     if res is None:
-        res = _get_sample_mesh_res(coll=coll, keym=key, mtype=mtype)
+        res = _get_sample_mesh_res(
+            coll=coll,
+            keym=key,
+            nd=nd,
+            mtype=mtype,
+        )
 
     # ------------
     # sample
@@ -358,12 +365,13 @@ def _get_sample_mesh_res(
     mtype=None,
 ):
 
+    wm = coll._which_mesh
     if nd == '1d':
-        kknots = coll.dobj[coll._which_msp][keym]['knots'][0]
+        kknots = coll.dobj[wm][keym]['knots'][0]
         res = np.min(np.diff(coll.ddata[kknots]['data']))
 
     elif mtype == 'rect':
-        kR, kZ = coll.dobj[coll._which_mesh][keym]['knots']
+        kR, kZ = coll.dobj[wm][keym]['knots']
         res = min(
             np.min(np.diff(coll.ddata[kR]['data'])),
             np.min(np.diff(coll.ddata[kZ]['data'])),
@@ -372,14 +380,14 @@ def _get_sample_mesh_res(
         res = 0.02
 
     elif mtype == 'polar':
-        keyr2d = coll.dobj[coll._which_mesh][keym]['radius2d']
+        keyr2d = coll.dobj[wm][keym]['radius2d']
         keybs0 = coll.ddata[keyr2d]['bsplines']
         keym0 = coll.dobj['bsplines'][keybs0]['mesh']
-        mtype0 = coll.dobj[coll._which_mesh][keym0]['type']
+        mtype0 = coll.dobj[wm][keym0]['type']
         res = _get_sample_mesh_res(coll=coll, keym=keym0, mtype=mtype0)
 
     else:
-        raise Exception("Wrong mtype: {mtype}")
+        raise Exception(f"Wrong mtype for sampling: {mtype}")
 
     return res
 
@@ -439,7 +447,8 @@ def sample_mesh_1d(
 
     # ddata
     ddata = {
-        kx0: {
+        'x0': {
+            'key': kx0,
             'data': x0,
             'dim': coll.ddata[kknots]['dim'],
             'quant': coll.ddata[kknots]['quant'],
@@ -449,7 +458,7 @@ def sample_mesh_1d(
     }
 
     if store:
-        ddata[kx0]['ref'] = kr
+        ddata['x0']['ref'] = kr
 
     return dref, ddata
 
@@ -554,14 +563,16 @@ def sample_mesh_2d(
 
     # ddata
     ddata = {
-        kx0: {
+        'x0': {
+            'key': kx0,
             'data': x0,
             'dim': coll.ddata[kk0]['dim'],
             'quant': coll.ddata[kk0]['quant'],
             'name': coll.ddata[kk0]['name'],
             'units': coll.ddata[kk0]['units'],
         },
-        kx1: {
+        'x1': {
+            'key': kx1,
             'data': x1,
             'dim': coll.ddata[kk1]['dim'],
             'quant': coll.ddata[kk1]['quant'],
@@ -571,8 +582,8 @@ def sample_mesh_2d(
     }
 
     if store is True:
-        ddata[kx0]['ref'] = k0r
-        ddata[kx1]['ref'] = k1r
+        ddata['x0']['ref'] = k0r
+        ddata['x1']['ref'] = k1r
 
     return dref, ddata
 
@@ -649,4 +660,4 @@ def _store(coll=None, dref=None, ddata=None):
 
     # ddata
     for k0, v0 in ddata.items():
-        coll.add_data(key=k0, **v0)
+        coll.add_data(**v0)

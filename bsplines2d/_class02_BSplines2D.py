@@ -15,6 +15,7 @@ from . import _class02_checks as _checks
 from . import _class02_compute as _compute
 from . import _class01_rect_cropping as _cropping
 from . import _class02_interpolate as _interpolate
+from . import _class02_interpolate_all as _interpolate_all
 from . import _class02_operators as _operators
 from . import _class02_plot_as_profile2d as _plot_as_profile2d
 
@@ -38,6 +39,7 @@ class BSplines2D(Previous):
     _ddef['params']['dref'] = None
 
     _dshow = dict(Previous._dshow)
+    _dshow['data'].append('bsplines')
 
     # -----------------
     # bsplines
@@ -350,6 +352,17 @@ class BSplines2D(Previous):
             inplace=inplace,
             # debug
             debug=debug,
+        )
+
+    def interpolate_all_bsplines(self, key=None, dres=None):
+        """ Return a new instance with fully interpolated data
+
+        """
+
+        return _interpolate_all.interpolate_all_bsplines(
+            coll=self,
+            key=key,
+            dres=dres,
         )
 
     """

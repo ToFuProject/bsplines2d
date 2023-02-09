@@ -63,13 +63,15 @@ def _get_key_mesh_vs_bplines(
     which=None,
 ):
 
-    if which in [None, coll._which_mesh]:
-        lk1 = list(coll.dobj.get(coll._which_mesh, {}).keys())
+    wm = coll._which_mesh
+    wbs = coll._which_bsplines
+    if which in [None, wm]:
+        lk1 = list(coll.dobj.get(wm, {}).keys())
     else:
         lk1 = []
 
-    if which in [None, coll._which_bsplines]:
-        lk2 = list(coll.dobj.get(coll._which_bsplines, {}).keys())
+    if which in [None, wbs]:
+        lk2 = list(coll.dobj.get(wbs, {}).keys())
     else:
         lk2 = []
 
@@ -82,14 +84,14 @@ def _get_key_mesh_vs_bplines(
 
     # which
     if key in lk1:
-        cat = coll._which_mesh
+        cat = wm
     else:
-        cat = coll._which_bsplines
+        cat = wbs
     assert which in [cat, None], (cat, which)
 
     # keys
-    if cat == coll._which_bsplines:
-        keym = coll.dobj[coll._which_bsplines][key][coll._which_mesh]
+    if cat == wbs:
+        keym = coll.dobj[wbs][key][wm]
         keybs = key
     else:
         keym = key
