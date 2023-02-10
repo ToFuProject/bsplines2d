@@ -848,7 +848,7 @@ class BSplines2D(Previous):
         self,
         key=None,
         # parameters
-        res=None,
+        dres=None,
         # plot options
         vmin=None,
         vmax=None,
@@ -867,7 +867,7 @@ class BSplines2D(Previous):
             coll=self,
             key=key,
             # parameters
-            res=res,
+            dres=dres,
             # plot options
             vmin=vmin,
             vmax=vmax,
