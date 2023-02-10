@@ -20,10 +20,35 @@ _ELEMENTS = 'knots'
 # #############################################################################
 
 
-def names_knots_cents(key=None, knots_name=None):
-    kkr, kcr = f'{key}-{knots_name}-nk', f'{key}-{knots_name}-nc'
-    kk, kc = f'{key}-k-{knots_name}', f'{key}-c-{knots_name}'
+def names_knots_cents(key=None, knots_name=''):
+
+    kkr, kcr = f'{key}_nk{knots_name}', f'{key}_nc{knots_name}'
+    kk, kc = f'{key}_k{knots_name}', f'{key}_c{knots_name}'
+
     return kkr, kcr, kk, kc
+
+
+def _get_kwdargs_2d(kwdargs, latt=None):
+
+    for k0 in latt:
+
+        if kwdargs.get(k0) is None:
+            kwdargs[k0] = [None, None]
+
+        elif isinstance(kwdargs.get(k0), str):
+            kwdargs[k0] = [kwdargs[k0], kwdargs[k0]]
+
+        elif not (isinstance(kwdargs[k0], list) and len(kwdargs[k0]) == 2):
+            msg = (
+                f"Wrong attributes for 2d rect mesh '{k0}':\n"
+                "Please provide units, dim, quant, name as list of len() = 2"
+                f"Provided:\n{kwdargs}"
+            )
+            raise Exception(msg)
+
+    dim, quant, name, units = [kwdargs[ss] for ss in latt]
+
+    return dim, quant, name, units
 
 
 # #############################################################################
@@ -37,41 +62,43 @@ def _get_key_mesh_vs_bplines(
     key=None,
     which=None,
 ):
-    
-    if which in [None, coll._which_mesh]:
-        lk1 = list(coll.dobj.get(coll._which_mesh, {}).keys())
+
+    wm = coll._which_mesh
+    wbs = coll._which_bsplines
+    if which in [None, wm]:
+        lk1 = list(coll.dobj.get(wm, {}).keys())
     else:
         lk1 = []
-    
-    if which in [None, coll._which_bsplines]:
-        lk2 = list(coll.dobj.get(coll._which_bsplines, {}).keys())
+
+    if which in [None, wbs]:
+        lk2 = list(coll.dobj.get(wbs, {}).keys())
     else:
         lk2 = []
-        
+
     # key
     key = ds._generic_check._check_var(
         key, 'key',
         allowed=lk1 + lk2,
         types=str,
     )
-    
+
     # which
     if key in lk1:
-        cat = coll._which_mesh
+        cat = wm
     else:
-        cat = coll._which_bsplines
+        cat = wbs
     assert which in [cat, None], (cat, which)
 
     # keys
-    if cat == coll._which_bsplines:
-        keym = coll.dobj[coll._which_bsplines][key][coll._which_mesh]
+    if cat == wbs:
+        keym = coll.dobj[wbs][key][wm]
         keybs = key
     else:
         keym = key
         keybs = None
-        
+
     return keym, keybs, cat
-    
+
 
 # #############################################################################
 # #############################################################################

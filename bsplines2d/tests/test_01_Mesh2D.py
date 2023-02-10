@@ -13,7 +13,7 @@ import numpy as np
 # specific
 from . import test_input
 from .. import _class01_checks as _checks
-from .._class02_BSplines2D import BSplines2D
+from .._class03_Bins import Bins as BSplines2D
 
 
 #######################################################
@@ -63,7 +63,7 @@ class Test00_check_routines():
 #######################################################
 
 
-class Test01_Mesh2D_Fixed():
+class Test01_BSplines2D():
 
     @classmethod
     def setup_class(cls):
@@ -301,85 +301,13 @@ class Test01_Mesh2D_Fixed():
             # self.bs,
         # )
 
+    # ################################
+    # interpolate data with subkey
+    # ################################
 
-#######################################################
-#
-#     Variable 1d ad 2d meshes
-#
-#######################################################
-
-
-"""
-class Test02_Mesh2D_Subkey():
-
-    @classmethod
-    def setup_class(cls):
-        cls.bs = BSplines2D()
-        test_input._add_mesh_all(cls.bs)
-
-    @classmethod
-    def setup_method(self):
-        pass
-
-    @classmethod
-    def teardown_method(self):
-        pass
-
-    @classmethod
-    def teardown_class(cls):
-        pass
-
-    # #######################
-    #  add bsplines and data
-    # #######################
-
-    def test01_add_bsplines(self):
-        test_input._add_bsplines(self.bs)
-
-    def test02_add_Bsplines_data(self):
-        pass
-
-    # ##############
-    #  mesh 1d sub
-    # ##############
-
-    def test03_add_mesh1d_subkey_fixed(self):
-        pass
-
-    def test10_add_mesh_1d_subkey_1d(self):
-        test_input._add_bsplines(self.bs, key='m00', deg=None)
-
-        lbs = [f'm00_bs{ii}' for ii in [0, 1, 2, 3]]
-        for kbs in lbs:
-            test_input._add_mesh_1d_subkey_fixed(
-                self.bs, key=None, keybs=kbs,
-            )
-
-    # ##############
-    #  mesh 2d polar
-    # ##############
-
-    def test04_add_mesh1d_subkey_variable(self):
-        pass
-
-    def test10_add_mesh_polar_radial(self):
-        test_input._add_rect_variable_crop(self.bs)
-        test_input._add_bsplines(self.bs)
-        test_input._add_polar1(self.bs)
-
-    def test11_add_mesh_polar_angle_regular(self):
-        test_input._add_rect_variable_crop(self.bs)
-        test_input._add_bsplines(self.bs)
-        test_input._add_polar2(self.bs)
-
-    def test12_add_mesh_polar_angle_variable(self):
-        test_input._add_rect_variable_crop(self.bs)
-        test_input._add_bsplines(self.bs)
-        test_input._add_polar2(self.bs)
-        # test_input._add_bsplines(
-        #     bsplines,
-        #     kind=['polar'],
-        #     angle=np.pi*np.r_[-3./4., -1/4, 0, 1/4, 3/4],
-        # )
-
-"""
+    def test50_plot_as_profile2d(self):
+        test_input._plot_as_profile2d(
+            self.bs,
+            nd='2d',
+            kind=None,
+        )

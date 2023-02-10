@@ -22,8 +22,6 @@ def check(
     # knots
     knots0=None,
     knots1=None,
-    knots0_name=None,
-    knots1_name=None,
     # automated
     domain=None,
     res=None,
@@ -48,6 +46,7 @@ def check(
     # knots vectors
 
     knots0, knots1, res0, res1 = _mesh2DRect_check(
+        key=key,
         knots0=knots0,
         knots1=knots1,
         # automated
@@ -101,8 +100,6 @@ def check(
         knots1=knots1,
         cents0=cents0,
         cents1=cents1,
-        knots0_name=knots0_name,
-        knots1_name=knots1_name,
         # sub quantity
         subkey0=subkey0,
         subkey1=subkey1,
@@ -123,10 +120,9 @@ def check(
 
 
 def _mesh2DRect_check(
+    key=None,
     knots0=None,
     knots1=None,
-    knots0_name=None,
-    knots1_name=None,
     domain=None,
     res=None,
 ):
@@ -190,15 +186,15 @@ def _mesh2DRect_check(
 
         # knots0
         knots0, res0 = _checks_1d._check_knots(
+            key=key,
             knots=knots0,
-            knots_name=knots0_name,
             uniform=True,
         )
 
         # knots1
         knots1, res1 = _checks_1d._check_knots(
+            key=key,
             knots=knots1,
-            knots_name=knots1_name,
             uniform=True,
         )
 
@@ -315,8 +311,6 @@ def _to_dict(
     knots1=None,
     cents0=None,
     cents1=None,
-    knots0_name=None,
-    knots1_name=None,
     res0=None,
     res1=None,
     # submesh
@@ -328,37 +322,21 @@ def _to_dict(
     **kwdargs,
 ):
 
-    # ---------
-    # check
-
-    knots0_name = ds._generic_check._check_var(
-        knots0_name, 'knots0_name',
-        types=str,
-        default='x',
-    )
-
-    knots1_name = ds._generic_check._check_var(
-        knots1_name, 'knots1_name',
-        types=str,
-        default='y',
-        excluded=[knots0_name],
-    )
-
     # --------------------
     # check / format input
 
     kkr0, kcr0, kk0, kc0 = _generic_mesh.names_knots_cents(
         key=key,
-        knots_name=knots0_name,
+        knots_name='0',
     )
     kkr1, kcr1, kk1, kc1 = _generic_mesh.names_knots_cents(
         key=key,
-        knots_name=knots1_name,
+        knots_name='1',
     )
 
     # attributes
     latt = ['dim', 'quant', 'name', 'units']
-    dim, quant, name, units = [kwdargs.get(ss) for ss in latt]
+    dim, quant, name, units = _generic_mesh._get_kwdargs_2d(kwdargs, latt)
 
     variable = not (np.isscalar(res0) and np.isscalar(res1))
 
@@ -391,38 +369,38 @@ def _to_dict(
     ddata = {
         kk0: {
             'data': knots0,
-            'units': units,
+            'units': units[0],
             # 'source': None,
-            'dim': dim,
-            'quant': quant,
-            'name': name,
+            'dim': dim[0],
+            'quant': quant[0],
+            'name': name[0],
             'ref': kkr0,
         },
         kk1: {
             'data': knots1,
-            'units': units,
+            'units': units[1],
             # 'source': None,
-            'dim': dim,
-            'quant': quant,
-            'name': name,
+            'dim': dim[1],
+            'quant': quant[1],
+            'name': name[1],
             'ref': kkr1,
         },
         kc0: {
             'data': cents0,
-            'units': units,
+            'units': units[0],
             # 'source': None,
-            'dim': dim,
-            'quant': quant,
-            'name': name,
+            'dim': dim[0],
+            'quant': quant[0],
+            'name': name[0],
             'ref': kcr0,
         },
         kc1: {
             'data': cents1,
-            'units': units,
+            'units': units[1],
             # 'source': None,
-            'dim': dim,
-            'quant': quant,
-            'name': name,
+            'dim': dim[1],
+            'quant': quant[1],
+            'name': name[1],
             'ref': kcr1,
         },
     }

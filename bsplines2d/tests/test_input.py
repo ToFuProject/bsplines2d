@@ -12,9 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-# tofu-specific
-
-
+# specific
 _HERE = os.path.abspath(os.path.dirname(__file__))
 _PATH_DATA = os.path.join(_HERE, 'test_data')
 _DFNAME = {
@@ -773,6 +771,9 @@ def _bin_bs(bs, nd=None, kind=None):
             keys=kd,
             ref_key=ref_key,
             bins=bins,
+            # store vs return
+            store=False,
+            returnas=True,
         )
 
         shape = list(bs.ddata[kd]['shape'])
@@ -803,6 +804,27 @@ def _add_data_var(bsplines, key):
         ref=('nt', key),
     )
     return kdata
+
+
+#######################################################
+#
+#     Plotting
+#
+#######################################################
+
+
+def _plot_as_profile2d(bs,  nd=None, kind=None):
+    dkd = _get_data(bs, nd=nd, kind=kind)
+
+    for ii, (k0, v0) in enumerate(dkd.items()):
+
+        if bs.ddata[k0]['data'].ndim > 4:
+            continue
+        if ii%2 == 0:
+            continue
+
+        dax = bs.plot_as_profile2d(key=k0)
+        plt.close('all')
 
 
 #######################################################

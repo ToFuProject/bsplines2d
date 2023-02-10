@@ -383,18 +383,18 @@ def _to_dict(
 
     _, _, kk0, kc0 = _generic_mesh.names_knots_cents(
         key=key,
-        knots_name=knots0_name,
+        knots_name='0',
     )
     _, _, kk1, kc1 = _generic_mesh.names_knots_cents(
         key=key,
-        knots_name=knots1_name,
+        knots_name='1',
     )
 
     kii = f"{key}-ind"
 
     # attributes
     latt = ['dim', 'quant', 'name', 'units']
-    dim, quant, name, units = [kwdargs.get(ss) for ss in latt]
+    dim, quant, name, units = _generic_mesh._get_kwdargs_2d(kwdargs, latt)
 
     # -----------------
     # dict
@@ -416,30 +416,34 @@ def _to_dict(
     ddata = {
         kk0: {
             'data': knots[:, 0],
-            'units': units,
-            'quant': quant,
-            'dim': dim,
+            'units': units[0],
+            'quant': quant[0],
+            'dim': dim[0],
+            'name': name[0],
             'ref': kk,
         },
         kk1: {
             'data': knots[:, 1],
-            'units': units,
-            'quant': quant,
-            'dim': dim,
+            'units': units[1],
+            'quant': quant[1],
+            'dim': dim[1],
+            'name': name[1],
             'ref': kk,
         },
         kc0: {
             'data': cents0,
-            'units': units,
-            'quant': quant,
-            'dim': dim,
+            'units': units[0],
+            'quant': quant[0],
+            'dim': dim[0],
+            'name': name[0],
             'ref': kc,
         },
         kc1: {
             'data': cents1,
-            'units': units,
-            'quant': quant,
-            'dim': dim,
+            'units': units[1],
+            'quant': quant[1],
+            'dim': dim[1],
+            'name': name[1],
             'ref': kc,
         },
         kii: {

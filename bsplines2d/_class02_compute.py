@@ -2,6 +2,8 @@
 
 
 # Built-in
+import copy
+import itertools as itt
 
 
 # Common
@@ -108,10 +110,10 @@ def _mesh2DRect_bsplines(coll=None, keym=None, keybs=None, deg=None):
     knots1 = coll.ddata[k1]['data']
 
     keybsr = f'{keybs}_nbs'
-    kRbsapn = f'{keybs}_nR'
-    kZbsapn = f'{keybs}_nZ'
-    kRbsap = f'{keybs}_apR'
-    kZbsap = f'{keybs}_apZ'
+    kRbsapn = f'{keybs}_n0'
+    kZbsapn = f'{keybs}_n1'
+    kRbsap = f'{keybs}_ap0'
+    kZbsap = f'{keybs}_ap1'
 
     (
         shapebs, Rbs_apex, Zbs_apex,
@@ -328,6 +330,209 @@ def _mesh2DTri_bsplines(coll=None, keym=None, keybs=None, deg=None):
     }
 
     return dref, ddata, dobj
+
+
+# ##############################################################
+# ##############################################################
+#                   Utils
+# ##############################################################
+
+
+def _get_profiles2d(coll=None):
+
+    dout = {}
+    wm = coll._which_mesh
+    wbs = coll._which_bsplines
+    for k0, v0 in coll.ddata.items():
+
+        if v0.get(wbs) is None or v0.get(wbs) == '':
+            continue
+
+        lbs = []
+        for k1 in v0[wbs]:
+            km = coll.dobj[wbs][k1][wm]
+            if coll.dobj[wm][km]['submesh'] is None:
+                if coll.dobj[wm][km]['nd'] == '2d':
+                    lbs.append(k1)
+            else:
+                subkm = coll.dobj[wm][km]['submesh']
+                if coll.dobj[wm][subkm]['nd'] == '2d':
+                    lbs.append(k1)
+
+        if len(lbs) == 1:
+            dout[k0] = lbs[0]
+
+    return dout
+
+
+# ##################################################################
+# ##################################################################
+#                       Extract
+# ##################################################################
+
+
+def extract(coll=None, coll2=None, vectors=None):
+
+    wm = coll._which_mesh
+    wbs = coll._which_bsplines
+
+    # -------------
+    # find bsplines and meshes
+
+    lbs, lmesh, ldata = _extract_bsplines_mesh(
+        coll=coll,
+        coll2=coll2,
+    )
+
+    # ---------------
+    # trivial
+
+    if len(lmesh) == 0:
+        return coll2
+
+    # ---------------
+    # extract data
+
+    dmesh = _extract_refdata_from_obj(coll=coll, which=wm, keys=lmesh)
+    dbs = _extract_refdata_from_obj(coll=coll, which=wbs, keys=lbs)
+
+    # get all keys for mesh and bsplines
+    kmesh = list(itt.chain.from_iterable([
+        v0['ref'] + v0['data'] for v0 in dmesh.values()
+    ]))
+    kbs = list(itt.chain.from_iterable([
+        v0['ref'] + v0['data'] for v0 in dbs.values()
+    ]))
+
+    # get all ref and data
+    lref, ldata = ds._class1_compute._extract_dataref(
+        coll=coll,
+        keys=list(set(kmesh + kbs + ldata)),
+        vectors=vectors
+    )
+
+    # ---------------
+    # add mesh
+
+    wm = coll._which_mesh
+    coll2._dobj[wm] = {
+        k0: copy.deepcopy(coll.dobj[wm][k0])
+        for k0 in lmesh
+    }
+
+    # ------------
+    # add bsplines
+
+    wm = coll._which_bsplines
+    coll2._dobj[wbs] = {
+        k0: copy.deepcopy(coll.dobj[wbs][k0])
+        for k0 in lbs
+    }
+
+    # ----------------
+    # add ref and data
+
+    coll2 = ds._class1_compute._extract_instance(
+        coll=coll,
+        lref=lref,
+        ldata=ldata,
+        coll2=coll2,
+    )
+
+    return coll2
+
+
+def _extract_bsplines_mesh(coll=None, coll2=None):
+
+    # -------------
+    # find bsplines
+
+    # bs from data['bsplines']
+    wbs = coll._which_bsplines
+    lbs = list(set(itt.chain.from_iterable([
+        v0[wbs] for v0 in coll2.ddata.values()
+        if isinstance(v0.get(wbs), tuple)
+    ])))
+
+    # bs from ref
+    lbs2 = []
+    if wbs in coll.dobj.keys():
+        for k0, v0 in coll.dobj[wbs].items():
+            for k1 in coll2.dref.keys():
+                if k1 in v0['ref'] + v0['ref-bs']:
+                    lbs2.append(k0)
+            for k1 in coll2.ddata.keys():
+                if k1 in v0['apex']:
+                    lbs2.append(k0)
+
+    lbs = list(set(lbs + lbs2))
+
+    # -----------
+    # find meshes
+
+    wm = coll._which_mesh
+    lmesh = list({coll.dobj[wbs][k0][wm] for k0 in lbs})
+
+    # -----------
+    # get submesh
+
+    ldata = list(set(itt.chain.from_iterable([
+        coll.dobj[wm][k0]['subkey'] for k0 in lmesh
+        if coll.dobj[wm][k0]['subkey'] is not None
+    ])))
+
+    lbs2 = list(itt.chain.from_iterable([coll.ddata[k0][wbs] for k0 in ldata]))
+    lmesh2 = list({coll.dobj[wbs][k0][wm] for k0 in lbs2})
+
+    return sorted(set(lbs + lbs2)), sorted(set(lmesh + lmesh2)), ldata
+
+
+def _extract_refdata_from_obj(coll=None, which=None, keys=None):
+
+    dout = {}
+    for k0 in keys:
+        dout[k0] = {'ref': [], 'data': []}
+        _extract_refdata_from_dict(
+            dout=dout[k0],
+            din=coll.dobj[which][k0],
+            lref=list(coll.dref.keys()),
+            ldata=list(coll.ddata.keys()),
+        )
+
+    return dout
+
+
+def _extract_refdata_from_dict(
+    dout=None,
+    din=None,
+    lref=None,
+    ldata=None,
+):
+
+    for k1, v1 in din.items():
+
+        if isinstance(v1, str):
+            if v1 in lref:
+                dout['ref'].append(v1)
+            elif v1 in ldata:
+                dout['data'].append(v1)
+
+        elif isinstance(v1, (list, tuple)):
+            for v2 in v1:
+                if not isinstance(v2, str):
+                    continue
+                if v2 in lref:
+                    dout['ref'].append(v2)
+                elif v2 in ldata:
+                    dout['data'].append(v2)
+
+        elif isinstance(v1, dict):
+            _extract_refdata_from_dict(
+                dout=dout,
+                din=v1,
+                lref=lref,
+                ldata=ldata,
+            )
 
 
 # ##################################################################
