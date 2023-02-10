@@ -311,4 +311,3 @@ class Test01_BSplines2D():
             nd='2d',
             kind=None,
         )
-

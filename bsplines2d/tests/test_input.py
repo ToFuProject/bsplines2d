@@ -816,7 +816,7 @@ def _add_data_var(bsplines, key):
 def _plot_as_profile2d(bs,  nd=None, kind=None):
     dkd = _get_data(bs, nd=nd, kind=kind)
 
-    for ii, (k0, v0) in dkd.items():
+    for ii, (k0, v0) in enumerate(dkd.items()):
 
         if bs.ddata[k0]['data'].ndim > 4:
             continue
