@@ -366,7 +366,6 @@ def interpolate(
                 'daxis': daxis,
                 'dsh_other': dsh_other,
                 'domain': domain,
-                'doutref': {k0: v0['ref'] for k0, v0 in dout.items()},
                 'details': details,
                 'crop': crop,
                 'cropbs': cropbs,

@@ -456,13 +456,14 @@ def _extract_bsplines_mesh(coll=None, coll2=None):
 
     # bs from ref
     lbs2 = []
-    for k0, v0 in coll.dobj[wbs].items():
-        for k1 in coll2.dref.keys():
-            if k1 in v0['ref'] + v0['ref-bs']:
-                lbs2.append(k0)
-        for k1 in coll2.ddata.keys():
-            if k1 in v0['apex']:
-                lbs2.append(k0)
+    if wbs in coll.dobj.keys():
+        for k0, v0 in coll.dobj[wbs].items():
+            for k1 in coll2.dref.keys():
+                if k1 in v0['ref'] + v0['ref-bs']:
+                    lbs2.append(k0)
+            for k1 in coll2.ddata.keys():
+                if k1 in v0['apex']:
+                    lbs2.append(k0)
 
     lbs = list(set(lbs + lbs2))
 
