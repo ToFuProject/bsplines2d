@@ -311,3 +311,19 @@ class Test01_BSplines2D():
             nd='2d',
             kind=None,
         )
+
+    # ################################
+    # operators
+    # ################################
+
+    def test51_operators_1d(self):
+        pass
+
+    def test52_operators_2d_rect(self):
+        pass
+
+    def test52_operators_2d_tri(self):
+        pass
+
+    def test53_operators_1d_subkey(self):
+        pass

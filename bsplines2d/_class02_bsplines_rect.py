@@ -280,8 +280,8 @@ class BivariateSplineRect(scpinterp.BivariateSpline):
     def get_overlap(self):
         return _get_overlap(
             deg=self.degrees[0],
-            knotsx=self.knots_per_bs_x0,
-            knotsy=self.knots_per_bs_x1,
+            knots0=self.knots_per_bs_x0,
+            knots1=self.knots_per_bs_x1,
             shapebs=self.shapebs,
         )
 

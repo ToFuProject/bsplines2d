@@ -33,7 +33,7 @@ def get_bsplines_operator(
 
     # -------
     # compute
-    
+
     (
         opmat, operator, geometry, dim, ref, crop,
         store, returnas, key,
@@ -50,13 +50,13 @@ def get_bsplines_operator(
         # to return gradR, gradZ, for D1N2 deg 0, for tomotok
         returnas_element=returnas_element,
     )
-    
+
     # ------
     # store
-    
+
     if store is True:
         if operator == 'D1':
-            name = f'{key}-{operator}-dR'
+            name = f'{key}-{operator}-dx0'
             if crop is True:
                 name = f'{name}-cropped'
             coll.add_data(
@@ -67,7 +67,7 @@ def get_bsplines_operator(
                 name=operator,
                 dim=dim,
             )
-            name = f'{key}-{operator}-dZ'
+            name = f'{key}-{operator}-dx1'
             if crop is True:
                 name = f'{name}-cropped'
             coll.add_data(
@@ -92,7 +92,7 @@ def get_bsplines_operator(
                 dim=dim,
             )
         elif operator == 'D1N2':
-            name = f'{key}-{operator}-dR-{geometry}'
+            name = f'{key}-{operator}-dx0-{geometry}'
             if crop is True:
                 name = f'{name}-cropped'
             coll.add_data(
@@ -103,7 +103,7 @@ def get_bsplines_operator(
                 name=operator,
                 dim=dim,
             )
-            name = f'{key}-{operator}-dZ-{geometry}'
+            name = f'{key}-{operator}-dx1-{geometry}'
             if crop is True:
                 name = f'{name}-cropped'
             coll.add_data(
@@ -115,7 +115,7 @@ def get_bsplines_operator(
                 dim=dim,
             )
         elif operator == 'D2N2':
-            name = f'{key}-{operator}-d2R-{geometry}'
+            name = f'{key}-{operator}-d2x0-{geometry}'
             if crop is True:
                 name = f'{name}-cropped'
             coll.add_data(
@@ -126,7 +126,7 @@ def get_bsplines_operator(
                 name=operator,
                 dim=dim,
             )
-            name = f'{key}-{operator}-d2Z-{geometry}'
+            name = f'{key}-{operator}-d2x1-{geometry}'
             if crop is True:
                 name = f'{name}-cropped'
             coll.add_data(
@@ -137,7 +137,7 @@ def get_bsplines_operator(
                 name=operator,
                 dim=dim,
             )
-            name = f'{key}-{operator}-dRZ-{geometry}'
+            name = f'{key}-{operator}-dx0x1-{geometry}'
             if crop is True:
                 name = f'{name}-cropped'
             coll.add_data(
@@ -155,7 +155,7 @@ def get_bsplines_operator(
     # return
     if returnas is True:
         return opmat, operator, geometry, dim, ref, crop
-    
+
 
 # #############################################################################
 # #############################################################################
