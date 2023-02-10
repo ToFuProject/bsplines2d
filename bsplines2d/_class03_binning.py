@@ -221,8 +221,9 @@ def _binning(
     )
 
     # sample mesh, update dv
-    xx = coll.get_sample_mesh(keym, res=res0 / npts, mode='abs')
+    xx = coll.get_sample_mesh(keym, res=res0 / npts, mode='abs')['x0']['data']
     dv = np.abs(np.diff(xx))
+
     dv = np.append(dv, dv[-1])
 
     # units
