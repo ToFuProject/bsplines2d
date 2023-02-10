@@ -365,14 +365,10 @@ def _prepare(
     # get plotting mesh
 
     # get dR, dZ
-    dx0, dx1, x0minmax, x1minmax = _plot_bsplines_get_dx01(
-        coll=coll,
-        km=coll.dobj[wbs][subbs][wm],
-    )
-
-    if dres is None:
-        res_coef = 0.2
-        dres = res_coef*min(dx0, dx1)
+    # dx0, dx1, x0minmax, x1minmax = _plot_bsplines_get_dx01(
+        # coll=coll,
+        # km=coll.dobj[wbs][subbs][wm],
+    # )
 
     coll2, dbs = coll.interpolate_all_bsplines(
         key=key,
