@@ -158,10 +158,8 @@ def interpolate(
                 imshow=False,
             )
 
-            if coll.dobj[wm][km]['nd'] == '1d':
-                x0 = out
-            else:
-                x0, x1 = out
+            x0 = out['x0']['data']
+            x1 = out.get('x1', {}).get('data')
 
         # ---------------
         # submesh
@@ -198,16 +196,23 @@ def interpolate(
             # ------------------------------------------
             # handle ref_com, add ref and data if needed
 
-            ref_com, lr_add, ld_add = _submesh_ref_com(
+            refcom = _submesh_ref_com(
                 coll=coll,
                 kd0=kd0,
                 keys=keys,
                 ref_com=ref_com,
+                # coordinates
+                x0=x0,
+            )
+
+            # temporary storing for ref handling
+            lr_add, ld_add = _submesh_addtemp(
+                coll=coll,
+                kd0=kd0,
                 # interp resut
                 dout_temp=dout_temp,
                 # coordinates
                 x0=x0,
-                x1=x1,
             )
 
             # --------
@@ -265,15 +270,6 @@ def interpolate(
         inplace=inplace,
         x0_str=x0_str,
     )
-
-    if store is True and submesh is True:
-        # TBF
-        import pdb; pdb.set_trace() # DB
-        kx0 = dparams_temp['kx0']
-        kx1 = dparams_temp['kx1']
-        refx = dparams_temp['refx']
-        for k0 in dout.keys():
-            dout[k0]['ref'] = dparams_temp['doutref'][k0]
 
     # ---------------
     # interpolate
@@ -342,10 +338,6 @@ def interpolate(
             coll=coll,
             dout=dout,
             inplace=inplace,
-            kx0=kx0,
-            kx1=kx1,
-            refx=refx,
-            ndim=ndim,
         )
 
     # -------
@@ -374,6 +366,7 @@ def interpolate(
                 'daxis': daxis,
                 'dsh_other': dsh_other,
                 'domain': domain,
+                'doutref': {k0: v0['ref'] for k0, v0 in dout.items()},
                 'details': details,
                 'crop': crop,
                 'cropbs': cropbs,
@@ -691,15 +684,13 @@ def _check_params_bsplines(
     # ---------
     # submesh
 
-    lok = [False]
-    if coll.dobj[coll._which_mesh][keym]['subkey'] is not None:
-        lok.append(True)
     submesh = ds._generic_check._check_var(
         submesh, 'submesh',
         types=bool,
         default=False,
-        allowed=lok,
     )
+    if coll.dobj[coll._which_mesh][keym]['subkey'] is None:
+        submesh = False
 
     return details, val_out, crop, cropbs, indbs_tf, nbs, submesh
 
@@ -715,11 +706,8 @@ def _submesh_ref_com(
     kd0=None,
     keys=None,
     ref_com=None,
-    # interp resut
-    dout_temp=None,
     # coordinates
     x0=None,
-    x1=None,
 ):
 
     # ---------------------
@@ -739,36 +727,51 @@ def _submesh_ref_com(
     if ref_com is None:
         if len(lrcom) > 0:
             msg = (
-                f"\nPossible common ref for data {keys} and subkey {kd0}:\n"
+                f"\nPossible common ref for data {keys} and subkey '{kd0}':\n"
                 + "\n".join([f"\t- {rr}" for rr in lrcom])
                 + "\nIf you wish to use one, specify with ref_com=..."
             )
             warnings.warn(msg)
 
-        return None, None, None
+    else:
+        # --------------
+        # if ref_com
 
-    # --------------
-    # if ref_com
-
-    lok = [rr[0] for rr in lrcom]
-    ref_com = ds._generic_check._check_var(
-        ref_com, 'ref_com',
-        types=str,
-        allowed=lok,
-    )
-
-    # -----------
-    # safety check vs assumptions
-
-    if isinstance(x0, str) and ref_com is coll.ddata[x0]['ref']:
-        msg = (
-            "For submesh=True, it is assumed that x0 '{x0}' has no common ref!"
-            f"\n\t- detected: {ref_com}"
+        lok = [rr[0] for rr in lrcom]
+        ref_com = ds._generic_check._check_var(
+            ref_com, 'ref_com',
+            types=str,
+            allowed=lok,
         )
-        raise NotImplementedError(msg)
+
+        # -----------
+        # safety check vs assumptions
+
+        if isinstance(x0, str) and ref_com is coll.ddata[x0]['ref']:
+            msg = (
+                "For submesh=True, x0 '{x0}' should have no common ref!"
+                f"\n\t- detected: {ref_com}"
+            )
+            raise NotImplementedError(msg)
+
+    return ref_com
+
+
+def _submesh_addtemp(
+    coll=None,
+    kd0=None,
+    # interp resut
+    dout_temp=None,
+    # coordinates
+    x0=None,
+    ref_com=None,
+):
 
     # -------------
     # trivial
+
+    if not isinstance(x0, str) and ref_com is None:
+        return None, None
 
     if isinstance(x0, str):
        assert not any([rr is None for rr in dout_temp[kd0[0]]['ref']])
@@ -806,7 +809,7 @@ def _submesh_ref_com(
 
     dd_add = dout_temp
     for ii, kk in enumerate(dd_add.keys()):
-        dd_add[kk]['key'] = f'd{len(coll.ddata) + ii:03.0f}'
+        dd_add[kk]['key'] = f'dddd{len(coll.ddata) + ii:03.0f}'
     ld_add = [vv['key'] for vv in dd_add.values()]
 
     # --------
@@ -821,10 +824,7 @@ def _submesh_ref_com(
     for vv in dd_add.values():
         coll.add_data(**vv)
 
-    # --------
-    # return
-
-    return ref_com, lr_add, ld_add
+    return lr_add, ld_add
 
 
 # ################################################################
