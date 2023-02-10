@@ -40,7 +40,7 @@ def _get_kwdargs_2d(kwdargs, latt=None):
 
         elif not (isinstance(kwdargs[k0], list) and len(kwdargs[k0]) == 2):
             msg = (
-                f"Wrong attributes for 2d rect mesh '{key}':\n"
+                f"Wrong attributes for 2d rect mesh '{k0}':\n"
                 "Please provide units, dim, quant, name as list of len() = 2"
                 f"Provided:\n{kwdargs}"
             )
