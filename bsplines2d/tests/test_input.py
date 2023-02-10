@@ -808,6 +808,27 @@ def _add_data_var(bsplines, key):
 
 #######################################################
 #
+#     Plotting
+#
+#######################################################
+
+
+def _plot_as_profile2d(bs,  nd=None, kind=None):
+    dkd = _get_data(bs, nd=nd, kind=kind)
+
+    for ii, (k0, v0) in dkd.items():
+
+        if bs.ddata[k0]['data'].ndim > 4:
+            continue
+        if ii%2 == 0:
+            continue
+
+        dax = bs.plot_as_profile2d(key=k0)
+        plt.close('all')
+
+
+#######################################################
+#
 #     utilities
 #
 #######################################################

@@ -308,8 +308,7 @@ class Test01_BSplines2D():
     def test50_plot_as_profile2d(self):
         test_input._plot_as_profile2d(
             self.bs,
-            nd='1d',
+            nd='2d',
             kind=None,
-            submesh=True,
         )
 
