@@ -121,7 +121,7 @@ setup(
         "numpy",
         "scipy",
         "matplotlib",
-        "datastock>=0.0.23",
+        "datastock>=0.0.24",
     ],
     python_requires=">=3.6",
 
