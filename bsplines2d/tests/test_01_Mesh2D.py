@@ -317,10 +317,18 @@ class Test01_BSplines2D():
     # ################################
 
     def test51_operators_1d(self):
-        pass
+        test_input._get_operators(
+            self.bs,
+            nd='1d',
+            kind=None,
+        )
 
     def test52_operators_2d_rect(self):
-        pass
+        test_input._get_operators(
+            self.bs,
+            nd='2d',
+            kind='rect',
+        )
 
     def test52_operators_2d_tri(self):
         pass

@@ -10,12 +10,13 @@ import scipy.interpolate as scpinterp
 
 
 from . import _utils_bsplines
+from . import _class02_bsplines_operators_1d as _operators_1d
 
 
-# #############################################################################
-# #############################################################################
+# ################################################################
+# ################################################################
 #                   class
-# #############################################################################
+# ################################################################
 
 
 class UnivariateSpline():
@@ -295,7 +296,7 @@ class UnivariateSpline():
 
     def get_overlap(self):
         return _get_overlap(
-            deg=self.degrees[0],
+            deg=self.deg,
             knots=self.knots_per_bs,
             shapebs=self.shapebs,
         )
@@ -313,16 +314,24 @@ class UnivariateSpline():
     ):
         """ Get desired operator """
 
-        msg = (
-            "Operator not implemented yet for 1d bsplines!"
+        return _operators_1d.get_operators(
+            deg=self.deg,
+            operator=operator,
+            geometry=geometry,
+            knots_mult=self.knots_with_mult,
+            knots_per_bs=self.knots_per_bs,
+            overlap=self.get_overlap(),
+            # specific to deg = 0
+            centered=centered,
+            # to return gradR, gradZ, for D1N2 deg 0, for tomotok
+            returnas_element=returnas_element,
         )
-        raise NotImplementedError(msg)
 
 
-# #############################################################################
-# #############################################################################
-#                       Mesh2DPolar - bsplines - overlap
-# #############################################################################
+# ################################################################
+# ################################################################
+#                       overlap
+# ################################################################
 
 
 def _get_overlap(
@@ -330,13 +339,28 @@ def _get_overlap(
     knots=None,
     shapebs=None,
 ):
-    raise NotImplementedError()
+    # nb of overlapping, inc. itself in 1d
+    nbs, = shapebs
+    ind0 = np.arange(0, nbs)
+
+    # complete
+    ntot = 2*deg + 1
+
+    add0 = np.arange(-deg, deg+1)
+
+    inter = ind0[None, :] + add0[:, None]
+
+    # purge
+    ineg = (inter < 0) | (inter >= nbs)
+    inter[ineg] = -1
+
+    return inter
 
 
-# #############################################################################
-# #############################################################################
+# ################################################################
+# ################################################################
 #                   Main
-# #############################################################################
+# ################################################################
 
 
 def get_bs_class(
