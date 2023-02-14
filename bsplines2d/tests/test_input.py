@@ -846,7 +846,7 @@ def _get_operators(bs, nd=None, kind=None, remove=None):
     wm = bs._which_mesh
     wbs = bs._which_bsplines
 
-    for k0 in lkb:
+    for ii, k0 in enumerate(lkb):
 
         keym = bs.dobj[wbs][k0][wm]
         mtype = bs.dobj[wm][keym]['type']
@@ -874,10 +874,8 @@ def _get_operators(bs, nd=None, kind=None, remove=None):
                     key=k0,
                     operator=op,
                     geometry=gg,
+                    store=ii % 2 == 0,
                 )
-
-                if remove is True:
-                    bs.remove_data()
 
 
 #######################################################
