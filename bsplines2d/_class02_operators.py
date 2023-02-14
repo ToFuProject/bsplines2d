@@ -5,6 +5,7 @@
 
 
 # Common
+import astropy.units as asunits
 import datastock as ds
 
 
@@ -23,21 +24,23 @@ def get_bsplines_operator(
     operator=None,
     geometry=None,
     crop=None,
+    # store vs return
     store=None,
     returnas=None,
+    return_param=None,
     # specific to deg = 0
     centered=None,
     # to return gradR, gradZ, for D1N2 deg 0, for tomotok
     returnas_element=None,
 ):
 
-    # -------
-    # compute
-    
+    # ---------
+    # check
+
     (
-        opmat, operator, geometry, dim, ref, crop,
-        store, returnas, key,
-    ) = _get_bsplines_operator(
+        key, store, returnas,
+        crop, cropbs, cropbs_flat, keycropped,
+    ) = _check(
         coll=coll,
         key=key,
         operator=operator,
@@ -45,125 +48,61 @@ def get_bsplines_operator(
         crop=crop,
         store=store,
         returnas=returnas,
+    )
+
+    # -------
+    # compute
+
+    dout = _get_bsplines_operator(
+        coll=coll,
+        key=key,
+        operator=operator,
+        geometry=geometry,
+        crop=crop,
+        cropbs=cropbs,
+        cropbs_flat=cropbs_flat,
+        keycropped=keycropped,
+        store=store,
+        returnas=returnas,
         # specific to deg = 0
         centered=centered,
         # to return gradR, gradZ, for D1N2 deg 0, for tomotok
         returnas_element=returnas_element,
     )
-    
+
     # ------
     # store
-    
-    if store is True:
-        if operator == 'D1':
-            name = f'{key}-{operator}-dR'
-            if crop is True:
-                name = f'{name}-cropped'
-            coll.add_data(
-                key=name,
-                data=opmat[0],
-                ref=ref,
-                units='',
-                name=operator,
-                dim=dim,
-            )
-            name = f'{key}-{operator}-dZ'
-            if crop is True:
-                name = f'{name}-cropped'
-            coll.add_data(
-                key=name,
-                data=opmat[1],
-                ref=ref,
-                units='',
-                name=operator,
-                dim=dim,
-            )
 
-        elif operator in ['D0N1', 'D0N2']:
-            name = f'{key}-{operator}-{geometry}'
-            if crop is True:
-                name = f'{name}-cropped'
-            coll.add_data(
-                key=name,
-                data=opmat,
-                ref=ref,
-                units='',
-                name=operator,
-                dim=dim,
-            )
-        elif operator == 'D1N2':
-            name = f'{key}-{operator}-dR-{geometry}'
-            if crop is True:
-                name = f'{name}-cropped'
-            coll.add_data(
-                key=name,
-                data=opmat[0],
-                ref=ref,
-                units='',
-                name=operator,
-                dim=dim,
-            )
-            name = f'{key}-{operator}-dZ-{geometry}'
-            if crop is True:
-                name = f'{name}-cropped'
-            coll.add_data(
-                key=name,
-                data=opmat[1],
-                ref=ref,
-                units='',
-                name=operator,
-                dim=dim,
-            )
-        elif operator == 'D2N2':
-            name = f'{key}-{operator}-d2R-{geometry}'
-            if crop is True:
-                name = f'{name}-cropped'
-            coll.add_data(
-                key=name,
-                data=opmat[0],
-                ref=ref,
-                units='',
-                name=operator,
-                dim=dim,
-            )
-            name = f'{key}-{operator}-d2Z-{geometry}'
-            if crop is True:
-                name = f'{name}-cropped'
-            coll.add_data(
-                key=name,
-                data=opmat[1],
-                ref=ref,
-                units='',
-                name=operator,
-                dim=dim,
-            )
-            name = f'{key}-{operator}-dRZ-{geometry}'
-            if crop is True:
-                name = f'{name}-cropped'
-            coll.add_data(
-                key=name,
-                data=opmat[2],
-                ref=ref,
-                units='',
-                name=operator,
-                dim=dim,
-            )
-        else:
-            msg = "Unknown opmat type!"
-            raise Exception(msg)
+    if store is True:
+
+        for k0, v0 in dout.items():
+
+            if operator == 'D1' and None in v0['ref']:
+                continue
+            coll.add_data(**v0)
 
     # return
     if returnas is True:
-        return opmat, operator, geometry, dim, ref, crop
-    
 
-# #############################################################################
-# #############################################################################
-#                           subroutine
-# #############################################################################
+        if return_param:
+            dpar = {
+                'key': key,
+                'operator': operator,
+                'geometry': geometry,
+                'crop': crop,
+            }
+            return dout, dpar
+
+        return dout
 
 
-def _get_bsplines_operator(
+# ################################################################
+# ################################################################
+#               check
+# ################################################################
+
+
+def _check(
     coll=None,
     key=None,
     operator=None,
@@ -171,19 +110,25 @@ def _get_bsplines_operator(
     crop=None,
     store=None,
     returnas=None,
-    # specific to deg = 0
-    centered=None,
-    # to return gradR, gradZ, for D1N2 deg 0, for tomotok
-    returnas_element=None,
 ):
 
-    # check inputs
-    lk = list(coll.dobj.get('bsplines', {}).keys())
+    # --------
+    # key
+
+    wm = coll._which_mesh
+    wbs = coll._which_bsplines
+    lk = list(coll.dobj.get(wbs, {}).keys())
     key = ds._generic_check._check_var(
         key, 'key',
         types=str,
         allowed=lk,
     )
+    keym = coll.dobj[wbs][key][wm]
+    nd = coll.dobj[wm][keym]['nd']
+    mtype = coll.dobj[wm][keym]['type']
+
+    # --------
+    # store
 
     store = ds._generic_check._check_var(
         store, 'store',
@@ -191,17 +136,25 @@ def _get_bsplines_operator(
         types=bool,
     )
 
+    # --------
+    # returnas
+
     returnas = ds._generic_check._check_var(
         returnas, 'returnas',
         default=store is False,
         types=bool,
     )
 
+    # --------
+    # crop
+
     crop = ds._generic_check._check_var(
         crop, 'crop',
         default=True,
         types=bool,
     )
+    if not (nd == '2d' and mtype == 'rect'):
+        crop = False
 
     # cropbs
     cropbs = coll.dobj['bsplines'][key]['crop']
@@ -215,9 +168,37 @@ def _get_bsplines_operator(
         cropbs = False
         cropbs_flat = False
 
+    return key, store, returnas, crop, cropbs, cropbs_flat, keycropped
+
+
+# ################################################################
+# ################################################################
+#                       compute
+# ################################################################
+
+
+def _get_bsplines_operator(
+    coll=None,
+    key=None,
+    operator=None,
+    geometry=None,
+    crop=None,
+    cropbs=None,
+    cropbs_flat=None,
+    keycropped=None,
+    store=None,
+    returnas=None,
+    # specific to deg = 0
+    centered=None,
+    # to return gradR, gradZ, for D1N2 deg 0, for tomotok
+    returnas_element=None,
+):
+
+    # -------------------
     # compute and return
+
     (
-        opmat, operator, geometry, dim,
+        opmat, operator, geometry,
     ) = coll.dobj['bsplines'][key]['class'].get_operator(
         operator=operator,
         geometry=geometry,
@@ -229,12 +210,264 @@ def _get_bsplines_operator(
         returnas_element=returnas_element,
     )
 
-    # cropping
-    if operator == 'D1':
-        ref = (keycropped, keycropped)
-    elif operator == 'D0N1':
-        ref = (keycropped,)
-    elif 'N2' in operator:
-        ref = (keycropped, keycropped)
+    # -----------
+    # format dout
 
-    return opmat, operator, geometry, dim, ref, crop, store, returnas, key
+    wm = coll._which_mesh
+    wbs = coll._which_bsplines
+    keym = coll.dobj[wbs][key][wm]
+    nd = coll.dobj[wm][keym]['nd']
+    mtype = coll.dobj[wm][keym]['type']
+    deg = coll.dobj[wbs][key]['deg']
+
+    dout = _dout(
+        coll=coll,
+        key=key,
+        opmat=opmat,
+        operator=operator,
+        geometry=geometry,
+        keycropped=keycropped,
+        crop=crop,
+        nd=nd,
+        mtype=mtype,
+        deg=deg,
+    )
+
+    return dout
+
+
+# ###################################################
+# ###################################################
+#                   ref
+# ###################################################
+
+
+def _dout(
+    coll=None,
+    key=None,
+    opmat=None,
+    operator=None,
+    geometry=None,
+    keycropped=None,
+    crop=None,
+    nd=None,
+    mtype=None,
+    deg=None,
+):
+
+    # --------
+    # get refs
+
+    ref, units = _ref_units(
+        coll=coll,
+        key=key,
+        opmat=opmat,
+        operator=operator,
+        geometry=geometry,
+        keycropped=keycropped,
+        nd=nd,
+        mtype=mtype,
+        deg=deg,
+    )
+
+    geom = geometry[:3]
+
+    # ----------
+    # build dout
+
+    dout = {}
+    if nd == '1d':
+
+        k0 = f'{key}_{operator}'
+        if 'N' in operator:
+            k0 = f'{k0}_{geom}'
+
+        dout[k0] = {
+            'key': k0,
+            'data': opmat,
+            'ref': ref,
+            'units': units,
+            'dim': operator,
+        }
+
+    elif nd == '2d' and mtype == 'rect':
+
+        if operator in ['D0N1', 'D0N2']:
+            k0 = f'{key}_{operator}_{geom}'
+            if crop is True:
+                k0 = f'{k0}_cropped'
+            dout[k0] = {
+                'key': k0,
+                'data': opmat,
+                'ref': ref,
+                'units': units,
+                'dim': operator,
+            }
+
+        elif operator in ['D1', 'D1N2']:
+            k0 = f'{key}_{operator}_d0'
+            if 'N' in operator:
+                k0 = f'{k0}_{geom}'
+            if crop is True:
+                k0 = f'{k0}_cropped'
+            dout[k0] = {
+                'key': k0,
+                'data': opmat[0],
+                'ref': ref,
+                'units': units[0],
+                'dim': operator,
+            }
+
+            k0 = f'{key}_{operator}_d1'
+            if 'N' in operator:
+                k0 = f'{k0}_{geom}'
+            if crop is True:
+                k0 = f'{k0}_cropped'
+            dout[k0] = {
+                'key': k0,
+                'data': opmat[1],
+                'ref': ref,
+                'units': units[1],
+                'dim': operator,
+            }
+
+        elif operator in ['D2N2']:
+            k0 = f'{key}_{operator}_d00_{geom}'
+            if crop is True:
+                k0 = f'{k0}_cropped'
+            dout[k0] = {
+                'key': k0,
+                'data': opmat[0],
+                'ref': ref,
+                'units': units[0],
+                'dim': operator,
+            }
+
+            k0 = f'{key}_{operator}_d01_{geom}'
+            if crop is True:
+                k0 = f'{k0}_cropped'
+            dout[k0] = {
+                'key': k0,
+                'data': opmat[1],
+                'ref': ref,
+                'units': units[1],
+                'dim': operator,
+            }
+
+            k0 = f'{key}_{operator}_d11_{geom}'
+            if crop is True:
+                k0 = f'{k0}_cropped'
+            dout[k0] = {
+                'key': k0,
+                'data': opmat[2],
+                'ref': ref,
+                'units': units[2],
+                'dim': operator,
+            }
+
+    return dout
+
+
+def _ref_units(
+    coll=None,
+    key=None,
+    opmat=None,
+    operator=None,
+    geometry=None,
+    keycropped=None,
+    nd=None,
+    mtype=None,
+    deg=None,
+):
+
+    # --------
+    # prepare
+
+    wm = coll._which_mesh
+    wbs = coll._which_bsplines
+    keym = coll.dobj[wbs][key][wm]
+
+    ref = keycropped
+    ref0 = coll.dobj[wbs][key]['ref-bs']
+
+    if deg > 0:
+        kbsm1 = f'{keym}_bs{deg-1}'
+        if kbsm1 in coll.dobj[wbs].keys():
+            rm1 = coll.dobj[wbs][kbsm1]['ref-bs']
+            if ref0 != ref:
+                rm1 = f'{rm1}_crop'
+        else:
+            rm1 = None
+    else:
+        rm1 = ref
+
+    # ----------
+    # ref
+
+    if operator == 'D1':
+        ref = (rm1, ref)
+
+    elif operator == 'D0N1':
+        ref = (ref,)
+
+    elif 'N2' in operator:
+        ref = (ref, ref)
+
+    # --------
+    # units
+
+    apex = coll.dobj[wbs][key]['apex']
+    u0 = coll.ddata[apex[0]]['units']
+    if nd == '1d':
+        units = _units(u0, operator, geometry)
+
+    else:
+        u1 = coll.ddata[apex[1]]['units']
+        units0 = _units(u0, operator, geometry)
+        units1 = _units(u1, operator, 'linear')
+
+        if operator in ['D0N1', 'D0N2']:
+            units = units0 * units1
+
+        elif operator in ['D1', 'D1N2']:
+            units = [units0, units1]
+
+        elif operator in ['D2N2']:
+            units = [units0, units0*u0*units1*u1, units1]
+
+    return ref, units
+
+
+def _units(u0=None, operator=None, geometry=None):
+
+    if u0 == '':
+        u0 = asunits.Unit('')
+
+    if operator == 'D1':
+        units = asunits.Unit(1/u0)
+
+    elif operator == 'D0N1':
+        if geometry == 'linear':
+            units = u0
+        else:
+            units = u0**2
+
+    elif operator == 'D0N2':
+        if geometry == 'linear':
+            units = u0
+        else:
+            units = u0**2
+
+    elif operator == 'D1N2':
+        if geometry == 'linear':
+            units = asunits.Unit(1/u0)
+        else:
+            units = asunits.Unit('')
+
+    elif operator == 'D2N2':
+        if geometry == 'linear':
+            units = asunits.Unit(1/u0**3)
+        else:
+            units = asunits.Unit(1/u0**2)
+
+    return units

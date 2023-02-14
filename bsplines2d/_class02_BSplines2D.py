@@ -276,6 +276,23 @@ class BSplines2D(Previous):
             returnas_element=returnas_element,
         )
 
+    def apply_bsplines_operator(
+        self,
+        key=None,
+        operator=None,
+        store=None,
+        returnas=None,
+    ):
+        """ Apply an operator to desired data """
+
+        return _operators.apply_operator(
+            coll=self,
+            key=key,
+            operator=operator,
+            store=store,
+            returnas=returnas,
+        )
+
     # -----------------
     # interp tools
     # ------------------

@@ -829,6 +829,57 @@ def _plot_as_profile2d(bs,  nd=None, kind=None):
 
 #######################################################
 #
+#     Operators
+#
+#######################################################
+
+
+def _get_operators(bs, nd=None, kind=None, remove=None):
+    lkb = _get_bs(bs, nd=nd, kind=kind)
+
+    operator = [
+        'D1',
+        'D0N1',
+        'D0N2', 'D1N2', 'D2N2', 'D3N2',
+    ]
+    geometry = ['linear', 'toroidal']
+    wm = bs._which_mesh
+    wbs = bs._which_bsplines
+
+    for ii, k0 in enumerate(lkb):
+
+        keym = bs.dobj[wbs][k0][wm]
+        mtype = bs.dobj[wm][keym]['type']
+
+        for op in operator:
+
+            deg = bs.dobj[wbs][k0]['deg']
+            if deg == 0 and op == 'D1N2':
+                pass
+            elif deg < int(op[1]):
+                continue
+            elif len(op) == 2 and deg >= 2:
+                continue
+            elif op == 'D1' and mtype == 'rect' and deg >= 1:
+                continue
+            elif deg == 3:
+                continue
+
+            for gg in geometry:
+                if op == 'D1' and gg == 'toroidal':
+                    continue
+                # print('\t', k0, nd, kind, op, gg)
+
+                bs.add_bsplines_operator(
+                    key=k0,
+                    operator=op,
+                    geometry=gg,
+                    store=ii % 2 == 0,
+                )
+
+
+#######################################################
+#
 #     utilities
 #
 #######################################################
