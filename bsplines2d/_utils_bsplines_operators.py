@@ -159,7 +159,7 @@ def _D0N2_Deg1(knots, geom='linear'):
     ])
 
 
-def _D0N2_Deg1_full(k2, k1, k0, geom='linear'):
+def _D0N2_Deg1_full(k0, k1, k2, geom='linear'):
     """ from 1d knots, return int_0^2 x b**2(x) dx """
     if geom == 'linear':
         return (k2 - k0) / 3.
@@ -316,6 +316,7 @@ def _D0N2_Deg2_3_linear(k0, k1, k2, k3, k4):
     return intt
 
 
+# TBC, seems too low compared to full toroidal
 def _D0N2_Deg2_3_toroidal(k0, k1, k2, k3, k4):
     """ from 1d knots, return int_0^3 b**2(x) dx """
     intt = np.zeros((k0.size,))
@@ -592,7 +593,7 @@ def _D1_Deg2(
 # ###############################################################
 
 
-def _D1N2_Deg1(knots, geometry=None):
+def _D1N2_Deg1(knots, geometry='linear'):
 
     if geometry == 'linear':
         ffull = _D1N2_Deg1_full_linear
@@ -641,7 +642,7 @@ def _D1N2_Deg1_2_toroidal(k1, k2):
     return intt
 
 
-def _D1N2_Deg2(knots, geometry=None):
+def _D1N2_Deg2(knots, geometry='linear'):
 
     if geometry == 'linear':
         ffull = _D1N2_Deg2_full_linear
@@ -772,7 +773,7 @@ def _D1N2_Deg2_2_toroidal(k1, k2, k3, k4):
 # ###############################################################
 
 
-def _D2N2_Deg2(knots, geometry=None):
+def _D2N2_Deg2(knots, geometry='linear'):
 
     if geometry == 'linear':
         ffull = _D2N2_Deg2_full_linear

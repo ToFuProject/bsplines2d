@@ -187,7 +187,6 @@ def get_operators(
                 data[i0:i0+2] = iix
                 row[i0:i0+2] = (indbs[ii], indbs[jj])
                 column[i0:i0+2] = (indbs[jj], indbs[ii])
-                import pdb; pdb.set_trace()     # DB
                 i0 += 2
 
         assert i0 == nbtot
@@ -229,12 +228,10 @@ def get_operators(
 
             # pre-compute integrals for exact operator deg >= 1
             if deg == 1:
-                idx = _D1N2_Deg1(knots_mult, geom)
-                ix = _D0N2_Deg1(knots_mult, geom)
+                idx = _operators._D1N2_Deg1(knots_mult, geom)
 
             elif deg == 2:
-                idx = _D1N2_Deg2(knots_mult, geom)
-                ix = _D0N2_Deg2(knots_mult, geom)
+                idx = _operators._D1N2_Deg2(knots_mult, geom)
 
             elif deg == 3:
                 msg = "Integral D1N2 not implemented for deg=3!"
@@ -242,55 +239,32 @@ def get_operators(
 
             # set non-diagonal elements
             i0 = 0
-            for ir in range(nx):
-                for iz in range(ny):
+            for ii in range(nbs):
 
-                    iflat = ir + iz*nx
-                    if cropbs_flat is not False and not cropbs_flat[iflat]:
-                        continue
+                # general case
+                overlapi = overlap[:, ii][overlap[:, ii] > ii]
 
-                    # general case
-                    overlapi = overlap[:, iflat][overlap[:, iflat] > iflat]
+                # diagonal element
+                datadx[i0] = idx[0, ii]
+                row[i0] = indbs[ii]
+                column[i0] = indbs[ii]
+                i0 += 1
 
-                    # diagonal element
-                    datadR[i0] = idR[0, ir] * iZ[0, iz]
-                    datadZ[i0] = iR[0, ir] * idZ[0, iz]
-                    row[i0] = indbs[iflat]
-                    column[i0] = indbs[iflat]
-                    i0 += 1
+                # non-diagonal elements (symmetric)
+                for jj in overlapi:
 
-                    # non-diagonal elements (symmetric)
-                    for jflat in overlapi:
+                    # store (i, j) and (j, i) (symmetric matrix)
+                    iidx = idx[jj - ii, ii]
 
-                        if cropbs_flat is not False and not cropbs_flat[jflat]:
-                            continue
-
-                        jr = jflat % nx
-                        jz = jflat // nx
-
-                        # store (i, j) and (j, i) (symmetric matrix)
-                        if jr >= ir:
-                            iidR = idR[jr - ir, ir]
-                            iiR = iR[jr - ir, ir]
-                        else:
-                            iidR = idR[abs(jr - ir), jr]
-                            iiR = iR[abs(jr - ir), jr]
-                        if jz >= iz:
-                            iidZ = idZ[jz - iz, iz]
-                            iiZ = iZ[jz - iz, iz]
-                        else:
-                            iidZ = idZ[abs(jz - iz), jz]
-                            iiZ = iZ[abs(jz - iz), jz]
-                        datadR[i0:i0+2] = iidR * iiZ
-                        datadZ[i0:i0+2] = iiR * iidZ
-                        row[i0:i0+2] = (indbs[iflat], indbs[jflat])
-                        column[i0:i0+2] = (indbs[jflat], indbs[iflat])
-                        i0 += 2
+                    datadx[i0:i0+2] = iidx
+                    row[i0:i0+2] = (indbs[ii], indbs[jj])
+                    column[i0:i0+2] = (indbs[jj], indbs[ii])
+                    i0 += 2
 
             assert i0 == nbtot
-            opmat = (
-                scpsp.csc_matrix((datadR, (row, column)), shape=shape),
-                scpsp.csc_matrix((datadZ, (row, column)), shape=shape),
+            opmat = scpsp.csc_matrix(
+                (datadx, (row, column)),
+                shape=shape,
             )
 
     # ------------
@@ -303,74 +277,41 @@ def get_operators(
             msg = f"degree {deg} too low for operator {operator}"
             raise Exception(msg)
         if deg == 2:
-            id2R = _D2N2_Deg2(knotsx_mult, geometry=geometry)
-            id2Z = _D2N2_Deg2(knotsy_mult, geometry='linear')
-            idR = _D1N2_Deg2(knotsx_mult, geometry=geometry)
-            idZ = _D1N2_Deg2(knotsy_mult, geometry='linear')
-            iR = _D0N2_Deg2(knotsx_mult, geometry=geometry)
-            iZ = _D0N2_Deg2(knotsy_mult, geometry='linear')
+            id2x = _operators._D2N2_Deg2(knots_mult, geom)
+            idx = _operators._D1N2_Deg2(knots_mult, geom)
+            ix = _operators._D0N2_Deg2(knots_mult, geom)
         elif deg == 3:
             msg = "Integral D2N2 not implemented for deg=3!"
             raise NotImplementedError(msg)
 
         # set non-diagonal elements
         i0 = 0
-        for ir in range(nx):
-            for iz in range(ny):
-
-                iflat = ir + iz*nx
-                if cropbs_flat is not False and not cropbs_flat[iflat]:
-                    continue
+        for ii in range(nbs):
 
                 # general case
-                overlapi = overlap[:, iflat][overlap[:, iflat] > iflat]
+                overlapi = overlap[:, ii][overlap[:, ii] > ii]
 
                 # diagonal element
-                datad2R[i0] = id2R[0, ir] * iZ[0, iz]
-                datad2Z[i0] = iR[0, ir] * id2Z[0, iz]
-                datadRZ[i0] = idR[0, ir] * idZ[0, iz]
-                row[i0] = indbs[iflat]
-                column[i0] = indbs[iflat]
+                datad2x[i0] = id2x[0, ii]
+                row[i0] = indbs[ii]
+                column[i0] = indbs[ii]
                 i0 += 1
 
                 # non-diagonal elements (symmetric)
-                for jflat in overlapi:
-
-                    if cropbs_flat is not False and not cropbs_flat[jflat]:
-                        continue
-
-                    jr = jflat % nx
-                    jz = jflat // nx
+                for jj in overlapi:
 
                     # store (i, j) and (j, i) (symmetric matrix)
-                    if jr >= ir:
-                        iid2R = id2R[jr - ir, ir]
-                        iidR = idR[jr - ir, ir]
-                        iiR = iR[jr - ir, ir]
-                    else:
-                        iid2R = id2R[abs(jr - ir), jr]
-                        iidR = idR[abs(jr - ir), jr]
-                        iiR = iR[abs(jr - ir), jr]
-                    if jz >= iz:
-                        iid2Z = id2Z[jz - iz, iz]
-                        iidZ = idZ[jz - iz, iz]
-                        iiZ = iZ[jz - iz, iz]
-                    else:
-                        iid2Z = id2Z[abs(jz - iz), jz]
-                        iidZ = idZ[abs(jz - iz), jz]
-                        iiZ = iZ[abs(jz - iz), jz]
-                    datad2R[i0:i0+2] = iid2R * iiZ
-                    datad2Z[i0:i0+2] = iiR * iid2Z
-                    datadRZ[i0:i0+2] = iidR * iidZ
-                    row[i0:i0+2] = (indbs[iflat], indbs[jflat])
-                    column[i0:i0+2] = (indbs[jflat], indbs[iflat])
+                    iid2x = id2x[jj - ii, ii]
+
+                    datad2x[i0:i0+2] = iid2x
+                    row[i0:i0+2] = (indbs[ii], indbs[jj])
+                    column[i0:i0+2] = (indbs[jj], indbs[ii])
                     i0 += 2
 
         assert i0 == nbtot
-        opmat = (
-            scpsp.csc_matrix((datad2R, (row, column)), shape=shape),
-            scpsp.csc_matrix((datad2Z, (row, column)), shape=shape),
-            scpsp.csc_matrix((datadRZ, (row, column)), shape=shape),
+        opmat = scpsp.csc_matrix(
+            (datad2x, (row, column)),
+            shape=shape,
         )
 
     # ------------
@@ -380,7 +321,7 @@ def get_operators(
 
         raise NotImplementedError("Integral D3N2 not implemented for deg=3!")
 
-    return opmat, operator, geometry, None
+    return opmat, operator, geometry
 
 
 # ###############################################################

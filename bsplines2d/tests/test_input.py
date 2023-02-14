@@ -843,12 +843,15 @@ def _get_operators(bs, nd=None, kind=None, remove=None):
         'D0N2', 'D1N2', 'D2N2', 'D3N2',
     ]
     geometry = ['linear', 'toroidal']
+    wm = bs._which_mesh
     wbs = bs._which_bsplines
 
     for k0 in lkb:
 
-        for op in operator:
+        keym = bs.dobj[wbs][k0][wm]
+        mtype = bs.dobj[wm][keym]['type']
 
+        for op in operator:
 
             deg = bs.dobj[wbs][k0]['deg']
             if deg == 0 and op == 'D1N2':
@@ -857,13 +860,15 @@ def _get_operators(bs, nd=None, kind=None, remove=None):
                 continue
             elif len(op) == 2 and deg >= 2:
                 continue
+            elif op == 'D1' and mtype == 'rect' and deg >= 1:
+                continue
             elif deg == 3:
                 continue
 
             for gg in geometry:
                 if op == 'D1' and gg == 'toroidal':
                     continue
-                print('\t', k0, nd, kind, op, gg)
+                # print('\t', k0, nd, kind, op, gg)
 
                 bs.add_bsplines_operator(
                     key=k0,

@@ -58,6 +58,7 @@ def get_bsplines_operator(
         key=key,
         operator=operator,
         geometry=geometry,
+        crop=crop,
         cropbs=cropbs,
         cropbs_flat=cropbs_flat,
         keycropped=keycropped,
@@ -75,8 +76,9 @@ def get_bsplines_operator(
     if store is True:
 
         for k0, v0 in dout.items():
-            # if key == 'm00_bs1':
-                # import pdb; pdb.set_trace()     # DB
+
+            if operator == 'D1' and None in v0['ref']:
+                continue
             coll.add_data(**v0)
 
     # return
@@ -180,6 +182,7 @@ def _get_bsplines_operator(
     key=None,
     operator=None,
     geometry=None,
+    crop=None,
     cropbs=None,
     cropbs_flat=None,
     keycropped=None,
@@ -195,7 +198,7 @@ def _get_bsplines_operator(
     # compute and return
 
     (
-        opmat, operator, geometry, dim,
+        opmat, operator, geometry,
     ) = coll.dobj['bsplines'][key]['class'].get_operator(
         operator=operator,
         geometry=geometry,
@@ -224,6 +227,7 @@ def _get_bsplines_operator(
         operator=operator,
         geometry=geometry,
         keycropped=keycropped,
+        crop=crop,
         nd=nd,
         mtype=mtype,
         deg=deg,
@@ -245,6 +249,7 @@ def _dout(
     operator=None,
     geometry=None,
     keycropped=None,
+    crop=None,
     nd=None,
     mtype=None,
     deg=None,
@@ -434,6 +439,10 @@ def _ref_units(
 
 
 def _units(u0=None, operator=None, geometry=None):
+
+    if u0 == '':
+        u0 = asunits.Unit('')
+
     if operator == 'D1':
         units = asunits.Unit(1/u0)
 
