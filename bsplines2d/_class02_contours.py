@@ -4,6 +4,7 @@
 # Built-in
 import warnings
 
+
 # Common
 import numpy as np
 from scipy.spatial import ConvexHull
@@ -12,14 +13,7 @@ from contourpy import contour_generator
 import datastock as ds
 
 
-# tofu
-from . import _generic_mesh
-from . import _utils_bsplines
-# from . import _class02_checks as _checks
-from . import _class02_bsplines_rect
-from . import _class02_bsplines_tri
-from . import _class02_bsplines_polar
-from . import _class02_bsplines_1d
+# specific
 
 
 # #################################################################
@@ -29,26 +23,28 @@ from . import _class02_bsplines_1d
 
 
 def _get_contours(
-    RR=None,
-    ZZ=None,
+    xx0=None,
+    xx1=None,
     val=None,
     levels=None,
     largest=None,
     uniform=None,
 ):
-    """ Return R, Z coordinates of contours (time-dependent)
+    """ Return x0, x1 coordinates of contours (time-dependent)
 
     For contourpy algorithm, the dimensions shoud be (ny, nx), from meshgrid
 
-    RR = (nz, nr)
-    ZZ = (nz, nr)
-    val = (nt, nz, nr)
+    xx0 = (n1, n0)
+    xx1 = (n1, n0)
+    val = (nt, n1, n0)
     levels = (nlevels,)
 
-    cR = (nt, nlevels, nmax) array of R coordinates
-    cZ = (nt, nlevels, nmax) array of Z coordinates
+    c0 = (nt, nlevels, nmax) array of x0 coordinates
+    c1 = (nt, nlevels, nmax) array of x1 coordinates
 
-    The contour coordinates are uniformzied to always have the same nb of pts
+    The contour coordinates are uniformized to always have the same nb of pts
+
+    DISCLAIMER: not entirely dimension agnostic yet!
 
     """
 
@@ -63,8 +59,8 @@ def _get_contours(
 
     # val.shape = (nt, nR, nZ)
     lc = [
-        val.shape == RR.shape,
-        val.ndim == RR.ndim + 1 and val.shape[1:] == RR.shape,
+        val.shape == xx0.shape,
+        val.ndim == xx0.ndim + 1 and val.shape[1:] == xx0.shape,
     ]
     if lc[0]:
         val = val[None, ...]
@@ -74,7 +70,7 @@ def _get_contours(
         msg = "Incompatible val.shape!"
         raise Exception(msg)
 
-    nt, nR, nZ = val.shape
+    nt, n0, n1 = val.shape
 
     # ------------------------
     # Compute list of contours
@@ -82,14 +78,14 @@ def _get_contours(
     # compute contours at rknots
     # see https://github.com/matplotlib/matplotlib/blob/main/src/_contour.h
 
-    contR = [[] for ii in range(nt)]
-    contZ = [[] for ii in range(nt)]
+    cont0 = [[] for ii in range(nt)]
+    cont1 = [[] for ii in range(nt)]
     for ii in range(nt):
 
         # define map
         contgen = contour_generator(
-            x=RR,
-            y=ZZ,
+            x=xx0,
+            y=xx1,
             z=val[ii, ...],
             name='serial',
             corner_mask=None,
@@ -156,34 +152,34 @@ def _get_contours(
             if no_cont is True:
                 cj = np.full((3, 2), np.nan)
 
-            contR[ii].append(cj[:, 0])
-            contZ[ii].append(cj[:, 1])
+            cont0[ii].append(cj[:, 0])
+            cont1[ii].append(cj[:, 1])
 
     # ------------------------------------------------
     # Interpolate / concatenate to uniformize as array
 
     if uniform:
-        ln = [[pp.size for pp in cc] for cc in contR]
+        ln = [[pp.size for pp in cc] for cc in cont0]
         nmax = np.max(ln)
-        cR = np.full((nt, len(levels), nmax), np.nan)
-        cZ = np.full((nt, len(levels), nmax), np.nan)
+        c0 = np.full((nt, len(levels), nmax), np.nan)
+        c1 = np.full((nt, len(levels), nmax), np.nan)
 
         for ii in range(nt):
             for jj in range(len(levels)):
-                cR[ii, jj, :] = np.interp(
+                c0[ii, jj, :] = np.interp(
                     np.linspace(0, ln[ii][jj], nmax),
                     np.arange(0, ln[ii][jj]),
-                    contR[ii][jj],
+                    cont0[ii][jj],
                 )
-                cZ[ii, jj, :] = np.interp(
+                c1[ii, jj, :] = np.interp(
                     np.linspace(0, ln[ii][jj], nmax),
                     np.arange(0, ln[ii][jj]),
-                    contZ[ii][jj],
+                    cont1[ii][jj],
                 )
 
-        return cR, cZ
+        return c0, c1
     else:
-        return contR, contZ
+        return cont0, cont1
 
 
 # #############################################################################
@@ -192,101 +188,101 @@ def _get_contours(
 # #############################################################################
 
 
-def _simplify_polygon(pR=None, pZ=None, res=None):
-    """ Use convex hull with a constraint on the maximum discrepancy """
+# def _simplify_polygon(pR=None, pZ=None, res=None):
+    # """ Use convex hull with a constraint on the maximum discrepancy """
 
-    # ----------
-    # preliminary 1: check there is non redundant point
+    # # ----------
+    # # preliminary 1: check there is non redundant point
 
-    dp = np.sqrt((pR[1:] - pR[:-1])**2 + (pZ[1:] - pZ[:-1])**2)
-    ind = (dp > 1.e-6).nonzero()[0]
-    pR = pR[ind]
-    pZ = pZ[ind]
+    # dp = np.sqrt((pR[1:] - pR[:-1])**2 + (pZ[1:] - pZ[:-1])**2)
+    # ind = (dp > 1.e-6).nonzero()[0]
+    # pR = pR[ind]
+    # pZ = pZ[ind]
 
-    # check new poly is closed
-    if (pR[0] != pR[-1]) or (pZ[0] != pZ[-1]):
-        pR = np.append(pR, pR[0])
-        pZ = np.append(pZ, pZ[0])
+    # # check new poly is closed
+    # if (pR[0] != pR[-1]) or (pZ[0] != pZ[-1]):
+        # pR = np.append(pR, pR[0])
+        # pZ = np.append(pZ, pZ[0])
 
-    # check it is counter-clockwise
-    clock = np.nansum((pR[1:] - pR[:-1]) * (pZ[1:] + pZ[:-1]))
-    if clock > 0:
-        pR = pR[::-1]
-        pZ = pZ[::-1]
+    # # check it is counter-clockwise
+    # clock = np.nansum((pR[1:] - pR[:-1]) * (pZ[1:] + pZ[:-1]))
+    # if clock > 0:
+        # pR = pR[::-1]
+        # pZ = pZ[::-1]
 
-    # threshold = diagonal of resolution + 10%
-    thresh = res * np.sqrt(2) * 1.1
+    # # threshold = diagonal of resolution + 10%
+    # thresh = res * np.sqrt(2) * 1.1
 
-    # ----------
-    # preliminary 2: get convex hull and copy
+    # # ----------
+    # # preliminary 2: get convex hull and copy
 
-    poly = np.array([pR, pZ]).T
-    iconv = ConvexHull(poly, incremental=False).vertices
+    # poly = np.array([pR, pZ]).T
+    # iconv = ConvexHull(poly, incremental=False).vertices
 
-    # close convex hull to iterate on edges
-    pR_conv = np.append(pR[iconv], pR[iconv[0]])
-    pZ_conv = np.append(pZ[iconv], pZ[iconv[0]])
+    # # close convex hull to iterate on edges
+    # pR_conv = np.append(pR[iconv], pR[iconv[0]])
+    # pZ_conv = np.append(pZ[iconv], pZ[iconv[0]])
 
-    # copy to create new polygon that will serve as buffer
-    pR_bis, pZ_bis = np.copy(pR), np.copy(pZ)
+    # # copy to create new polygon that will serve as buffer
+    # pR_bis, pZ_bis = np.copy(pR), np.copy(pZ)
 
-    # -------------------------
-    # loop on convex hull edges
+    # # -------------------------
+    # # loop on convex hull edges
 
-    for ii in range(pR_conv.size - 1):
+    # for ii in range(pR_conv.size - 1):
 
-        pR1, pR2 = pR_conv[ii], pR_conv[ii+1]
-        pZ1, pZ2 = pZ_conv[ii], pZ_conv[ii+1]
-        i0 = np.argmin(np.hypot(pR_bis - pR1, pZ_bis - pZ1))
+        # pR1, pR2 = pR_conv[ii], pR_conv[ii+1]
+        # pZ1, pZ2 = pZ_conv[ii], pZ_conv[ii+1]
+        # i0 = np.argmin(np.hypot(pR_bis - pR1, pZ_bis - pZ1))
 
-        # make sure it starts from p1
-        pR_bis = np.append(pR_bis[i0:], pR_bis[:i0])
-        pZ_bis = np.append(pZ_bis[i0:], pZ_bis[:i0])
+        # # make sure it starts from p1
+        # pR_bis = np.append(pR_bis[i0:], pR_bis[:i0])
+        # pZ_bis = np.append(pZ_bis[i0:], pZ_bis[:i0])
 
-        # get indices of closest points to p1, p2
-        i1 = np.argmin(np.hypot(pR_bis - pR1, pZ_bis - pZ1))
-        i2 = np.argmin(np.hypot(pR_bis - pR2, pZ_bis - pZ2))
+        # # get indices of closest points to p1, p2
+        # i1 = np.argmin(np.hypot(pR_bis - pR1, pZ_bis - pZ1))
+        # i2 = np.argmin(np.hypot(pR_bis - pR2, pZ_bis - pZ2))
 
-        # get corresponding indices of poly points to be included
-        if i2 == i1 + 1:
-            itemp = [i1, i2]
+        # # get corresponding indices of poly points to be included
+        # if i2 == i1 + 1:
+            # itemp = [i1, i2]
 
-        else:
-            # several points in-between
-            # => check they are all within distance before exclusing them
+        # else:
+            # # several points in-between
+            # # => check they are all within distance before exclusing them
 
-            # get unit vector of segment
-            norm12 = np.hypot(pR2 - pR1, pZ2 - pZ1)
-            u12R = (pR2 - pR1) / norm12
-            u12Z = (pZ2 - pZ1) / norm12
+            # # get unit vector of segment
+            # norm12 = np.hypot(pR2 - pR1, pZ2 - pZ1)
+            # u12R = (pR2 - pR1) / norm12
+            # u12Z = (pZ2 - pZ1) / norm12
 
-            # get points standing between p1 nd p2
-            lpR = pR_bis[i1 + 1:i2]
-            lpZ = pZ_bis[i1 + 1:i2]
+            # # get points standing between p1 nd p2
+            # lpR = pR_bis[i1 + 1:i2]
+            # lpZ = pZ_bis[i1 + 1:i2]
 
-            # indices of points standing too far from edge (use cross-product)
-            iout = np.abs(u12R*(lpZ - pZ1) - u12Z*(lpR - pR1)) > thresh
+            # # indices of points standing too far from edge (use cross-product)
+            # iout = np.abs(u12R*(lpZ - pZ1) - u12Z*(lpR - pR1)) > thresh
 
-            # if any pts too far => include all pts
-            if np.any(iout):
-                itemp = np.arange(i1, i2 + 1)
-            else:
-                itemp = [i1, i2]
+            # # if any pts too far => include all pts
+            # if np.any(iout):
+                # itemp = np.arange(i1, i2 + 1)
+            # else:
+                # itemp = [i1, i2]
 
-        # build pts_in
-        pR_in = pR_bis[itemp]
-        pZ_in = pZ_bis[itemp]
+        # # build pts_in
+        # pR_in = pR_bis[itemp]
+        # pZ_in = pZ_bis[itemp]
 
-        # concatenate to add to new polygon
-        pR_bis = np.append(pR_in, pR_bis[i2 + 1:])
-        pZ_bis = np.append(pZ_in, pZ_bis[i2 + 1:])
+        # # concatenate to add to new polygon
+        # pR_bis = np.append(pR_in, pR_bis[i2 + 1:])
+        # pZ_bis = np.append(pZ_in, pZ_bis[i2 + 1:])
 
-    # check new poly is closed
-    if (pR_bis[0] != pR_bis[-1]) or (pZ_bis[0] != pZ_bis[-1]):
-        pR_bis = np.append(pR_bis, pR_bis[0])
-        pZ_bis = np.append(pZ_bis, pZ_bis[0])
+    # # check new poly is closed
+    # if (pR_bis[0] != pR_bis[-1]) or (pZ_bis[0] != pZ_bis[-1]):
+        # pR_bis = np.append(pR_bis, pR_bis[0])
+        # pZ_bis = np.append(pZ_bis, pZ_bis[0])
 
-    return pR_bis, pZ_bis
+    # return pR_bis, pZ_bis
 
 
 # #############################################################################
