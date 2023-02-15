@@ -149,8 +149,10 @@ setup(
     #    # And include any *.csv files found in the 'ITER' package, too:
     #    'ITER': ['*.csv'],
     # },
-    # package_data={},
-    # include_package_data=True,
+    package_data={
+        'bsplines2d.tests.test_data': ['.npz'],
+    },
+    include_package_data=True,
 
     # Although 'package_data' is the preferred approach, in some case you may
     # need to place data files outside of your packages. See:
