@@ -17,7 +17,6 @@ from . import _class01_checks_2d_rect as _checks_2d_rect
 from . import _class01_checks_2d_tri as _checks_2d_tri
 from . import _class01_checks_2d_polar as _checks_2d_polar
 
-from . import _class01_compute as _compute
 from . import _class01_rect_cropping as _cropping
 from . import _class01_select as _select
 from . import _class01_sample as _sample
