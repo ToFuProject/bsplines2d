@@ -14,7 +14,6 @@ import datastock as ds
 # specific
 from . import _generic_check
 from . import _class01_checks as _checks
-from . import _class01_compute as _compute
 
 
 # #############################################################################

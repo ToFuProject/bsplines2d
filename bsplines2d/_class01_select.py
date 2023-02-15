@@ -255,7 +255,9 @@ def _select_mesh(
     # ------------
     # check inputs
 
-    meshtype = coll.dobj[coll._which_mesh][key]['type']
+    wm = coll._which_mesh
+    nd = coll.dobj[wm][key]['nd']
+    mtype = coll.dobj[wm][key]['type']
 
     (
         elements, returnas,
@@ -270,16 +272,15 @@ def _select_mesh(
     # ------------
     # prepare
 
-    if meshtype in ['rect', 'tri']:
-        kR, kZ = coll.dobj[coll._which_mesh][key][elements]
+    if mtype in ['rect', 'tri']:
+        kR, kZ = coll.dobj[wm][key][elements]
         R = coll.ddata[kR]['data']
         Z = coll.ddata[kZ]['data']
         nR = R.size
         nZ = Z.size
     else:
-        kr = coll.dobj[coll._which_mesh][key][elements][0]
+        kr = coll.dobj[wm][key][elements][0]
         rad = coll.ddata[kr]['data']
-
 
     # ------------
     # non-trivial case
@@ -287,9 +288,9 @@ def _select_mesh(
     if returnas == 'ind':
         out = ind
     else:
-        if meshtype == 'rect':
+        if mtype == 'rect':
             out = R[ind[0]], Z[ind[1]]
-        elif meshtype == 'tri':
+        elif mtype == 'tri':
             out = R[ind], Z[ind]
         else:
             out = rad[ind]
@@ -298,7 +299,7 @@ def _select_mesh(
     # neighbours
 
     if return_neighbours is True:
-        if meshtype == 'rect':
+        if mtype == 'rect':
             neigh = _select_mesh_neighbours_rect(
                 coll=coll,
                 key=key,
@@ -306,7 +307,7 @@ def _select_mesh(
                 elements=elements,
                 returnas=returnas,
             )
-        elif meshtype == 'tri':
+        elif mtype == 'tri':
             neigh = _select_mesh_neighbours_tri(
                 coll=coll,
                 key=key,
@@ -316,20 +317,67 @@ def _select_mesh(
                 return_ind_as=return_ind_as,
             )
         else:
-            # TBF
-            raise NotImplementedError()
-            # neigh = _select_mesh_neighbours_polar(
-                # coll=coll,
-                # key=key,
-                # ind=ind,
-                # elements=elements,
-                # returnas=returnas,
-                # return_ind_as=return_ind_as,
-            # )
+            neigh = _select_mesh_neighbours_1d(
+                coll=coll,
+                key=key,
+                ind=ind,
+                elements=elements,
+                returnas=returnas,
+                return_ind_as=return_ind_as,
+            )
 
         return out, neigh
     else:
         return out
+
+
+# TBF
+def _select_mesh_neighbours_1d(
+    coll=None,
+    key=None,
+    ind=None,
+    elements=None,
+    returnas=None,
+    return_ind_as=None,
+):
+    """ ind is a bool
+
+    if returnas = 'ind', ind is returned as a bool array
+    (because the nb. of neighbours is not constant on a triangular mesh)
+
+    """
+    # ------------
+    # neighbours
+
+    elneig = 'cents' if elements == 'knots' else 'knots'
+    kneig = coll.dobj[coll._which_mesh][key][f'{elneig}'][0]
+    neig = coll.ddata[kneig]['data']
+    nneig = neig.size
+
+    # get tuple indices of neighbours
+    shape = tuple(np.r_[ind[0].shape, 2])
+    ineig = np.zeros(shape, dtype=int),
+
+    rsh = tuple(
+        [2 if ii == len(shape)-1 else 1 for ii in range(len(shape))]
+    )
+
+    if elements == 'cents':
+        ineig[...] = ind[0][..., None] + np.r_[0, 1, 1, 0].reshape(rsh)
+
+    elif elements == 'knots':
+        ineig[...] = ind[0][..., None] + np.r_[-1, 0, 0, -1].reshape(rsh)
+        ineig(ineig < 0) | (ineig >= nRneig)] = -1
+
+    # return neighbours in desired format
+    if returnas == 'ind':
+        neig_out = ineig
+    else:
+        neig_out = neig[ineig]
+        neig_out[:, (ineig == -1)] = np.nan
+
+    return neig_out
+
 
 
 def _select_mesh_neighbours_rect(
