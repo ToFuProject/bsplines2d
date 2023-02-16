@@ -826,6 +826,9 @@ def _add_data_var(bsplines, key):
 def _plot_as_profile2d(bs,  nd=None, kind=None):
     dkd = _get_data(bs, nd=nd, kind=kind, maxref=4)
 
+    wm = bs._which_mesh
+    wbs = bs._which_bsplines
+
     for ii, (k0, v0) in enumerate(dkd.items()):
 
         if bs.ddata[k0]['data'].ndim > 4:
@@ -833,7 +836,16 @@ def _plot_as_profile2d(bs,  nd=None, kind=None):
         if ii%2 == 0:
             continue
 
-        dax = bs.plot_as_profile2d(key=k0)
+        # knots
+        knots = bs.dobj[wbs][v0['bs'][0]]['apex'][0]
+        knots = bs.ddata[knots]['data']
+        span = np.abs(knots[-1] - knots[0])
+        res = span / 3.
+
+        dax = bs.plot_as_profile2d(
+            key=k0,
+            dres=res,
+        )
         plt.close('all')
 
 
