@@ -324,6 +324,7 @@ class BSplines2D(Previous):
         deriv=None,
         val_out=None,
         log_log=None,
+        nan0=None,
         # store vs return
         returnas=None,
         return_params=None,
