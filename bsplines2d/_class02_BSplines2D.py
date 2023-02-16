@@ -241,8 +241,10 @@ class BSplines2D(Previous):
         operator=None,
         geometry=None,
         crop=None,
+        # store vs return
         store=None,
         returnas=None,
+        return_param=None,
         # specific to deg = 0
         centered=None,
         # to return gradR, gradZ, for D1N2 deg 0, for tomotok
@@ -270,6 +272,7 @@ class BSplines2D(Previous):
             crop=crop,
             store=store,
             returnas=returnas,
+            return_param=return_param,
             # specific to deg = 0
             centered=centered,
             # to return gradR, gradZ, for D1N2 deg 0, for tomotok
