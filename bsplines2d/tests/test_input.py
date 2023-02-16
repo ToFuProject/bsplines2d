@@ -560,7 +560,9 @@ def _add_data_multibs_arrays(bs, nd=None, kind=None, subbs=None, remove=None):
 
 
 def _interpolate(bs, nd=None, kind=None, details=None, submesh=None):
-    dkd = _get_data(bs, nd=nd, kind=kind, submesh=submesh)
+    dkd = _get_data(
+        bs, nd=nd, kind=kind, submesh=submesh, maxref=int(nd[0]) + 2,
+    )
 
     wm = bs._which_mesh
     wbs = bs._which_bsplines
@@ -744,19 +746,26 @@ def _interpolate(bs, nd=None, kind=None, details=None, submesh=None):
 
 
 def _bin_bs(bs, nd=None, kind=None):
-    dkd = _get_data(bs, nd=nd, kind=kind)
+    dkd = _get_data(bs, nd=nd, kind=kind, maxref=3)
+
 
     wbs = bs._which_bsplines
     for ii, (kd, vd) in enumerate(dkd.items()):
 
-        if ii % 10 == 0 and len(vd['ref']) > 1:
-            ref_key = vd['ref'][0]
-            ax = 0
-        elif len(vd['ref']) > 1:
+
+        if len(bs.ddata[kd]['ref']) > 3:
+            continue
+
+        if len(vd['ref']) > 1:
+            if ii % 10 == 0:
+                ref_key = vd['ref'][0]
+                ax = 0
+            else:
+                ref_key = vd['bs'][0]
+                ax = bs.ddata[kd]['ref'].index(bs.dobj[wbs][ref_key]['ref'][0])
+        else:
             ref_key = vd['bs'][0]
             ax = bs.ddata[kd]['ref'].index(bs.dobj[wbs][ref_key]['ref'][0])
-        else:
-            continue
 
         vect = bs.dobj[bs._which_bsplines][vd['bs'][0]]['apex'][0]
         vect = bs.ddata[vect]['data']
@@ -815,7 +824,7 @@ def _add_data_var(bsplines, key):
 
 
 def _plot_as_profile2d(bs,  nd=None, kind=None):
-    dkd = _get_data(bs, nd=nd, kind=kind)
+    dkd = _get_data(bs, nd=nd, kind=kind, maxref=4)
 
     for ii, (k0, v0) in enumerate(dkd.items()):
 
@@ -908,7 +917,7 @@ def _get_bs(bs, nd=None, kind=None, subbs=None):
     ]
 
 
-def _get_data(bs, nd=None, kind=None, submesh=None):
+def _get_data(bs, nd=None, kind=None, submesh=None, maxref=None):
 
     dkd = {}
     wm = bs._which_mesh
@@ -928,6 +937,7 @@ def _get_data(bs, nd=None, kind=None, submesh=None):
                         and bs.dobj[wm][km]['submesh'] is not None
                     )
                 ),
+                maxref is None or len(bs.ddata[k0]['ref']) <= maxref,
             ]
             if all(lc):
                 if k0 not in dkd.keys():
