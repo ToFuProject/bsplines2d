@@ -355,26 +355,27 @@ def _select_mesh_neighbours_1d(
     nneig = neig.size
 
     # get tuple indices of neighbours
-    shape = tuple(np.r_[ind[0].shape, 2])
-    ineig = np.zeros(shape, dtype=int),
+    ind = ind.nonzero()[0]
+    shape = tuple(np.r_[ind.shape, 2].astype(int))
+    ineig = np.zeros(shape, dtype=int)
 
     rsh = tuple(
         [2 if ii == len(shape)-1 else 1 for ii in range(len(shape))]
     )
 
     if elements == 'cents':
-        ineig[...] = ind[0][..., None] + np.r_[0, 1, 1, 0].reshape(rsh)
+        ineig[...] = ind[..., None] + np.r_[0, 1].reshape(rsh)
 
     elif elements == 'knots':
-        ineig[...] = ind[0][..., None] + np.r_[-1, 0, 0, -1].reshape(rsh)
-        ineig(ineig < 0) | (ineig >= nRneig)] = -1
+        ineig[...] = ind[..., None] + np.r_[-1, 0].reshape(rsh)
+        ineig[(ineig < 0) | (ineig >= nneig)] = -1
 
     # return neighbours in desired format
     if returnas == 'ind':
         neig_out = ineig
     else:
         neig_out = neig[ineig]
-        neig_out[:, (ineig == -1)] = np.nan
+        neig_out[ineig == -1] = np.nan
 
     return neig_out
 
@@ -400,7 +401,7 @@ def _select_mesh_neighbours_rect(
     nZneig = Zneig.size
 
     # get tuple indices of neighbours
-    shape = tuple(np.r_[ind[0].shape, 4])
+    shape = tuple(np.r_[ind[0].shape, 4].astype(int))
     neig = (
         np.zeros(shape, dtype=int),
         np.zeros(shape, dtype=int),
