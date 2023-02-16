@@ -280,8 +280,8 @@ def _mesh2DTri_bsplines(coll=None, keym=None, keybs=None, deg=None):
         indices=coll.ddata[coll.dobj[coll._which_mesh][keym]['ind']]['data'],
     )
     keybsr = f'{keybs}-nbs'
-    kbscr = f'{keybs}-apR'
-    kbscz = f'{keybs}-apZ'
+    kbscr = f'{keybs}-ap0'
+    kbscz = f'{keybs}-ap1'
 
     bs_cents = clas._get_bs_cents()
 
