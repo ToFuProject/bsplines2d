@@ -669,7 +669,7 @@ def _interpolate(bs, nd=None, kind=None, details=None, submesh=None):
 
         # interpolate
         dout, dparam = bs.interpolate(
-            keys=kd,
+            keys=None if details is True else (None if ii%2 == 0 else kd),
             ref_key=ref_key,
             return_params=True,
             debug=True,
@@ -679,10 +679,11 @@ def _interpolate(bs, nd=None, kind=None, details=None, submesh=None):
         # expected shape
         if details is True:
             shape = tuple(np.r_[vect.shape, nbs].astype(int))
+            kd = f'{ref_key}_details'
         else:
             shape = list(bs.ddata[kd]['shape'])
-            ax0 = dparam['axis'][0]
-            ax1 = dparam['axis'][-1]
+            ax0 = dparam['daxis'][kd][0]
+            ax1 = dparam['daxis'][kd][-1]
 
             # submesh
             if submesh is True:
