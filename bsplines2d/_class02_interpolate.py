@@ -54,6 +54,7 @@ def interpolate(
     deriv=None,
     val_out=None,
     log_log=None,
+    nan0=None,
     # store vs return
     returnas=None,
     return_params=None,
@@ -88,11 +89,16 @@ def interpolate(
         debug = False
 
     # keys
-    isbs, keys, ref_key, daxis, dunits, units_ref = _check_keys(
+    (
+        isbs, keys, ref_key,
+        daxis, dunits, units_ref,
+        details, ktemp,
+    ) = _check_keys(
         coll=coll,
         keys=keys,
         ref_key=ref_key,
         only1d=False,
+        details=details,
     )
 
     # -----------
@@ -106,7 +112,6 @@ def interpolate(
 
         keybs, keym, mtype, ref_key = _prepare_bsplines(
             coll=coll,
-            keys=keys,
             ref_key=ref_key,
         )
 
@@ -120,7 +125,7 @@ def interpolate(
         # check bsplines-specific params
 
         (
-            details, val_out, crop, cropbs, indbs_tf, nbs, submesh,
+            val_out, crop, cropbs, indbs_tf, nbs, submesh,
         ) = _check_params_bsplines(
             coll=coll,
             details=details,
@@ -196,7 +201,7 @@ def interpolate(
             # ------------------------------------------
             # handle ref_com, add ref and data if needed
 
-            refcom = _submesh_ref_com(
+            ref_com = _submesh_ref_com(
                 coll=coll,
                 kd0=kd0,
                 keys=keys,
@@ -242,7 +247,7 @@ def interpolate(
         deg, deriv,
         kx0, kx1, x0, x1, refx, dref_com,
         ddata, dout, dsh_other, sli_c, sli_x, sli_v,
-        log_log, grid, ndim, xunique,
+        log_log, nan0, grid, ndim, xunique,
         returnas, return_params, store, inplace,
     ) = ds._class1_interpolate._check(
         coll=coll,
@@ -263,6 +268,7 @@ def interpolate(
         deg=None,
         deriv=deriv,
         log_log=None,
+        nan0=nan0,
         # return vs store
         returnas=returnas,
         return_params=return_params,
@@ -299,6 +305,7 @@ def interpolate(
             dref_com=dref_com,
             lr_add=lr_add,
             ld_add=ld_add,
+            nan0=nan0,
         )
 
     else:
@@ -321,7 +328,14 @@ def interpolate(
             sli_x=sli_x,
             sli_c=sli_c,
             sli_v=sli_v,
+            nan0=nan0,
         )
+
+    # ------------------------------
+    # cleanup if details
+
+    if details is True:
+        coll.remove_data(ktemp)
 
     # ------------------------------
     # adjust data and ref if xunique
@@ -362,6 +376,7 @@ def interpolate(
                 'x1': x1,
                 'grid': grid,
                 'refx': refx,
+                'ref_com': ref_com,
                 'dref_com': dref_com,
                 'daxis': daxis,
                 'dsh_other': dsh_other,
@@ -370,12 +385,13 @@ def interpolate(
                 'crop': crop,
                 'cropbs': cropbs,
                 'indbs_tf': indbs_tf,
+                'submesh': submesh,
+                'subbs': kbs0 if submesh else None,
             }
 
             # debug
             if debug is True:
                 dparam['x0.shape'] = x0.shape
-                dparam['axis'] = daxis[keys[0]]
 
             return dout, dparam
         else:
@@ -393,9 +409,21 @@ def _check_keys(
     keys=None,
     ref_key=None,
     only1d=None,
+    details=None,
 ):
 
+    # -------------
+    # details
+
+    details = ds._generic_check._check_var(
+        details, 'details',
+        types=bool,
+        default=False,
+    )
+
+    # -------------
     # only1d
+
     only1d = ds._generic_check._check_var(
         only1d, 'only1d',
         types=bool,
@@ -403,6 +431,29 @@ def _check_keys(
     )
 
     maxd = 1 if only1d else 2
+
+    # ---------------
+    # details is True
+
+    wbs = coll._which_bsplines
+    lbs = list(coll.dobj[wbs].keys())
+
+    ktemp = None
+    if details is True:
+        ref_key = ds._generic_check._check_var(
+            ref_key, 'ref_key',
+            types=str,
+            allowed=lbs,
+        )
+
+        # add temporary data
+        ktemp = f'{ref_key}_details'
+        coll.add_data(
+            key=ktemp,
+            data=np.ones(coll.dobj[wbs][ref_key]['shape'], dtype=float),
+            ref=ref_key,
+        )
+        keys = ktemp
 
     # ---------------
     # keys vs ref_key
@@ -417,7 +468,6 @@ def _check_keys(
 
         lref = list(coll.dref.keys())
         ldata = list(coll.ddata.keys())
-        lbs = list(coll.dobj[coll._which_bsplines].keys())
 
         ref_key = list(ds._generic_check._check_var_iter(
             ref_key, 'ref_key',
@@ -531,7 +581,6 @@ def _check_keys(
     if isbs:
 
         # check ref_key
-        wbs = coll._which_bsplines
         lbs = [
             [
                 bs for bs in coll.ddata[k0][wbs]
@@ -595,7 +644,7 @@ def _check_keys(
     # dunits
     dunits = {k0: coll.ddata[k0]['units'] for k0 in keys}
 
-    return isbs, keys, ref_key, daxis, dunits, units_ref
+    return isbs, keys, ref_key, daxis, dunits, units_ref, details, ktemp
 
 
 def _check_params_bsplines(
@@ -609,14 +658,6 @@ def _check_params_bsplines(
     indbs_tf=None,
     submesh=None,
 ):
-    # -------------
-    # details
-
-    details = ds._generic_check._check_var(
-        details, 'details',
-        types=bool,
-        default=False,
-    )
 
     # -------------
     # val_out
@@ -691,7 +732,7 @@ def _check_params_bsplines(
     if coll.dobj[coll._which_mesh][keym]['subkey'] is None:
         submesh = False
 
-    return details, val_out, crop, cropbs, indbs_tf, nbs, submesh
+    return val_out, crop, cropbs, indbs_tf, nbs, submesh
 
 
 # ################################################################
@@ -716,7 +757,9 @@ def _submesh_ref_com(
     lrcom = [
         (rr, ref0.index(rr))
         for ii, rr in enumerate(ref0)
-        if rr in coll.ddata[keys[0]]['ref']
+        if rr in list(itt.chain.from_iterable([
+            coll.ddata[kk]['ref'] for kk in keys
+        ]))
         and ii in [0, len(ref0) - 1]
     ]
 
@@ -737,6 +780,8 @@ def _submesh_ref_com(
         # if ref_com
 
         lok = [rr[0] for rr in lrcom]
+        if len(lok) == 0 and ref_com is not None:
+            import pdb; pdb.set_trace()     # DB
         ref_com = ds._generic_check._check_var(
             ref_com, 'ref_com',
             types=str,
@@ -834,7 +879,6 @@ def _submesh_addtemp(
 
 def _prepare_bsplines(
     coll=None,
-    keys=None,
     ref_key=None,
 ):
 
@@ -891,6 +935,7 @@ def _interp(
     dref_com=None,
     lr_add=None,
     ld_add=None,
+    nan0=None,
 ):
 
     # ----------
@@ -982,9 +1027,13 @@ def _interp(
                     indokx0=indokx0,
                     shape_o=dsh_other[k0],
                     shape_v=dout[k0]['data'].shape,
-                    dref_com=dref_com.get(k0),
+                    dref_com=dref_com[k0],
                     axis_v=axis_v,
                 )
+
+                # nan0
+                if nan0 is True:
+                      dout[k0]['data'][dout[k0]['data'] == 0.] = np.nan
 
         except Exception as err:
             raise err
