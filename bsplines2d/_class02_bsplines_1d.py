@@ -166,7 +166,8 @@ class UnivariateSpline():
             slix = sli_x(
                 ind,
                 indokx0=indokx0,
-                iother=None if dref_com is None else dref_com['iother'],
+                ix=dref_com['ix'],
+                iother=dref_com['iother'],
             )
 
             sliv = sli_v(
@@ -174,7 +175,8 @@ class UnivariateSpline():
                 indokx0=indokx0,
                 ddim=coefs.ndim,
                 axis=axis,
-                iother=None if dref_com is None else dref_com['iother'],
+                ix=dref_com['ix'],
+                iother=dref_com['iother'],
             )
 
             # call be called on any shape of x0
@@ -187,7 +189,7 @@ class UnivariateSpline():
             )(x0[slix], nu=deriv)
 
         # clean out-of-mesh
-        if dref_com is None and val_out is not False:
+        if dref_com['ix'] is None and val_out is not False:
             slio = sli_o((x0 < self.knots[0]) | (x0 > self.knots[-1]))
             val[slio] = val_out
 

@@ -533,7 +533,7 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
                     ) * coefs[tuple(sli_c)]
 
         # clean out-of-mesh
-        if dref_com is None and val_out is not False:
+        if dref_com['ix'] is None and val_out is not False:
             slio = sli_o(ind == -1)
             val[slio] = val_out
         return val
