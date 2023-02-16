@@ -54,11 +54,16 @@ def binning(
     )
 
     # keys
-    isbs, keys, ref_key, daxis, dunits, units_ref = _interpolate._check_keys(
+    (
+        isbs, keys, ref_key,
+        daxis, dunits, units_ref,
+        _, _,
+    ) = _interpolate._check_keys(
         coll=coll,
         keys=keys,
         ref_key=ref_key,
-        only1d=True,
+        only1d=False,
+        details=False,
     )
 
     # ----------
