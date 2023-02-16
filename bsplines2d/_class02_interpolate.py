@@ -224,14 +224,14 @@ def interpolate(
             # substitue x0, x1
 
             x0_str = isinstance(x0, str)
-            if ref_com is None:
-                x0 = dout_temp[kd0[0]]['data']
-                if len(kd0) > 1:
-                    x1 = dout_temp[kd0[1]]['data']
-            else:
-                x0 = dout_temp[kd0[0]]['key']
-                if len(kd0) > 1:
-                    x1 = dout_temp[kd0[1]]['key']
+            # if ref_com is None:
+                # x0 = dout_temp[kd0[0]]['data']
+                # if len(kd0) > 1:
+                    # x1 = dout_temp[kd0[1]]['data']
+            # else:
+            x0 = dout_temp[kd0[0]]['key']
+            if len(kd0) > 1:
+                x1 = dout_temp[kd0[1]]['key']
 
             if len(kd0) == 1:
                 x1 = None
@@ -347,7 +347,6 @@ def interpolate(
     # store
 
     if store is True:
-
         coll2 = ds._class1_interpolate._store(
             coll=coll,
             dout=dout,
@@ -501,7 +500,7 @@ def _check_keys(
             ref_key = ref_key[0]
             lok_bs = [
                 k0 for k0, v0 in coll.ddata.items()
-                if ref_key in v0[coll._which_bsplines]
+                if v0[wbs] is not None and ref_key in v0[wbs]
             ]
             lok_nobs = []
 
@@ -780,8 +779,6 @@ def _submesh_ref_com(
         # if ref_com
 
         lok = [rr[0] for rr in lrcom]
-        if len(lok) == 0 and ref_com is not None:
-            import pdb; pdb.set_trace()     # DB
         ref_com = ds._generic_check._check_var(
             ref_com, 'ref_com',
             types=str,
@@ -808,38 +805,38 @@ def _submesh_addtemp(
     dout_temp=None,
     # coordinates
     x0=None,
-    ref_com=None,
 ):
-
-    # -------------
-    # trivial
-
-    if not isinstance(x0, str) and ref_com is None:
-        return None, None
-
-    if isinstance(x0, str):
-       assert not any([rr is None for rr in dout_temp[kd0[0]]['ref']])
-       dr_add, lr_add = None, None
 
     # ----------------
     # add ref and data
 
-    if not isinstance(x0, str):
+    if isinstance(x0, str):
+
+       assert not any([rr is None for rr in dout_temp[kd0[0]]['ref']])
+       dr_add, lr_add = None, None
+
+    else:
 
         # dref
         ii, dr_add, lref = 0, {}, []
         for jj, rr in enumerate(dout_temp[kd0[0]]['ref']):
+
+            # ref name
             if rr is None:
-                kk = f"r{len(coll.dref) + ii:03.0f}"
-                dr_add[kk] = {
-                    'key': kk,
-                    'size': dout_temp[kd0[0]]['data'].shape[jj],
-                }
-                lref.append(kk)
+                rr = f"r{len(coll.dref) + ii:03.0f}"
+                lref.append(rr)
                 ii += 1
             else:
                 lref.append(None)
 
+            # dr_add
+            if rr not in coll.dref.keys():
+                dr_add[rr] = {
+                    'key': rr,
+                    'size': dout_temp[kd0[0]]['data'].shape[jj],
+                }
+
+        # combine
         for kk in dout_temp.keys():
             dout_temp[kk]['ref'] = tuple([
                 rr if rr is not None else dout_temp[kd0[0]]['ref'][jj]
@@ -1070,6 +1067,13 @@ def _interp(
             dout[k0]['ref'] = tuple([
                 None if rr in lr_add else rr
                 for rr in v0['ref']
+            ])
+
+    if details:
+        wbs = coll._which_bsplines
+        for k0, v0 in dout.items():
+            dout[k0]['ref'] = tuple(np.r_[
+                v0['ref'], coll.dobj[wbs][keybs]['ref-bs'],
             ])
 
     return
