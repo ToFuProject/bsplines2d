@@ -641,17 +641,18 @@ def _select_bsplines(
         )
 
     else:
-        clas = coll.dobj[wbs][key]['class']
-        kpbs, cpbs = 'knots_per_bs', 'cents_per_bs'
+        kk = coll.dobj[wm][keym]['knots'][0]
+        kc = coll.dobj[wm][keym]['cents'][0]
 
-        if return_cents is True and return_knots is True:
-            out = ((getattr(clas, kpbs),), (getattr(clas, cpbs),))
-
-        elif return_cents is True:
-            out = (getattr(clas, cpbs),)
-
-        elif return_knots is True:
-            out = (getattr(clas, kpbs),)
+        out = _mesh1d_bsplines_knotscents(
+            returnas=returnas,
+            return_knots=return_knots,
+            return_cents=return_cents,
+            ind=ind,
+            deg=coll.dobj[wbs][key]['deg'],
+            knots=coll.ddata[kk]['data'],
+            cents=coll.ddata[kc]['data'],
+        )
 
     # ------------
     # return
@@ -662,6 +663,63 @@ def _select_bsplines(
         return ind, out
     else:
         return ind
+
+
+def _mesh1d_bsplines_knotscents(
+    returnas=None,
+    return_knots=None,
+    return_cents=None,
+    ind=None,
+    deg=None,
+    knots=None,
+    cents=None,
+):
+
+    # -------------
+    # check inputs
+
+    return_knots = ds._generic_check._check_var(
+        return_knots, 'return_knots',
+        types=bool,
+        default=True,
+    )
+    return_cents = ds._generic_check._check_var(
+        return_cents, 'return_cents',
+        types=bool,
+        default=True,
+    )
+    if return_knots is False and return_cents is False:
+        return
+
+    # -------------
+    # compute
+
+    if return_knots is True:
+
+        knots_per_bs = _utils_bsplines._get_knots_per_bs(
+            knots, deg=deg, returnas=returnas,
+        )
+        if ind is not None:
+            knots_per_bs = knots_per_bs[:, ind]
+
+    if return_cents is True:
+
+        cents_per_bs = _utils_bsplines._get_cents_per_bs(
+            cents, deg=deg, returnas=returnas,
+        )
+        if ind is not None:
+            cents_per_bs = cents_per_bs[:, ind]
+
+    # -------------
+    # return
+
+    if return_knots is True and return_cents is True:
+        out = (knots_per_bs, cents_per_bs)
+    elif return_knots is True:
+        out = knots_per_bs
+    else:
+        out = cents_per_bs
+    return out
 
 
 def _mesh2DRect_bsplines_knotscents(
