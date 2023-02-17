@@ -11,6 +11,7 @@ import numpy as np
 
 # local
 from ._class01_Mesh2D import Mesh2D as Previous
+from . import _class01_select as _select
 from . import _class02_checks as _checks
 from . import _class02_compute as _compute
 from . import _class01_rect_cropping as _cropping
@@ -198,7 +199,7 @@ class BSplines2D(Previous):
         Can return indices / values of neighbourgs
 
         """
-        return _compute._select_bsplines(
+        return _select._select_bsplines(
             coll=self,
             key=key,
             ind=ind,

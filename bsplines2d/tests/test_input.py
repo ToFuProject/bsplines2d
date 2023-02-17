@@ -394,6 +394,7 @@ def _select_mesh_elements(bsplines, nd=None, kind=None):
                 crop=comb[0],
             )
 
+
 def _sample_mesh(bsplines, nd=None, kind=None):
     lkm = _get_mesh(bsplines, nd=nd, kind=kind)
 
@@ -441,6 +442,28 @@ def _plot_mesh(bsplines, nd=None, kind=None):
 #
 #######################################################
 
+
+def _select_bsplines(bs, nd=None, kind=None):
+    lkb = _get_bs(bs, nd=nd, kind=kind)
+
+    lind = [None, 0, [0, 3]]
+    if kind == 'rect':
+        lcrop = [False, True]
+    else:
+        lcrop = [None]
+    lretc = [True, False]
+    lretk = [True, False]
+
+    for km in lkb:
+
+        for comb in itt.product(lind, lretc, lretk, lcrop):
+            out = bs.select_bsplines(
+                key=km,
+                ind=comb[0],
+                return_cents=comb[1],
+                return_knots=comb[2],
+                crop=comb[3],
+            )
 
 def _add_data_1bs_fix(bs, nd=None, kind=None, remove=None):
     lkb = _get_bs(bs, nd=nd, kind=kind)
