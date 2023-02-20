@@ -18,7 +18,145 @@ import datastock as ds
 
 # #################################################################
 # #################################################################
-#               Contour computation
+#               Main
+# #################################################################
+
+
+def get_contours(
+    coll=None,
+    key=None,
+    levels=None,
+    res=None,
+    largest=None,
+    uniform=None,
+    store=None,
+):
+
+    # ----------
+    # check
+
+    key, keybs, keym0, levels, store, returnas = _check(
+        coll=coll,
+        key=key,
+        levels=levels,
+    )
+
+    # ---------------------
+    # prepare (interpolate)
+
+    xx0, xx1 = col.get_sample_mesh(
+        key=keym0,
+        res=res,
+        grid=True,
+    )
+
+    dinterp = coll.interpolate(
+        keys=key,
+        ref_key=keybs,
+        x0=xx0,
+        x1=xx1,
+        grid=False,
+        submesh=True,
+    )[key]
+
+    # ----------------
+    # compute contours
+
+    cont0, cont1 = _get_contours(
+        xx0=xx0,
+        xx1=xx1,
+        val=dinterp['data'],
+        levels=levels,
+        largest=largest,
+        uniform=uniform,
+    )
+
+    # ----------------
+    # format output
+
+    dout, dref = _format(
+        coll=coll,
+        key=key,
+        keybs=keybs,
+        dinterp=dinterp,
+    )
+
+    # ----------------
+    # store and return
+
+    if store is True:
+        _store(
+            coll=coll,
+            dout=dout,
+            dref=dref,
+        )
+
+    if returnas is True:
+        return dout
+
+
+# #################################################################
+# #################################################################
+#               check
+# #################################################################
+
+
+def _check(
+    coll=None,
+    key=None,
+    levels=None,
+):
+
+    # ------
+    # key
+
+    dp2d = coll.get_profiles2d()
+    key = ds_generic_check._check_var(
+        'key', key,
+        types=str,
+        allowed=list(dp2d.keys()),
+    )
+
+    wm = coll._which_mesh
+    wbs = coll._which_bsplines
+    keybs = dp2d[key]
+    keym0 = coll.dobj[wbs][keybs][wm]
+    submesh = coll.dobj[wm][keym0]['submesh']
+    if submesh is not None:
+        keym0 = submesh
+
+    # ----------
+    # levels
+
+    levels = ds._generic_check._check_flat1darray(
+        levels, 'levels',
+        dtype=float,
+    )
+
+    # ----------
+    # store
+
+    store = ds_generic_check._check_var(
+        'store', store,
+        types=bool,
+        defaut=False,
+    )
+
+    # ----------
+    # returnas
+
+    returnas = ds_generic_check._check_var(
+        'returnas', returnas,
+        types=bool,
+        defaut=not store,
+    )
+
+    return key, keybs, keym0, levels, store, returnas
+
+
+# #################################################################
+# #################################################################
+#               compute contours
 # #################################################################
 
 
@@ -57,6 +195,7 @@ def _get_contours(
     if uniform is None:
         uniform = True
 
+    import pdb; pdb.set_trace()     # DB
     # val.shape = (nt, nR, nZ)
     lc = [
         val.shape == xx0.shape,
@@ -180,6 +319,88 @@ def _get_contours(
         return c0, c1
     else:
         return cont0, cont1
+
+
+# #################################################################
+# #################################################################
+#               format
+# #################################################################
+
+
+def _format(
+    coll=None,
+    key=None,
+    keybs=None,
+    dinterp=None,
+    cont0=None,
+    cont1=None,
+    key_cont0=None,
+    key_cont1=None,
+):
+
+    # ------
+    # keys
+
+    if key_cont0 is None:
+        key_cont0 = f'{key}_cont0'
+
+    if key_cont1 is None:
+        key_cont1 = f'{key}_cont1'
+
+    # --------
+    # ref
+
+    import pdb; pdb.set_trace()     # DB
+
+    # -------
+    # units
+
+    # -------------
+    # populate dict
+
+    dref = {}
+
+    dout = {
+        'cont0': {
+            'key': key_cont0,
+            'data': cont0,
+            'ref':
+            'units':
+        },
+        'cont1': {
+            'key': key_cont0,
+            'data': cont1,
+            'ref':
+            'units':
+        },
+    }
+
+    return dout, dref
+
+
+# #################################################################
+# #################################################################
+#               store
+# #################################################################
+
+
+def _store(
+    coll=None,
+    dout=None,
+    dref=None,
+):
+
+    # --------
+    # add ref
+
+    for k0, v0 in dref.items():
+        coll.add_ref(**v0)
+
+    # --------
+    # add data
+
+    for k0, v0 in dout.items():
+        coll.add_data(**v0)
 
 
 # #############################################################################

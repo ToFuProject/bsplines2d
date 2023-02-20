@@ -14,6 +14,7 @@ from ._class01_Mesh2D import Mesh2D as Previous
 from . import _class01_select as _select
 from . import _class02_checks as _checks
 from . import _class02_compute as _compute
+from . import _class02_contour as _contour
 from . import _class01_rect_cropping as _cropping
 from . import _class02_interpolate as _interpolate
 from . import _class02_interpolate_all as _interpolate_all
@@ -296,6 +297,23 @@ class BSplines2D(Previous):
             operator=operator,
             store=store,
             returnas=returnas,
+        )
+
+    # -----------------
+    # contours
+    # ------------------
+
+    def get_bsplines_contours(
+        self,
+        key=None,
+        levels=None,
+    ):
+        """ Return a dict of contour data """
+
+        return _contours.get_contours(
+            coll=self,
+            key=key,
+            levels=levels,
         )
 
     # -----------------
