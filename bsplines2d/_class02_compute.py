@@ -274,11 +274,11 @@ def _get_profiles2d(coll=None):
         lbs = []
         for k1 in v0[wbs]:
             km = coll.dobj[wbs][k1][wm]
-            if coll.dobj[wm][km]['submesh'] is None:
+            subkm = coll.dobj[wm][km]['submesh']
+            if subkm is None:
                 if coll.dobj[wm][km]['nd'] == '2d':
                     lbs.append(k1)
             else:
-                subkm = coll.dobj[wm][km]['submesh']
                 if coll.dobj[wm][subkm]['nd'] == '2d':
                     lbs.append(k1)
 
