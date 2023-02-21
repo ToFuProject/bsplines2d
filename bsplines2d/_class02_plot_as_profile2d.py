@@ -123,16 +123,39 @@ def plot_as_profile2d(
         # ---------------
         # add contour
 
-        for k0, v0 in dref.items():
-            dax.add_ref(**v0)
+        for k0, v0 in dout.items():
+            sh = dout[k0]['data'].shape
+            shnan = [1 if ii == axis[0] else ss for ii, ss in enumerate(sh)]
+
+            dout[k0]['data'] = np.append(
+                v0['data'],
+                np.full(tuple(shnan), np.nan),
+                axis=axis[0],
+            )
+
+            sh = dout[k0]['data'].shape
+            newpts = sh[axis[0]]*sh[axis[1]]
+            sh = tuple(np.r_[sh[:axis[0]], newpts, sh[axis[1]+1:]].astype(int))
+            newref = tuple(np.r_[
+                v0['ref'][:axis[0]],
+                [dref['npts']['key']],
+                v0['ref'][axis[1]+1:],
+            ])
+
+            dout[k0]['data'] = dout[k0]['data'].swapaxes(axis[0], axis[1]).reshape(sh)
+            dout[k0]['ref'] = newref
+
+        dref['npts']['size'] = newpts
+        dax.add_ref(**dref['npts'])
 
         for k0, v0 in dout.items():
             dax.add_data(**v0)
 
+        levels = np.atleast_1d(levels)
+
         # ---------------
         # prepare contour
 
-        levels = np.atleast_1d(levels)
         ndim = len(dgroup)
         cont0 = dax.ddata[key_cont[0]]['data']
         cont1 = dax.ddata[key_cont[1]]['data']
@@ -141,7 +164,7 @@ def plot_as_profile2d(
             axisZ = None
             sli = [
                 slice(None) if ii == axis[0] else 0
-                for ii in range(ndim)
+                for ii in range(ndim-1)
             ]
 
         elif ndim == 4:
@@ -159,8 +182,8 @@ def plot_as_profile2d(
 
                 for ii in range(len(levels)):
                     ax.plot(
-                        cont0[:, ii],
-                        cont1[:, ii],
+                        cont0,
+                        cont1,
                         ls='-',
                         lw=1.,
                         c='k',
@@ -168,25 +191,26 @@ def plot_as_profile2d(
 
             elif ndim == 3:
 
-                for ii in range(len(levels)):
-                    l0, = ax.plot(
-                        cont0[sli],
-                        cont1[sli],
-                        ls='-',
-                        lw=1.,
-                        c='k',
-                    )
+                l0, = ax.plot(
+                    cont0[sli],
+                    cont1[sli],
+                    ls='-',
+                    lw=1.,
+                    c='k',
+                )
 
-                    km = f'contour{ii}'
-                    dax.add_mobile(
-                        key=km,
-                        handle=l0,
-                        refs=[refZ, refZ],
-                        data=[key_cont[0], key_cont[1]],
-                        dtype=['xdata', 'ydata'],
-                        axes=kax,
-                        ind=0,
-                    )
+                km = f'contours'
+                dax.add_mobile(
+                    key=km,
+                    handle=l0,
+                    # group_vis='Z',
+                    # refs=[(refZ, ref_lvls), (refZ, ref_lvls)],
+                    refs=[(refZ,), (refZ,)],
+                    data=[key_cont[0], key_cont[1]],
+                    dtype=['xdata', 'ydata'],
+                    axes=kax,
+                    ind=0,
+                )
 
             else:
                 raise NotImplementedError()
@@ -199,8 +223,6 @@ def plot_as_profile2d(
                 # k0 = f'contour{ii}'
                 # dax.add_mobile(
                 # )
-
-            import pdb; pdb.set_trace()     # DB
 
         # -----------
         # connect
