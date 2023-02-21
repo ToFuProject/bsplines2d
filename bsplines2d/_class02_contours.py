@@ -32,6 +32,7 @@ def get_contours(
     largest=None,
     # return vs store
     returnas=None,
+    return_dref=None,
     store=None,
     key_npts=None,
     key_lvls=None,
@@ -44,13 +45,15 @@ def get_contours(
 
     (
         key, keybs, keym0, levels,
-        store, returnas, key_npts, key_lvls, key_cont0, key_cont1,
+        store, returnas, return_dref,
+        key_npts, key_lvls, key_cont0, key_cont1,
     ) = _check(
         coll=coll,
         key=key,
         levels=levels,
         # return vs store
         returnas=returnas,
+        return_dref=return_dref,
         store=store,
         key_npts=key_npts,
         key_lvls=key_lvls,
@@ -126,7 +129,10 @@ def get_contours(
         )
 
     if returnas is True:
-        return dout
+        if return_dref is True:
+            return dout, dref
+        else:
+            return dout
 
 
 # #################################################################
@@ -141,6 +147,7 @@ def _check(
     levels=None,
     # store vs return
     returnas=None,
+    return_dref=None,
     store=None,
     key_npts=None,
     key_lvls=None,
@@ -182,6 +189,15 @@ def _check(
         returnas, 'returnas',
         types=bool,
         default=not store,
+    )
+
+    # ----------
+    # return_dref
+
+    return_dref = ds._generic_check._check_var(
+        return_dref, 'return_dref',
+        types=bool,
+        default=False,
     )
 
     # -----------------
@@ -231,7 +247,8 @@ def _check(
 
     return (
         key, keybs, keym0, levels,
-        store, returnas, key_npts, key_lvls, key_cont0, key_cont1,
+        store, returnas, return_dref,
+        key_npts, key_lvls, key_cont0, key_cont1,
     )
 
 

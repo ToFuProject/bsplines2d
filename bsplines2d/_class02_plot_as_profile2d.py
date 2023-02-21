@@ -29,6 +29,8 @@ def plot_as_profile2d(
     key=None,
     # parameters
     dres=None,
+    # contours
+    levels=None,
     # figure
     vmin=None,
     vmax=None,
@@ -70,6 +72,7 @@ def plot_as_profile2d(
 
     (
         coll2, dkeys, interp,
+        key_cont, axis, dout, dref, refZ, refU,
     ) = _prepare(
         coll=coll,
         key=key,
@@ -80,150 +83,137 @@ def plot_as_profile2d(
         # submesh
         subbs=subbs,
         submtype=submtype,
+        # levels
+        levels=levels,
     )
 
     # ---------------
     # call right function
 
-    # if mtype in ['rect', 'tri']:
-    return coll2.plot_as_array(
-        vmin=vmin,
-        vmax=vmax,
-        cmap=cmap,
-        dax=dax,
-        dmargin=dmargin,
-        fs=fs,
-        dcolorbar=dcolorbar,
-        dleg=dleg,
-        interp=interp,
-        connect=connect,
-        **dkeys,
-    )
+    if levels is None:
+        return coll2.plot_as_array(
+            vmin=vmin,
+            vmax=vmax,
+            cmap=cmap,
+            dax=dax,
+            dmargin=dmargin,
+            fs=fs,
+            dcolorbar=dcolorbar,
+            dleg=dleg,
+            interp=interp,
+            connect=connect,
+            **dkeys,
+        )
 
-    # else:
+    else:
+        dax, dgroup = coll2.plot_as_array(
+            vmin=vmin,
+            vmax=vmax,
+            cmap=cmap,
+            dax=dax,
+            dmargin=dmargin,
+            fs=fs,
+            dcolorbar=dcolorbar,
+            dleg=dleg,
+            interp=interp,
+            connect=False,
+            **dkeys,
+        )
 
-        # if dax is None:
-            # dax = _plot_profile2d_polar_create_axes(
-                # fs=fs,
-                # dmargin=dmargin,
-            # )
+        # ---------------
+        # add contour
 
-        # dax, dgroup = coll2.plot_as_array(
-            # vmin=vmin,
-            # vmax=vmax,
-            # cmap=cmap,
-            # dax=dax,
-            # dmargin=dmargin,
-            # fs=fs,
-            # dcolorbar=dcolorbar,
-            # dleg=dleg,
-            # connect=False,
-            # interp=interp,
-            # label=True,
-            # **dkeys,
-        # )
+        for k0, v0 in dref.items():
+            dax.add_ref(**v0)
 
-        # # ------------------
-        # # add radial profile to dax
+        for k0, v0 in dout.items():
+            dax.add_data(**v0)
 
-        # kradius, lkradial, lkdet, reft = _plot_profile2d_polar_add_radial(
-            # coll=coll,
-            # key=key,
-            # keym=keym,
-            # keybs=keybs,
-            # dax=dax,
-        # )
+        # ---------------
+        # prepare contour
+
+        levels = np.atleast_1d(levels)
+        ndim = len(dgroup)
+        cont0 = dax.ddata[key_cont[0]]['data']
+        cont1 = dax.ddata[key_cont[1]]['data']
+
+        if ndim == 3:
+            axisZ = None
+            sli = [
+                slice(None) if ii == axis[0] else 0
+                for ii in range(ndim)
+            ]
+
+        elif ndim == 4:
+            raise NotImplementedError()
 
 
-        # assert (reft is not None) == ('Z' in dgroup.keys())
-        # if reft is not None and reft not in dgroup['Z']['ref']:
-            # dgroup['Z']['ref'].append(reft)
-            # dgroup['Z']['data'].append('index')
+        # -----------
+        # add contour
 
-        # # ------------------
-        # # add radial profile
+        kax = 'matrix'
+        if dax.dax.get(kax) is not None:
+            ax = dax.dax[kax]['handle']
 
-        # kax = 'radial'
-        # if dax.dax.get(kax) is not None:
-            # ax = dax.dax[kax]['handle']
-            # for ii in range(len(lkradial)):
+            if ndim == 2:
 
-                # if reft is None:
-                    # l0, = ax.plot(
-                        # dax.ddata[kradius]['data'],
-                        # dax.ddata[lkradial[ii]]['data'],
-                        # c=lcol[ii],
-                        # ls='-',
-                        # lw=2,
-                    # )
-                # else:
-                    # l0, = ax.plot(
-                        # dax.ddata[kradius]['data'],
-                        # dax.ddata[lkradial[ii]]['data'][0, :],
-                        # c=lcol[ii],
-                        # ls='-',
-                        # lw=2,
-                    # )
+                for ii in range(len(levels)):
+                    ax.plot(
+                        cont0[:, ii],
+                        cont1[:, ii],
+                        ls='-',
+                        lw=1.,
+                        c='k',
+                    )
 
-                    # kl = f"radial{ii}"
-                    # dax.add_mobile(
-                        # key=kl,
-                        # handle=l0,
-                        # refs=(reft,),
-                        # data=[lkradial[ii]],
-                        # dtype=['ydata'],
-                        # axes=kax,
-                        # ind=0,
-                    # )
+            elif ndim == 3:
 
-            # if lkdet is not None:
-                # for ii in range(len(lkdet)):
-                    # if reft is None:
-                        # l0, = ax.plot(
-                            # dax.ddata[kradius]['data'],
-                            # dax.ddata[lkdet[ii]]['data'],
-                            # ls='-',
-                            # lw=1,
-                        # )
-                    # else:
-                        # l0, = ax.plot(
-                            # dax.ddata[kradius]['data'],
-                            # dax.ddata[lkdet[ii]]['data'][0, :],
-                            # ls='-',
-                            # lw=1,
-                        # )
+                for ii in range(len(levels)):
+                    l0, = ax.plot(
+                        cont0[sli],
+                        cont1[sli],
+                        ls='-',
+                        lw=1.,
+                        c='k',
+                    )
 
-                        # kl = f"radial_det{ii}"
-                        # dax.add_mobile(
-                            # key=kl,
-                            # handle=l0,
-                            # refs=(reft,),
-                            # data=[lkdet[ii]],
-                            # dtype=['ydata'],
-                            # axes=kax,
-                            # ind=0,
-                        # )
+                    km = f'contour{ii}'
+                    dax.add_mobile(
+                        key=km,
+                        handle=l0,
+                        refs=[refZ, refZ],
+                        data=[key_cont[0], key_cont[1]],
+                        dtype=['xdata', 'ydata'],
+                        axes=kax,
+                        ind=0,
+                    )
 
-            # ax.set_xlim(
-                # dax.ddata[kradius]['data'].min(),
-                # dax.ddata[kradius]['data'].max(),
-            # )
+            else:
+                raise NotImplementedError()
 
-            # if vmin is not None:
-                # ax.set_ylim(bottom=vmin)
-            # if vmax is not None:
-                # ax.set_ylim(top=vmax)
+                # sli = [slice(None)]
 
-        # # connect
-        # if connect is True:
-            # dax.setup_interactivity(kinter='inter0', dgroup=dgroup, dinc=dinc)
-            # dax.disconnect_old()
-            # dax.connect()
+                # l0, = ax.plot(
+                # )
 
-            # dax.show_commands()
-            # return dax
-        # else:
-            # return dax, dgroup
+                # k0 = f'contour{ii}'
+                # dax.add_mobile(
+                # )
+
+            import pdb; pdb.set_trace()     # DB
+
+        # -----------
+        # connect
+
+        if connect is True:
+            dax.setup_interactivity(kinter='inter0', dgroup=dgroup, dinc=dinc)
+            dax.disconnect_old()
+            dax.connect()
+
+            dax.show_commands()
+            return dax
+        else:
+            return dax, dgroup
 
 
 # #############################################################################
@@ -344,6 +334,8 @@ def _prepare(
     # submesh
     subbs=None,
     submtype=None,
+    # levels
+    levels=None,
 ):
 
     # ------------
@@ -362,12 +354,6 @@ def _prepare(
 
     # -----------------
     # get plotting mesh
-
-    # get dR, dZ
-    # dx0, dx1, x0minmax, x1minmax = _plot_bsplines_get_dx01(
-        # coll=coll,
-        # km=coll.dobj[wbs][subbs][wm],
-    # )
 
     coll2, dbs = coll.interpolate_all_bsplines(
         key=key,
@@ -398,7 +384,44 @@ def _prepare(
         if ndim == 4:
             dkeys['keyU'] = coll2.get_ref_vector(ref=lr1d[1])[3]
 
-    return coll2, dkeys, interp
+    # -----------------
+    # optional contours
+
+    key_cont = None
+    axis = None
+    refZ, refU = None, None
+    if levels is not None:
+
+        # get contours
+        key_cont = ['cont0', 'cont1']
+        dout, dref = coll.get_profile2d_contours(
+            key=key,
+            levels=levels,
+            res=dres if isinstance(dres, (int, float)) else None,
+            store=False,
+            return_dref=True,
+            key_cont0=key_cont[0],
+            key_cont1=key_cont[1],
+        )
+
+        # axis
+        ref = dout['cont0']['ref']
+        axis = [
+            ii for ii, rr in enumerate(ref)
+            if rr not in coll.dref.keys()
+        ]
+
+        # refZ, refU
+        if len(ref) == 3:
+            refZ = [
+                rr for ii, rr in enumerate(ref)
+                if ii not in axis
+            ][0]
+
+    return (
+        coll2, dkeys, interp,
+        key_cont, axis, dout, dref, refZ, refU,
+    )
 
 
 # #############################################################################
