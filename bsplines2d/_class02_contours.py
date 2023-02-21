@@ -2,6 +2,7 @@
 
 
 # Built-in
+import itertools as itt
 import warnings
 
 
@@ -27,48 +28,73 @@ def get_contours(
     key=None,
     levels=None,
     res=None,
+    npts=None,
     largest=None,
-    uniform=None,
+    # return vs store
+    returnas=None,
     store=None,
+    key_npts=None,
+    key_lvls=None,
+    key_cont0=None,
+    key_cont1=None,
 ):
 
     # ----------
     # check
 
-    key, keybs, keym0, levels, store, returnas = _check(
+    (
+        key, keybs, keym0, levels,
+        store, returnas, key_npts, key_lvls, key_cont0, key_cont1,
+    ) = _check(
         coll=coll,
         key=key,
         levels=levels,
+        # return vs store
+        returnas=returnas,
+        store=store,
+        key_npts=key_npts,
+        key_lvls=key_lvls,
+        key_cont0=key_cont0,
+        key_cont1=key_cont1,
     )
 
     # ---------------------
     # prepare (interpolate)
 
-    xx0, xx1 = col.get_sample_mesh(
+    dsamp = coll.get_sample_mesh(
         key=keym0,
         res=res,
         grid=True,
+        store=False,
     )
 
     dinterp = coll.interpolate(
         keys=key,
         ref_key=keybs,
-        x0=xx0,
-        x1=xx1,
+        x0=dsamp['x0']['data'],
+        x1=dsamp['x1']['data'],
         grid=False,
         submesh=True,
+        store=False,
     )[key]
+
+    # axis
+    axis = [
+        ii for ii, rr in enumerate(dinterp['ref'])
+        if rr is None
+    ]
 
     # ----------------
     # compute contours
 
     cont0, cont1 = _get_contours(
-        xx0=xx0,
-        xx1=xx1,
+        xx0=dsamp['x0']['data'],
+        xx1=dsamp['x1']['data'],
         val=dinterp['data'],
+        axis=axis,
         levels=levels,
+        npts=npts,
         largest=largest,
-        uniform=uniform,
     )
 
     # ----------------
@@ -79,6 +105,14 @@ def get_contours(
         key=key,
         keybs=keybs,
         dinterp=dinterp,
+        cont0=cont0,
+        cont1=cont1,
+        axis=axis,
+        keym0=keym0,
+        key_npts=key_npts,
+        key_lvls=key_lvls,
+        key_cont0=key_cont0,
+        key_cont1=key_cont1,
     )
 
     # ----------------
@@ -105,14 +139,21 @@ def _check(
     coll=None,
     key=None,
     levels=None,
+    # store vs return
+    returnas=None,
+    store=None,
+    key_npts=None,
+    key_lvls=None,
+    key_cont0=None,
+    key_cont1=None,
 ):
 
     # ------
     # key
 
     dp2d = coll.get_profiles2d()
-    key = ds_generic_check._check_var(
-        'key', key,
+    key = ds._generic_check._check_var(
+        key, 'key',
         types=str,
         allowed=list(dp2d.keys()),
     )
@@ -126,32 +167,72 @@ def _check(
         keym0 = submesh
 
     # ----------
-    # levels
-
-    levels = ds._generic_check._check_flat1darray(
-        levels, 'levels',
-        dtype=float,
-    )
-
-    # ----------
     # store
 
-    store = ds_generic_check._check_var(
-        'store', store,
+    store = ds._generic_check._check_var(
+        store, 'store',
         types=bool,
-        defaut=False,
+        default=False,
     )
 
     # ----------
     # returnas
 
-    returnas = ds_generic_check._check_var(
-        'returnas', returnas,
+    returnas = ds._generic_check._check_var(
+        returnas, 'returnas',
         types=bool,
-        defaut=not store,
+        default=not store,
     )
 
-    return key, keybs, keym0, levels, store, returnas
+    # -----------------
+    # keys for storing
+
+    # key_npts
+    if store is True:
+        lout = list(coll.dref.keys())
+    else:
+        lout = []
+    key_npts = ds._generic_check._check_var(
+        key_npts, 'key_npts',
+        types=str,
+        default=f'{key}_cont_npts',
+        excluded=lout,
+    )
+
+    # key_lvls
+    lout.append(key_npts)
+    key_lvls = ds._generic_check._check_var(
+        key_lvls, 'key_lvls',
+        types=str,
+        default=f'{key}_cont_nlvls',
+        excluded=lout,
+    )
+
+    # key_cont0
+    if store is True:
+        lout = list(coll.ddata.keys())
+    else:
+        lout = []
+    key_cont0 = ds._generic_check._check_var(
+        key_cont0, 'key_cont0',
+        types=str,
+        default=f'{key}_cont0',
+        excluded=lout,
+    )
+
+    # key_cont0
+    lout.append(key_cont0)
+    key_cont1 = ds._generic_check._check_var(
+        key_cont1, 'key_cont1',
+        types=str,
+        default=f'{key}_cont1',
+        excluded=lout,
+    )
+
+    return (
+        key, keybs, keym0, levels,
+        store, returnas, key_npts, key_lvls, key_cont0, key_cont1,
+    )
 
 
 # #################################################################
@@ -164,9 +245,10 @@ def _get_contours(
     xx0=None,
     xx1=None,
     val=None,
+    axis=None,
     levels=None,
+    npts=None,
     largest=None,
-    uniform=None,
 ):
     """ Return x0, x1 coordinates of contours (time-dependent)
 
@@ -189,43 +271,52 @@ def _get_contours(
     # -------------
     # check inputs
 
-    if largest is None:
-        largest = False
+    (
+        axis, n0, n1, shape_other, shape_cont, npts, levels, largest,
+    ) = _compute_check(
+        xx0=xx0,
+        xx1=xx1,
+        val=val,
+        axis=axis,
+        levels=levels,
+        npts=npts,
+        largest=largest,
+    )
 
-    if uniform is None:
-        uniform = True
-
-    import pdb; pdb.set_trace()     # DB
-    # val.shape = (nt, nR, nZ)
-    lc = [
-        val.shape == xx0.shape,
-        val.ndim == xx0.ndim + 1 and val.shape[1:] == xx0.shape,
-    ]
-    if lc[0]:
-        val = val[None, ...]
-    elif lc[1]:
-        pass
-    else:
-        msg = "Incompatible val.shape!"
-        raise Exception(msg)
-
-    nt, n0, n1 = val.shape
-
-    # ------------------------
-    # Compute list of contours
+    # --------
+    # prepare
 
     # compute contours at rknots
     # see https://github.com/matplotlib/matplotlib/blob/main/src/_contour.h
 
-    cont0 = [[] for ii in range(nt)]
-    cont1 = [[] for ii in range(nt)]
-    for ii in range(nt):
+    cont0 = np.full(shape_cont, np.nan)
+    cont1 = np.full(shape_cont, np.nan)
+
+    # prepare slices
+    sli_v = [slice(None) if ii in axis else 0 for ii in range(val.ndim)]
+    sli_c = [slice(None) if ii == axis[0] else 0 for ii in range(cont0.ndim)]
+
+    # prepare indices
+    ind_v = [ii for ii in range(val.ndim) if ii not in axis]
+    ind_c = [ii for ii in range(cont0.ndim) if ii not in axis]
+
+    # ------------------------
+    # loop on slices
+
+    maxnpts = 0
+    maxlvl = levels[0]
+    for ind in itt.product(*[range(aa) for aa in shape_other]):
+
+        # slice
+        for ii, jj in enumerate(ind):
+            sli_v[ind_v[ii]] = jj
+            sli_c[ind_c[ii]] = jj
 
         # define map
         contgen = contour_generator(
             x=xx0,
             y=xx1,
-            z=val[ii, ...],
+            z=val[tuple(sli_v)],
             name='serial',
             corner_mask=None,
             line_type='Separate',
@@ -238,6 +329,7 @@ def _get_contours(
             thread_count=0,
         )
 
+        # loop on levels
         for jj in range(len(levels)):
 
             # compute concatenated contour
@@ -257,6 +349,7 @@ def _get_contours(
                 msg = f"Wrong output from contourpy!\n{cj}"
                 raise Exception(msg)
 
+            # if one or several contours exist
             if len(cj) > 0:
                 cj = [
                     cc[np.all(np.isfinite(cc), axis=1), :]
@@ -288,37 +381,105 @@ def _get_contours(
             else:
                 no_cont = True
 
-            if no_cont is True:
-                cj = np.full((3, 2), np.nan)
+            # if contour was found
+            if no_cont is False:
 
-            cont0[ii].append(cj[:, 0])
-            cont1[ii].append(cj[:, 1])
+                # maxnpts
+                if cj.shape[0] > maxnpts:
+                    maxnpts = cj.shape[0]
+                    maxlvl = levels[jj]
 
-    # ------------------------------------------------
-    # Interpolate / concatenate to uniformize as array
+                # slice
+                sli_c[axis[1]] = jj
 
-    if uniform:
-        ln = [[pp.size for pp in cc] for cc in cont0]
-        nmax = np.max(ln)
-        c0 = np.full((nt, len(levels), nmax), np.nan)
-        c1 = np.full((nt, len(levels), nmax), np.nan)
-
-        for ii in range(nt):
-            for jj in range(len(levels)):
-                c0[ii, jj, :] = np.interp(
-                    np.linspace(0, ln[ii][jj], nmax),
-                    np.arange(0, ln[ii][jj]),
-                    cont0[ii][jj],
+                # interpolate on desired nb of points
+                cont0[tuple(sli_c)] = np.interp(
+                    np.linspace(0, cj.shape[0], npts),
+                    np.arange(0, cj.shape[0]),
+                    cj[:, 0],
                 )
-                c1[ii, jj, :] = np.interp(
-                    np.linspace(0, ln[ii][jj], nmax),
-                    np.arange(0, ln[ii][jj]),
-                    cont1[ii][jj],
+                cont1[tuple(sli_c)] = np.interp(
+                    np.linspace(0, cj.shape[0], npts),
+                    np.arange(0, cj.shape[0]),
+                    cj[:, 1],
                 )
 
-        return c0, c1
+    # -----------------
+    # Warning + return
+
+    msg = f"Contour computing: npts {npts} vs {maxnpts} (level {maxlvl})"
+    if maxnpts > npts:
+        warnings.warn(msg)
     else:
-        return cont0, cont1
+        print(msg)
+
+    return cont0, cont1
+
+
+def _compute_check(
+    xx0=None,
+    xx1=None,
+    val=None,
+    axis=None,
+    levels=None,
+    npts=None,
+    largest=None,
+):
+
+    # ---------------------
+    # check axis and shapes
+
+    if axis is None:
+        axis = [
+            ii for ii, ss in enumerate(val.shape)
+            if ss in xx0.shape
+        ]
+    assert xx0.ndim == 2
+    assert xx0.shape == xx1.shape
+    assert len(axis) == 2
+
+    # ---------------------
+    # check axis and shapes
+
+    npts = ds._generic_check._check_var(
+        npts, 'npts',
+        types=int,
+        default=100,
+        sign='>0',
+    )
+
+    # ----------
+    # levels
+
+    levels = ds._generic_check._check_flat1darray(
+        levels, 'levels',
+        dtype=float,
+    )
+
+    # ---------------------
+    # check axis and shapes
+
+    n0, n1 = xx0.shape
+    shape_other = [
+        ss for ii, ss in enumerate(val.shape)
+        if ii not in axis
+    ]
+    shape_cont = tuple([
+        npts if ii == axis[0]
+        else (levels.size if ii == axis[1] else ss)
+        for ii, ss in enumerate(val.shape)
+    ])
+
+    # ----------
+    # largest
+
+    largest = ds._generic_check._check_var(
+        largest, 'largest',
+        types=bool,
+        default=True,
+    )
+
+    return axis, n0, n1, shape_other, shape_cont, npts, levels, largest
 
 
 # #################################################################
@@ -334,44 +495,56 @@ def _format(
     dinterp=None,
     cont0=None,
     cont1=None,
+    axis=None,
+    keym0=None,
+    key_npts=None,
+    key_lvls=None,
     key_cont0=None,
     key_cont1=None,
 ):
 
-    # ------
-    # keys
-
-    if key_cont0 is None:
-        key_cont0 = f'{key}_cont0'
-
-    if key_cont1 is None:
-        key_cont1 = f'{key}_cont1'
+    npts = cont0.shape[axis[0]]
+    nlvls = cont0.shape[axis[1]]
 
     # --------
     # ref
 
-    import pdb; pdb.set_trace()     # DB
+    ref = tuple([
+        key_npts if ii == axis[0]
+        else (key_lvls if ii == axis[1] else rr)
+        for ii, rr in enumerate(dinterp['ref'])
+    ])
 
     # -------
     # units
 
+    wm = coll._which_mesh
+    knots0, knots1 = coll.dobj[wm][keym0]['knots']
+
+    lf = ['units', 'dim', 'quant', 'name']
+    dd0 = {k0: coll.ddata[knots0][k0] for k0 in lf}
+    dd1 = {k0: coll.ddata[knots1][k0] for k0 in lf}
+
     # -------------
     # populate dict
 
-    dref = {}
+    dref = {
+        'npts': {'key': key_npts, 'size': npts},
+        'levels': {'key': key_lvls, 'size': nlvls},
+    }
 
     dout = {
         'cont0': {
             'key': key_cont0,
             'data': cont0,
-            'ref':
-            'units':
+            'ref': ref,
+            **dd0,
         },
         'cont1': {
-            'key': key_cont0,
+            'key': key_cont1,
             'data': cont1,
-            'ref':
-            'units':
+            'ref': ref,
+            **dd1,
         },
     }
 

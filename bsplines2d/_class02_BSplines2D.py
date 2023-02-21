@@ -14,7 +14,7 @@ from ._class01_Mesh2D import Mesh2D as Previous
 from . import _class01_select as _select
 from . import _class02_checks as _checks
 from . import _class02_compute as _compute
-from . import _class02_contour as _contour
+from . import _class02_contours as _contours
 from . import _class01_rect_cropping as _cropping
 from . import _class02_interpolate as _interpolate
 from . import _class02_interpolate_all as _interpolate_all
@@ -303,10 +303,19 @@ class BSplines2D(Previous):
     # contours
     # ------------------
 
-    def get_bsplines_contours(
+    def get_profile2d_contours(
         self,
         key=None,
         levels=None,
+        res=None,
+        npts=None,
+        largest=None,
+        # return vs store
+        returnas=None,
+        store=None,
+        key_npts=None,
+        key_cont0=None,
+        key_cont1=None,
     ):
         """ Return a dict of contour data """
 
@@ -314,6 +323,15 @@ class BSplines2D(Previous):
             coll=self,
             key=key,
             levels=levels,
+            res=res,
+            npts=npts,
+            largest=largest,
+            # return vs store
+            returnas=returnas,
+            store=store,
+            key_npts=key_npts,
+            key_cont0=key_cont0,
+            key_cont1=key_cont1,
         )
 
     # -----------------
@@ -890,6 +908,8 @@ class BSplines2D(Previous):
         key=None,
         # parameters
         dres=None,
+        # levels
+        levels=None,
         # plot options
         vmin=None,
         vmax=None,
@@ -909,6 +929,8 @@ class BSplines2D(Previous):
             key=key,
             # parameters
             dres=dres,
+            # levels
+            levels=levels,
             # plot options
             vmin=vmin,
             vmax=vmax,
