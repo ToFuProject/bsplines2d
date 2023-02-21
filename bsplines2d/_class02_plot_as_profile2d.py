@@ -411,6 +411,7 @@ def _prepare(
 
     key_cont = None
     axis = None
+    dout, dref = None, None
     refZ, refU = None, None
     if levels is not None:
 
