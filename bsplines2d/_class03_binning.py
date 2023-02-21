@@ -6,9 +6,6 @@ Created on Thu Jan  5 20:14:40 2023
 """
 
 
-import itertools as itt
-
-
 import numpy as np
 import datastock as ds
 
