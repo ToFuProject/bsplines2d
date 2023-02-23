@@ -13,9 +13,9 @@ sys.path.insert(0, _PATH_DS)
 import datastock as ds
 sys.path.pop(0)
 
-# #####################
+# ######################
 # Debugging unit tests - END
-# #####################
+# ######################
 
 
 from ._class03_Bins import Bins as BSplines2D
