@@ -2,6 +2,7 @@
 
 
 # Built-in
+import warnings
 
 
 # Common
@@ -52,8 +53,8 @@ def plot_as_profile2d(
         connect = True
 
     (
-        key, keybs, keym, mtype,
-        subbs, submtype,
+        key, keybs, keym, nd, mtype,
+        submesh, subbs, submtype,
         cmap, dcolorbar, dleg,
         connect,
     ) = _check(
@@ -81,161 +82,68 @@ def plot_as_profile2d(
         dres=dres,
         mtype=mtype,
         # submesh
+        submesh=submesh,
         subbs=subbs,
         submtype=submtype,
         # levels
         levels=levels,
     )
 
-    # ---------------
-    # call right function
 
-    if levels is None:
-        return coll2.plot_as_array(
-            vmin=vmin,
-            vmax=vmax,
-            cmap=cmap,
-            dax=dax,
-            dmargin=dmargin,
-            fs=fs,
-            dcolorbar=dcolorbar,
-            dleg=dleg,
-            interp=interp,
-            connect=connect,
-            **dkeys,
-        )
+    # -----------------
+    # case with submesh
 
-    else:
-        dax, dgroup = coll2.plot_as_array(
-            vmin=vmin,
-            vmax=vmax,
-            cmap=cmap,
-            dax=dax,
-            dmargin=dmargin,
-            fs=fs,
-            dcolorbar=dcolorbar,
-            dleg=dleg,
-            interp=interp,
-            connect=False,
-            **dkeys,
-        )
+    if submesh is not None:
 
-        # ---------------
-        # add contour
-
-        for k0, v0 in dout.items():
-            sh = dout[k0]['data'].shape
-            shnan = [1 if ii == axis[0] else ss for ii, ss in enumerate(sh)]
-
-            dout[k0]['data'] = np.append(
-                v0['data'],
-                np.full(tuple(shnan), np.nan),
-                axis=axis[0],
+        if dax is None:
+            dax = _plot_profile2d_submesh_create_axes(
+                fs=fs,
+                dmargin=dmargin,
             )
 
-            sh = dout[k0]['data'].shape
-            newpts = sh[axis[0]]*sh[axis[1]]
-            sh = tuple(np.r_[sh[:axis[0]], newpts, sh[axis[1]+1:]].astype(int))
-            newref = tuple(np.r_[
-                v0['ref'][:axis[0]],
-                [dref['npts']['key']],
-                v0['ref'][axis[1]+1:],
-            ])
+    # -------------------
+    # call right function
 
-            dout[k0]['data'] = dout[k0]['data'].swapaxes(axis[0], axis[1]).reshape(sh)
-            dout[k0]['ref'] = newref
+    else:
+        if levels is None:
+            return coll2.plot_as_array(
+                vmin=vmin,
+                vmax=vmax,
+                cmap=cmap,
+                dax=dax,
+                dmargin=dmargin,
+                fs=fs,
+                dcolorbar=dcolorbar,
+                dleg=dleg,
+                interp=interp,
+                connect=connect,
+                **dkeys,
+            )
 
-        dref['npts']['size'] = newpts
-        dax.add_ref(**dref['npts'])
-
-        for k0, v0 in dout.items():
-            dax.add_data(**v0)
-
-        levels = np.atleast_1d(levels)
-
-        # ---------------
-        # prepare contour
-
-        ndim = len(dgroup)
-        cont0 = dax.ddata[key_cont[0]]['data']
-        cont1 = dax.ddata[key_cont[1]]['data']
-
-        if ndim == 3:
-            axisZ = None
-            sli = [
-                slice(None) if ii == axis[0] else 0
-                for ii in range(ndim-1)
-            ]
-
-        elif ndim == 4:
-            raise NotImplementedError()
-
-
-        # -----------
-        # add contour
-
-        kax = 'matrix'
-        if dax.dax.get(kax) is not None:
-            ax = dax.dax[kax]['handle']
-
-            if ndim == 2:
-
-                for ii in range(len(levels)):
-                    ax.plot(
-                        cont0,
-                        cont1,
-                        ls='-',
-                        lw=1.,
-                        c='k',
-                    )
-
-            elif ndim == 3:
-
-                l0, = ax.plot(
-                    cont0[sli],
-                    cont1[sli],
-                    ls='-',
-                    lw=1.,
-                    c='k',
-                )
-
-                km = f'contours'
-                dax.add_mobile(
-                    key=km,
-                    handle=l0,
-                    # group_vis='Z',
-                    # refs=[(refZ, ref_lvls), (refZ, ref_lvls)],
-                    refs=[(refZ,), (refZ,)],
-                    data=[key_cont[0], key_cont[1]],
-                    dtype=['xdata', 'ydata'],
-                    axes=kax,
-                    ind=0,
-                )
-
-            else:
-                raise NotImplementedError()
-
-                # sli = [slice(None)]
-
-                # l0, = ax.plot(
-                # )
-
-                # k0 = f'contour{ii}'
-                # dax.add_mobile(
-                # )
-
-        # -----------
-        # connect
-
-        if connect is True:
-            dax.setup_interactivity(kinter='inter0', dgroup=dgroup, dinc=dinc)
-            dax.disconnect_old()
-            dax.connect()
-
-            dax.show_commands()
-            return dax
         else:
-            return dax, dgroup
+            return _plot_fixed_with_levels(
+                coll2=coll2,
+                dout=dout,
+                axis=axis,
+                dref=dref,
+                levels=levels,
+                key_cont=key_cont,
+                refZ=refZ,
+                # figure
+                vmin=vmin,
+                vmax=vmax,
+                cmap=cmap,
+                dax=dax,
+                dmargin=dmargin,
+                fs=fs,
+                dcolorbar=dcolorbar,
+                dleg=dleg,
+                interp=interp,
+                dkeys=dkeys,
+                # interactivity
+                connect=connect,
+                dinc=dinc,
+            )
 
 
 # #############################################################################
@@ -273,6 +181,7 @@ def _check(
     refbs = coll.dobj[wbs][keybs]['ref']
 
     keym = coll.dobj[wbs][keybs][wm]
+    nd = coll.dobj[wm][keym]['nd']
     mtype = coll.dobj[wm][keym]['type']
 
     submesh = coll.dobj[wm][keym]['submesh']
@@ -331,8 +240,8 @@ def _check(
     )
 
     return (
-        key, keybs, keym, mtype,
-        subbs, submtype,
+        key, keybs, keym, nd, mtype,
+        submesh, subbs, submtype,
         cmap, dcolorbar, dleg,
         connect,
     )
@@ -354,11 +263,20 @@ def _prepare(
     dres=None,
     mtype=None,
     # submesh
+    submesh=None,
     subbs=None,
     submtype=None,
     # levels
     levels=None,
 ):
+
+    # ----------
+    # check
+
+    if levels is not None and submesh is not None:
+        levels = None
+        msg = f"Arg levels is only usable for fixed meshes (submesh=None)"
+        warnings.warn(msg)
 
     # ------------
     # misc
@@ -449,6 +367,168 @@ def _prepare(
 
 # #############################################################################
 # #############################################################################
+#                   Plot fixed mesh with levels
+# #############################################################################
+
+
+def _plot_fixed_with_levels(
+    coll2=None,
+    dout=None,
+    axis=None,
+    dref=None,
+    levels=None,
+    key_cont=None,
+    refZ=None,
+    # figure
+    vmin=None,
+    vmax=None,
+    cmap=None,
+    dax=None,
+    dmargin=None,
+    fs=None,
+    dcolorbar=None,
+    dleg=None,
+    interp=None,
+    dkeys=None,
+    # interactivity
+    connect=None,
+    dinc=None,
+):
+
+    dax, dgroup = coll2.plot_as_array(
+        vmin=vmin,
+        vmax=vmax,
+        cmap=cmap,
+        dax=dax,
+        dmargin=dmargin,
+        fs=fs,
+        dcolorbar=dcolorbar,
+        dleg=dleg,
+        interp=interp,
+        connect=False,
+        **dkeys,
+    )
+
+    # ---------------
+    # add contour
+
+    for k0, v0 in dout.items():
+        sh = dout[k0]['data'].shape
+        shnan = [1 if ii == axis[0] else ss for ii, ss in enumerate(sh)]
+
+        dout[k0]['data'] = np.append(
+            v0['data'],
+            np.full(tuple(shnan), np.nan),
+            axis=axis[0],
+        )
+
+        sh = dout[k0]['data'].shape
+        newpts = sh[axis[0]]*sh[axis[1]]
+        sh = tuple(np.r_[sh[:axis[0]], newpts, sh[axis[1]+1:]].astype(int))
+        newref = tuple(np.r_[
+            v0['ref'][:axis[0]],
+            [dref['npts']['key']],
+            v0['ref'][axis[1]+1:],
+        ])
+
+        dout[k0]['data'] = dout[k0]['data'].swapaxes(axis[0], axis[1]).reshape(sh)
+        dout[k0]['ref'] = newref
+
+    dref['npts']['size'] = newpts
+    dax.add_ref(**dref['npts'])
+
+    for k0, v0 in dout.items():
+        dax.add_data(**v0)
+
+    levels = np.atleast_1d(levels)
+
+    # ---------------
+    # prepare contour
+
+    ndim = len(dgroup)
+    cont0 = dax.ddata[key_cont[0]]['data']
+    cont1 = dax.ddata[key_cont[1]]['data']
+
+    if ndim == 3:
+        axisZ = None
+        sli = [
+            slice(None) if ii == axis[0] else 0
+            for ii in range(ndim-1)
+        ]
+
+    elif ndim == 4:
+        raise NotImplementedError()
+
+
+    # -----------
+    # add contour
+
+    kax = 'matrix'
+    if dax.dax.get(kax) is not None:
+        ax = dax.dax[kax]['handle']
+
+        if ndim == 2:
+
+            for ii in range(len(levels)):
+                ax.plot(
+                    cont0,
+                    cont1,
+                    ls='-',
+                    lw=1.,
+                    c='k',
+                )
+
+        elif ndim == 3:
+
+            l0, = ax.plot(
+                cont0[sli],
+                cont1[sli],
+                ls='-',
+                lw=1.,
+                c='k',
+            )
+
+            km = f'contours'
+            dax.add_mobile(
+                key=km,
+                handle=l0,
+                # group_vis='Z',
+                # refs=[(refZ, ref_lvls), (refZ, ref_lvls)],
+                refs=[(refZ,), (refZ,)],
+                data=[key_cont[0], key_cont[1]],
+                dtype=['xdata', 'ydata'],
+                axes=kax,
+                ind=0,
+            )
+
+        else:
+            raise NotImplementedError()
+
+            # sli = [slice(None)]
+
+            # l0, = ax.plot(
+            # )
+
+            # k0 = f'contour{ii}'
+            # dax.add_mobile(
+            # )
+
+    # -----------
+    # connect
+
+    if connect is True:
+        dax.setup_interactivity(kinter='inter0', dgroup=dgroup, dinc=dinc)
+        dax.disconnect_old()
+        dax.connect()
+
+        dax.show_commands()
+        return dax
+    else:
+        return dax, dgroup
+
+
+# #############################################################################
+# #############################################################################
 #                       Utilities
 # #############################################################################
 
@@ -486,7 +566,7 @@ def _plot_bsplines_get_dx01(coll=None, km=None):
 
 # #############################################################################
 # #############################################################################
-#                       Back-up
+#                       plot with submesh
 # #############################################################################
 
 
@@ -611,58 +691,55 @@ def _plot_bsplines_get_dx01(coll=None, km=None):
     # return kradius, lk, lkdet, reft
 
 
+def _plot_profile2d_submesh_create_axes(
+    fs=None,
+    dmargin=None,
+):
 
+    if fs is None:
+        fs = (15, 9)
 
+    if dmargin is None:
+        dmargin = {
+            'left': 0.05, 'right': 0.95,
+            'bottom': 0.05, 'top': 0.95,
+            'hspace': 0.4, 'wspace': 0.3,
+        }
 
-# def _plot_profile2d_polar_create_axes(
-    # fs=None,
-    # dmargin=None,
-# ):
+    fig = plt.figure(figsize=fs)
+    gs = gridspec.GridSpec(ncols=6, nrows=6, **dmargin)
 
-    # if fs is None:
-        # fs = (15, 9)
+    # axes for image
+    ax0 = fig.add_subplot(gs[:4, 2:4], aspect='auto')
 
-    # if dmargin is None:
-        # dmargin = {
-            # 'left': 0.05, 'right': 0.95,
-            # 'bottom': 0.05, 'top': 0.95,
-            # 'hspace': 0.4, 'wspace': 0.3,
-        # }
+    # axes for vertical profile
+    ax1 = fig.add_subplot(gs[:4, 4], sharey=ax0)
 
-    # fig = plt.figure(figsize=fs)
-    # gs = gridspec.GridSpec(ncols=6, nrows=6, **dmargin)
+    # axes for horizontal profile
+    ax2 = fig.add_subplot(gs[4:, 2:4], sharex=ax0)
 
-    # # axes for image
-    # ax0 = fig.add_subplot(gs[:4, 2:4], aspect='auto')
+    # axes for traces
+    ax3 = fig.add_subplot(gs[2:4, :2])
 
-    # # axes for vertical profile
-    # ax1 = fig.add_subplot(gs[:4, 4], sharey=ax0)
+    # axes for traces
+    ax7 = fig.add_subplot(gs[:2, :2], sharey=ax2)
 
-    # # axes for horizontal profile
-    # ax2 = fig.add_subplot(gs[4:, 2:4], sharex=ax0)
+    # axes for text
+    ax4 = fig.add_subplot(gs[:3, 5], frameon=False)
+    ax5 = fig.add_subplot(gs[3:, 5], frameon=False)
+    ax6 = fig.add_subplot(gs[4:, :2], frameon=False)
 
-    # # axes for traces
-    # ax3 = fig.add_subplot(gs[2:4, :2])
-
-    # # axes for traces
-    # ax7 = fig.add_subplot(gs[:2, :2], sharey=ax2)
-
-    # # axes for text
-    # ax4 = fig.add_subplot(gs[:3, 5], frameon=False)
-    # ax5 = fig.add_subplot(gs[3:, 5], frameon=False)
-    # ax6 = fig.add_subplot(gs[4:, :2], frameon=False)
-
-    # # dax
-    # dax = {
-        # # data
-        # 'matrix': {'handle': ax0, 'type': 'matrix'},
-        # 'vertical': {'handle': ax1, 'type': 'misc'},
-        # 'horizontal': {'handle': ax2, 'type': 'misc'},
-        # 'traces': {'handle': ax3, 'type': 'misc'},
-        # 'radial': {'handle': ax7, 'type': 'misc'},
-        # # text
-        # 'textX': {'handle': ax4, 'type': 'text'},
-        # 'textY': {'handle': ax5, 'type': 'text'},
-        # 'textZ': {'handle': ax6, 'type': 'text'},
-    # }
-    # return dax
+    # dax
+    dax = {
+        # data
+        'matrix': {'handle': ax0, 'type': 'matrix'},
+        'vertical': {'handle': ax1, 'type': 'misc'},
+        'horizontal': {'handle': ax2, 'type': 'misc'},
+        'traces': {'handle': ax3, 'type': 'misc'},
+        'radial': {'handle': ax7, 'type': 'misc'},
+        # text
+        'textX': {'handle': ax4, 'type': 'text'},
+        'textY': {'handle': ax5, 'type': 'text'},
+        'textZ': {'handle': ax6, 'type': 'text'},
+    }
+    return dax
