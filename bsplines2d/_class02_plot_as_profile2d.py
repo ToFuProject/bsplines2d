@@ -73,7 +73,7 @@ def plot_as_profile2d(
 
     (
         coll2, dkeys, interp,
-        key_cont, axis, dout, dref, refZ, refU,
+        key_cont, axis, dout, dref, refZ, refU, lcol,
     ) = _prepare(
         coll=coll,
         key=key,
@@ -89,17 +89,33 @@ def plot_as_profile2d(
         levels=levels,
     )
 
-
     # -----------------
     # case with submesh
 
     if submesh is not None:
 
-        if dax is None:
-            dax = _plot_profile2d_submesh_create_axes(
-                fs=fs,
-                dmargin=dmargin,
-            )
+        return _plot_submesh(
+            coll=coll,
+            coll2=coll2,
+            key=key,
+            keym=keym,
+            keybs=keybs,
+            # figure
+            vmin=vmin,
+            vmax=vmax,
+            cmap=cmap,
+            dax=dax,
+            dmargin=dmargin,
+            fs=fs,
+            dcolorbar=dcolorbar,
+            dleg=dleg,
+            interp=interp,
+            dkeys=dkeys,
+            lcol=lcol,
+            # interactivity
+            connect=connect,
+            dinc=dinc,
+        )
 
     # -------------------
     # call right function
@@ -359,9 +375,14 @@ def _prepare(
                 if ii not in axis
             ][0]
 
+    # --------------------
+    # optional for submesh
+
+    lcol = ['k', 'r', 'b', 'g', 'm', 'c', 'y']
+
     return (
         coll2, dkeys, interp,
-        key_cont, axis, dout, dref, refZ, refU,
+        key_cont, axis, dout, dref, refZ, refU, lcol,
     )
 
 
@@ -570,125 +591,274 @@ def _plot_bsplines_get_dx01(coll=None, km=None):
 # #############################################################################
 
 
-# def _plot_profile2d_polar_add_radial(
-    # coll=None,
-    # key=None,
-    # keym=None,
-    # keybs=None,
-    # dax=None,
-# ):
+def _plot_submesh(
+    coll=None,
+    coll2=None,
+    key=None,
+    keym=None,
+    keybs=None,
+    # figure
+    vmin=None,
+    vmax=None,
+    cmap=None,
+    dax=None,
+    dmargin=None,
+    fs=None,
+    dcolorbar=None,
+    dleg=None,
+    interp=None,
+    dkeys=None,
+    lcol=None,
+    # interactivity
+    connect=None,
+    dinc=None,
+):
 
-    # # key to radius
-    # kr2d = coll.dobj[coll._which_mesh][keym]['radius2d']
-    # kr = coll.dobj[coll._which_mesh][keym]['knots'][0]
-    # rr = coll.ddata[kr]['data']
-    # rad = np.linspace(rr[0], rr[-1], rr.size*20)
+    if dax is None:
+        dax = _plot_profile2d_submesh_create_axes(
+            fs=fs,
+            dmargin=dmargin,
+        )
 
-    # # get angle if any
-    # clas = coll.dobj['bsplines'][keybs]['class']
-    # if clas.knotsa is None:
-        # angle = None
-    # elif len(clas.shapebs) == 2:
-        # ka = coll.dobj['bsplines'][keybs]['apex'][1]
-        # angle = coll.ddata[ka]['data']
-    # elif np.sum(clas.nbs_a_per_r > 1) == 1:
-        # i0 = (clas.nbs_a_per_r > 1).nonzero()[0][0]
-        # angle = coll.dobj['bsplines'][keybs]['class'].apex_per_bs_a[i0]
-    # else:
-        # pass
+    # plot usual parts
+    dax, dgroup = coll2.plot_as_array(
+        vmin=vmin,
+        vmax=vmax,
+        cmap=cmap,
+        dax=dax,
+        dmargin=dmargin,
+        fs=fs,
+        dcolorbar=dcolorbar,
+        dleg=dleg,
+        connect=False,
+        interp=interp,
+        label=True,
+        **dkeys,
+    )
 
-    # if angle is None:
-        # radmap = rad
-        # anglemap = angle
-    # else:
-        # radmap = np.repeat(rad[:, None], angle.size, axis=1)
-        # anglemap = np.repeat(angle[None, :], rad.size, axis=0)
+    # ------------------
+    # add radial profile to dax
 
-    # # reft
-    # reft, keyt, _, dind = coll.get_time_common(keys=[key, kr2d])[1:]
+    kradius, lkradial, lkdet, reft = _plot_profile2d_polar_add_radial(
+        coll=coll,
+        key=key,
+        keym=keym,
+        keybs=keybs,
+        dax=dax,
+    )
 
-    # # radial total profile
-    # radial, t_radial, _ = coll.interpolate_profile2d(
-        # key=key,
-        # radius=radmap,
-        # angle=anglemap,
-        # grid=False,
-        # t=keyt,
-    # )
+    assert (reft is not None) == ('Z' in dgroup.keys())
+    if reft is not None and reft not in dgroup['Z']['ref']:
+        dgroup['Z']['ref'].append(reft)
+        dgroup['Z']['data'].append('index')
 
-    # if reft is not None and radial.ndim == radmap.ndim:
-        # radial = np.repeat(radial[None, ...], t_radial.size, axis=0)
+    # ------------------
+    # add radial profile
 
-    # # details for purely-radial cases
-    # if clas.knotsa is None:
-        # radial_details, t_radial, _ = coll.interpolate_profile2d(
-            # key=keybs,
-            # radius=rad,
-            # angle=None,
-            # grid=False,
-            # details=True,
-        # )
+    kax = 'radial'
+    if dax.dax.get(kax) is not None:
+        ax = dax.dax[kax]['handle']
+        for ii in range(len(lkradial)):
 
-        # if reft is None:
-            # radial_details = radial_details * coll.ddata[key]['data'][None, :]
-            # refdet = ('nradius',)
+            if reft is None:
+                l0, = ax.plot(
+                    dax.ddata[kradius]['data'],
+                    dax.ddata[lkradial[ii]]['data'],
+                    c=lcol[ii],
+                    ls='-',
+                    lw=2,
+                )
+            else:
+                l0, = ax.plot(
+                    dax.ddata[kradius]['data'],
+                    dax.ddata[lkradial[ii]]['data'][0, :],
+                    c=lcol[ii],
+                    ls='-',
+                    lw=2,
+                )
+
+                kl = f"radial{ii}"
+                dax.add_mobile(
+                    key=kl,
+                    handle=l0,
+                    refs=(reft,),
+                    data=[lkradial[ii]],
+                    dtype=['ydata'],
+                    axes=kax,
+                    ind=0,
+                )
+
+        if lkdet is not None:
+            for ii in range(len(lkdet)):
+                if reft is None:
+                    l0, = ax.plot(
+                        dax.ddata[kradius]['data'],
+                        dax.ddata[lkdet[ii]]['data'],
+                        ls='-',
+                        lw=1,
+                    )
+                else:
+                    l0, = ax.plot(
+                        dax.ddata[kradius]['data'],
+                        dax.ddata[lkdet[ii]]['data'][0, :],
+                        ls='-',
+                        lw=1,
+                    )
+
+                    kl = f"radial_det{ii}"
+                    dax.add_mobile(
+                        key=kl,
+                        handle=l0,
+                        refs=(reft,),
+                        data=[lkdet[ii]],
+                        dtype=['ydata'],
+                        axes=kax,
+                        ind=0,
+                    )
+
+        ax.set_xlim(
+            dax.ddata[kradius]['data'].min(),
+            dax.ddata[kradius]['data'].max(),
+        )
+
+        if vmin is not None:
+            ax.set_ylim(bottom=vmin)
+        if vmax is not None:
+            ax.set_ylim(top=vmax)
+
+    # -----------
+    # connect
+
+    if connect is True:
+        dax.setup_interactivity(kinter='inter0', dgroup=dgroup, dinc=dinc)
+        dax.disconnect_old()
+        dax.connect()
+
+        dax.show_commands()
+        return dax
+    else:
+        return dax, dgroup
+
+
+def _plot_profile2d_polar_add_radial(
+    coll=None,
+    key=None,
+    keym=None,
+    keybs=None,
+    dax=None,
+):
+
+    # key to radius
+    kr2d = coll.dobj[coll._which_mesh][keym]['radius2d']
+    kr = coll.dobj[coll._which_mesh][keym]['knots'][0]
+    rr = coll.ddata[kr]['data']
+    rad = np.linspace(rr[0], rr[-1], rr.size*20)
+
+    # get angle if any
+    clas = coll.dobj['bsplines'][keybs]['class']
+    if clas.knotsa is None:
+        angle = None
+    elif len(clas.shapebs) == 2:
+        ka = coll.dobj['bsplines'][keybs]['apex'][1]
+        angle = coll.ddata[ka]['data']
+    elif np.sum(clas.nbs_a_per_r > 1) == 1:
+        i0 = (clas.nbs_a_per_r > 1).nonzero()[0][0]
+        angle = coll.dobj['bsplines'][keybs]['class'].apex_per_bs_a[i0]
+    else:
+        pass
+
+    if angle is None:
+        radmap = rad
+        anglemap = angle
+    else:
+        radmap = np.repeat(rad[:, None], angle.size, axis=1)
+        anglemap = np.repeat(angle[None, :], rad.size, axis=0)
+
+    # reft
+    reft, keyt, _, dind = coll.get_time_common(keys=[key, kr2d])[1:]
+
+    # radial total profile
+    radial, t_radial, _ = coll.interpolate_profile2d(
+        key=key,
+        radius=radmap,
+        angle=anglemap,
+        grid=False,
+        t=keyt,
+    )
+
+    if reft is not None and radial.ndim == radmap.ndim:
+        radial = np.repeat(radial[None, ...], t_radial.size, axis=0)
+
+    # details for purely-radial cases
+    if clas.knotsa is None:
+        radial_details, t_radial, _ = coll.interpolate_profile2d(
+            key=keybs,
+            radius=rad,
+            angle=None,
+            grid=False,
+            details=True,
+        )
+
+        if reft is None:
+            radial_details = radial_details * coll.ddata[key]['data'][None, :]
+            refdet = ('nradius',)
+        else:
+            refdet = (reft, 'nradius')
+            if reft == coll.get_time(key)[2]:
+                radial_details = (
+                    radial_details[None, :, :]
+                    * coll.ddata[key]['data'][:, None, :]
+                )
+            elif key in dind.keys():
+                radial_details = (
+                    radial_details[None, :, :]
+                    * coll.ddata[key]['data'][dind[key]['ind'], None, :]
+                )
+
+        nbs = radial_details.shape[-1]
+
+    # add to dax
+    dax.add_ref(key='nradius', size=rad.size)
+    if angle is not None:
+        dax.add_ref(key='nangle', size=angle.size)
+
+    if reft is not None:
+        assert radial.ndim > 1 and radial.shape[0] > 1
+        # if angle is not None:
+            # ref = (reft, 'nangle', 'nradius')
         # else:
-            # refdet = (reft, 'nradius')
-            # if reft == coll.get_time(key)[2]:
-                # radial_details = (
-                    # radial_details[None, :, :]
-                    # * coll.ddata[key]['data'][:, None, :]
-                # )
-            # elif key in dind.keys():
-                # radial_details = (
-                    # radial_details[None, :, :]
-                    # * coll.ddata[key]['data'][dind[key]['ind'], None, :]
-                # )
-
-        # nbs = radial_details.shape[-1]
-
-    # # add to dax
-    # dax.add_ref(key='nradius', size=rad.size)
-    # if angle is not None:
-        # dax.add_ref(key='nangle', size=angle.size)
-
-    # if reft is not None:
-        # assert radial.ndim > 1 and radial.shape[0] > 1
-        # # if angle is not None:
-            # # ref = (reft, 'nangle', 'nradius')
-        # # else:
-        # ref = (reft, 'nradius')
-    # else:
-        # # if angle is not None:
-            # # ref = ('nangle', 'nradius')
-        # # else:
-        # ref = 'nradius'
-
-    # # add to ddata
-    # kradius = 'radius'
-    # dax.add_data(key=kradius, data=rad, ref='nradius')
-    # if angle is None:
-        # lk = ['radial']
-        # dax.add_data(key=lk[0], data=radial, ref=ref)
-        # lkdet = [f'radial-detail-{ii}' for ii in range(nbs)]
-        # for ii in range(nbs):
-            # dax.add_data(
-                # key=lkdet[ii], data=radial_details[..., ii], ref=refdet,
-            # )
-
-    # else:
-        # kangle = 'angle'
-        # dax.add_data(key=kangle, data=angle, ref='nangle')
-        # lkdet = None
-        # lk = [f'radial-{ii}' for ii in range(angle.size)]
-        # if reft is None:
-            # for ii in range(angle.size):
-                # dax.add_data(key=lk[ii], data=radial[:, ii], ref=ref)
+        ref = (reft, 'nradius')
+    else:
+        # if angle is not None:
+            # ref = ('nangle', 'nradius')
         # else:
-            # for ii in range(angle.size):
-                # dax.add_data(key=lk[ii], data=radial[:, :, ii], ref=ref)
+        ref = 'nradius'
 
-    # return kradius, lk, lkdet, reft
+    # add to ddata
+    kradius = 'radius'
+    dax.add_data(key=kradius, data=rad, ref='nradius')
+    if angle is None:
+        lk = ['radial']
+        dax.add_data(key=lk[0], data=radial, ref=ref)
+        lkdet = [f'radial-detail-{ii}' for ii in range(nbs)]
+        for ii in range(nbs):
+            dax.add_data(
+                key=lkdet[ii], data=radial_details[..., ii], ref=refdet,
+            )
+
+    else:
+        kangle = 'angle'
+        dax.add_data(key=kangle, data=angle, ref='nangle')
+        lkdet = None
+        lk = [f'radial-{ii}' for ii in range(angle.size)]
+        if reft is None:
+            for ii in range(angle.size):
+                dax.add_data(key=lk[ii], data=radial[:, ii], ref=ref)
+        else:
+            for ii in range(angle.size):
+                dax.add_data(key=lk[ii], data=radial[:, :, ii], ref=ref)
+
+    return kradius, lk, lkdet, reft
 
 
 def _plot_profile2d_submesh_create_axes(
