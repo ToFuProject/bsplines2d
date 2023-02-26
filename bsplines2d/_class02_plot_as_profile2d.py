@@ -748,25 +748,34 @@ def _plot_profile2d_polar_add_radial(
     dax=None,
 ):
 
+    # -------------
     # key to radius
-    kr2d = coll.dobj[coll._which_mesh][keym]['radius2d']
-    kr = coll.dobj[coll._which_mesh][keym]['knots'][0]
+    
+    wm = coll._which_mesh
+    wbs = coll._which_bsplines
+    
+    kr2d = coll.dobj[wm][keym]['subkey'][0]
+    kr = coll.dobj[wm][keym]['knots'][0]
     rr = coll.ddata[kr]['data']
-    rad = np.linspace(rr[0], rr[-1], rr.size*20)
+    rad = np.linspace(rr[0], rr[-1], rr.size*10)
 
+    # -----------------
     # get angle if any
-    clas = coll.dobj['bsplines'][keybs]['class']
-    if clas.knotsa is None:
+    
+    clas = coll.dobj[wbs][keybs]['class']
+    # if clas.knotsa is None:
+    if True:
         angle = None
     elif len(clas.shapebs) == 2:
-        ka = coll.dobj['bsplines'][keybs]['apex'][1]
+        ka = coll.dobj[wbs][keybs]['apex'][1]
         angle = coll.ddata[ka]['data']
     elif np.sum(clas.nbs_a_per_r > 1) == 1:
         i0 = (clas.nbs_a_per_r > 1).nonzero()[0][0]
-        angle = coll.dobj['bsplines'][keybs]['class'].apex_per_bs_a[i0]
+        angle = coll.dobj[wbs][keybs]['class'].apex_per_bs_a[i0]
     else:
         pass
 
+    # angle
     if angle is None:
         radmap = rad
         anglemap = angle
@@ -774,32 +783,56 @@ def _plot_profile2d_polar_add_radial(
         radmap = np.repeat(rad[:, None], angle.size, axis=1)
         anglemap = np.repeat(angle[None, :], rad.size, axis=0)
 
+    # ----
     # reft
-    reft, keyt, _, dind = coll.get_time_common(keys=[key, kr2d])[1:]
+
+    refc = [rr for rr in coll.ddata[key]['ref'] if rr in coll.ddata[kr2d]['ref']]
+    if len(refc) == 1:
+        refc = refc[0]
+    else:
+        refc = None
+
+    reft, keyt, _, dind = coll.get_ref_vector_common(
+        keys=[key, kr2d],
+        ref=refc,
+        dim=None,
+        quant=None,
+        name=None,
+        units=None,
+        values=None,
+        indices=None,
+        ind_strict=None,
+    )[1:]
 
     # radial total profile
-    radial, t_radial, _ = coll.interpolate_profile2d(
-        key=key,
-        radius=radmap,
-        angle=anglemap,
+    # radial, t_radial, _ = coll.interpolate(
+    dout = coll.interpolate(
+        keys=key,
+        x0=radmap,
+        x1=anglemap,
         grid=False,
-        t=keyt,
-    )
+        # ref_com=keyt,
+    )[key]
 
-    if reft is not None and radial.ndim == radmap.ndim:
-        radial = np.repeat(radial[None, ...], t_radial.size, axis=0)
+    radial = dout['data']
+    # if reft is not None and radial.ndim == radmap.ndim:
+    #     radial = np.repeat(radial[None, ...], t_radial.size, axis=0)
 
+    # -------------------------------
     # details for purely-radial cases
-    if clas.knotsa is None:
-        radial_details, t_radial, _ = coll.interpolate_profile2d(
-            key=keybs,
-            radius=rad,
-            angle=None,
+    
+    if angle is None:
+        # radial_details, t_radial, _ = coll.interpolate(
+        dout_details = coll.interpolate(
+            ref_key=keybs,
+            x0=rad,
             grid=False,
             details=True,
-        )
+        )[f'{keybs}_details']
 
+        radial_details = dout_details['data']
         if reft is None:
+            print(key, keybs)
             radial_details = radial_details * coll.ddata[key]['data'][None, :]
             refdet = ('nradius',)
         else:
@@ -817,7 +850,9 @@ def _plot_profile2d_polar_add_radial(
 
         nbs = radial_details.shape[-1]
 
+    # -----------
     # add to dax
+    
     dax.add_ref(key='nradius', size=rad.size)
     if angle is not None:
         dax.add_ref(key='nangle', size=angle.size)
@@ -834,7 +869,9 @@ def _plot_profile2d_polar_add_radial(
         # else:
         ref = 'nradius'
 
+    # ------------
     # add to ddata
+    
     kradius = 'radius'
     dax.add_data(key=kradius, data=rad, ref='nradius')
     if angle is None:
