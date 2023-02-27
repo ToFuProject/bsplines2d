@@ -808,6 +808,7 @@ def _plot_profile2d_polar_add_radial(
     # radial, t_radial, _ = coll.interpolate(
     dout = coll.interpolate(
         keys=key,
+        ref_key=keybs,
         x0=radmap,
         x1=anglemap,
         grid=False,
@@ -832,7 +833,6 @@ def _plot_profile2d_polar_add_radial(
 
         radial_details = dout_details['data']
         if reft is None:
-            print(key, keybs)
             radial_details = radial_details * coll.ddata[key]['data'][None, :]
             refdet = ('nradius',)
         else:

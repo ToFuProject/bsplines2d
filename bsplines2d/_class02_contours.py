@@ -30,6 +30,7 @@ def get_contours(
     res=None,
     npts=None,
     largest=None,
+    ref_com=None,
     # return vs store
     returnas=None,
     return_dref=None,
@@ -43,6 +44,7 @@ def get_contours(
     # ----------
     # check
 
+    print('A')
     (
         key, keybs, keym0, levels,
         store, returnas, return_dref,
@@ -70,22 +72,56 @@ def get_contours(
         grid=True,
         store=False,
     )
+    
+    # temporary addition of sample 
+    if ref_com is not None:
+        
+        # ref
+        lkr_temp = []
+        for ii, ss in enumerate(dsamp['x0']['data'].shape):
+            kri = f'{key}_refsamptemp{ii}'
+            lkr_temp.append(kri)
+            coll.add_ref(key=kri, size=ss)
+            
+        # data
+        lkd_temp = [f'{key}_samptemp0', f'{key}_samptemp1']
+        coll.add_data(key=lkd_temp[0], data=dsamp['x0']['data'], ref=lkr_temp)
+        coll.add_data(key=lkd_temp[1], data=dsamp['x1']['data'], ref=lkr_temp)    
+        x0, x1 = lkd_temp
+    else:
+        x0 = dsamp['x0']['data']
+        x1 = dsamp['x1']['data']
 
+    # interpolate
     dinterp = coll.interpolate(
         keys=key,
         ref_key=keybs,
-        x0=dsamp['x0']['data'],
-        x1=dsamp['x1']['data'],
+        x0=x0,
+        x1=x1,
         grid=False,
         submesh=True,
+        ref_com=ref_com,
         store=False,
     )[key]
 
-    # axis
-    axis = [
-        ii for ii, rr in enumerate(dinterp['ref'])
-        if rr is None
-    ]
+    # remove temporary data
+    if ref_com is not None:
+        coll.remove_data(x0, propagate=False)
+        coll.remove_data(x1, propagate=False)
+        for rr in lkr_temp:
+            coll.remove_ref(rr, propagate=False)
+            
+        axis = [
+            dinterp['ref'].index(lkr_temp[0]), 
+            dinterp['ref'].index(lkr_temp[1]),
+        ]
+        
+    else:
+        # axis
+        axis = [
+            ii for ii, rr in enumerate(dinterp['ref'])
+            if rr is None
+        ]
 
     # ----------------
     # compute contours

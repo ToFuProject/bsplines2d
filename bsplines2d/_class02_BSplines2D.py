@@ -310,6 +310,7 @@ class BSplines2D(Previous):
         res=None,
         npts=None,
         largest=None,
+        ref_com=None,
         # return vs store
         returnas=None,
         return_dref=None,
@@ -327,6 +328,7 @@ class BSplines2D(Previous):
             res=res,
             npts=npts,
             largest=largest,
+            ref_com=ref_com,
             # return vs store
             returnas=returnas,
             return_dref=return_dref,
