@@ -31,7 +31,7 @@ def plot_as_profile2d(
     # parameters
     dres=None,
     # contours
-    levels=None,
+    dlevels=None,
     ref_com=None,
     # figure
     vmin=None,
@@ -56,11 +56,13 @@ def plot_as_profile2d(
     (
         key, keybs, keym, nd, mtype,
         submesh, subbs, submtype,
+        dlevels,
         cmap, dcolorbar, dleg,
         connect,
     ) = _check(
         coll=coll,
         key=key,
+        dlevels=dlevels,
         # figure
         cmap=cmap,
         dcolorbar=dcolorbar,
@@ -74,7 +76,7 @@ def plot_as_profile2d(
 
     (
         coll2, dkeys, interp,
-        key_cont, axis, dout, dref, refZ, refU, lcol,
+        dlevels, lcol,
     ) = _prepare(
         coll=coll,
         key=key,
@@ -87,7 +89,7 @@ def plot_as_profile2d(
         subbs=subbs,
         submtype=submtype,
         # levels
-        levels=levels,
+        dlevels=dlevels,
         ref_com=ref_com,
     )
 
@@ -138,17 +140,13 @@ def plot_as_profile2d(
     # -----------
     # add levels
     
-    if levels is not None:
+    if dlevels is not None:
         _add_levels_2d(
+            key=key,
             dax=dax,
             dgroup=dgroup,
             coll2=coll2,
-            dout=dout,
-            axis=axis,
-            dref=dref,
-            levels=levels,
-            key_cont=key_cont,
-            refZ=refZ,
+            dlevels=dlevels,
             # figure
             vmin=vmin,
             vmax=vmax,
@@ -176,8 +174,6 @@ def plot_as_profile2d(
         return dax, dgroup
     
     
-
-
 # #############################################################################
 # #############################################################################
 #                       Check
@@ -187,6 +183,7 @@ def plot_as_profile2d(
 def _check(
     coll=None,
     key=None,
+    dlevels=None,
     # figure
     cmap=None,
     dcolorbar=None,
@@ -229,7 +226,44 @@ def _check(
         submtype = coll.dobj[wm][keym]['type']
 
     # ----------
-    # derived
+    # dlevels
+    
+    if dlevels is not None:
+        
+        dp2d = coll.get_profiles2d()
+        if isinstance(dlevels, (float, int)):
+            dlevels = {key: np.r_[dlevels]}
+            
+        elif isinstance(dlevels, (np.ndarray, list, tuple)):
+            dlevels = np.atleast_1d(dlevels).ravel()
+            dlevels = {key: dlevels}
+            
+        c0 = (
+            isinstance(dlevels, dict)
+            and all([kk in dp2d.keys() for kk, vv in dlevels.items()])
+        )
+        if not c0:
+            msg = (
+                "Arg dlevels must be a dict with:\n"
+                "\t- keys: valid keys of 2d profile data\n"
+                "\t- values: iterable of level values\n"
+                f"\nProvided: {dlevels}"
+            )
+            raise Exception(msg)
+            
+        for k0, v0 in dlevels.items():
+            
+            if isinstance(v0, (np.ndarray, list, tuple)):
+                dlevels[k0] = {'levels': np.atleast_1d(v0).ravel()}
+                v0 = dlevels[k0]
+            
+            if not isinstance(v0, dict) or 'levels' not in v0.keys():
+                msg = f"dlevels['{k0}'] must have key 'levels'"
+                raise Exception(msg)
+            
+            # check fields
+            dlevels[k0]['levels'] = np.atleast_1d(v0['levels']).ravel()
+            dlevels[k0]['color'] = v0.get('color', 'k')
 
     # ----------
     # figure
@@ -274,6 +308,7 @@ def _check(
     return (
         key, keybs, keym, nd, mtype,
         submesh, subbs, submtype,
+        dlevels,
         cmap, dcolorbar, dleg,
         connect,
     )
@@ -299,7 +334,7 @@ def _prepare(
     subbs=None,
     submtype=None,
     # levels
-    levels=None,
+    dlevels=None,
     ref_com=None,
 ):
 
@@ -352,38 +387,50 @@ def _prepare(
     # -----------------
     # optional contours
 
-    key_cont = None
-    axis = None
-    dout, dref = None, None
-    refZ, refU = None, None
-    if levels is not None:
+    if dlevels is not None:
 
-        # get contours
-        key_cont = ['cont0', 'cont1']
-        dout, dref = coll.get_profile2d_contours(
-            key=key,
-            levels=levels,
-            ref_com=ref_com,
-            res=dres if isinstance(dres, (int, float)) else None,
-            store=False,
-            return_dref=True,
-            key_cont0=key_cont[0],
-            key_cont1=key_cont[1],
-        )
+        for ii, (k0, v0) in enumerate(dlevels.items()):        
 
-        # axis
-        ref = dout['cont0']['ref']
-        axis = [
-            ii for ii, rr in enumerate(ref)
-            if rr not in coll.dref.keys()
-        ]
+            refi = coll.ddata[k0]['ref']            
 
-        # refZ, refU
-        if len(ref) == 3:
-            refZ = [
-                rr for ii, rr in enumerate(ref)
-                if ii not in axis
-            ][0]
+            # get contours
+            dout, dref = coll.get_profile2d_contours(
+                key=k0,
+                levels=v0['levels'],
+                ref_com=ref_com if ref_com in refi else None,
+                res=dres if isinstance(dres, (int, float)) else None,
+                store=False,
+                return_dref=True,
+                key_cont0="cont0",
+                key_cont1="cont1",
+            )
+    
+            # ref
+            dlevels[k0]['dref'] = dref
+            
+            # axis
+            ref = dout['cont0']['ref']
+            axis = [
+                ii for ii, rr in enumerate(ref)
+                if rr not in coll.dref.keys()
+            ]
+    
+            # refZ, refU
+            refZ, refU = None, None
+            if len(ref) == 3:
+                refZ = [
+                    rr for ii, rr in enumerate(ref)
+                    if ii not in axis
+                ][0]
+                
+            # populate
+            for k1 in ['cont0', 'cont1']:
+                dlevels[k0][k1] = dout[k1]
+                dlevels[k0]['cont0']['key'] = f'{k0}_{k1}'
+                
+            dlevels[k0]['refZ'] = refZ
+            dlevels[k0]['refU'] = refU
+            dlevels[k0]['axis'] = axis
 
     # --------------------
     # optional for submesh
@@ -392,7 +439,7 @@ def _prepare(
 
     return (
         coll2, dkeys, interp,
-        key_cont, axis, dout, dref, refZ, refU, lcol,
+        dlevels, lcol,
     )
 
 
@@ -403,15 +450,11 @@ def _prepare(
 
 
 def _add_levels_2d(
+    key=None,
     dax=None,
     dgroup=None,
     coll2=None,
-    dout=None,
-    axis=None,
-    dref=None,
-    levels=None,
-    key_cont=None,
-    refZ=None,
+    dlevels=None,
     # figure
     vmin=None,
     vmax=None,
@@ -427,51 +470,49 @@ def _add_levels_2d(
     # ---------------------------------
     # add make contours as single lines
 
-    for k0, v0 in dout.items():
-        sh = dout[k0]['data'].shape
-        shnan = [1 if ii == axis[0] else ss for ii, ss in enumerate(sh)]
-
-        dout[k0]['data'] = np.append(
-            v0['data'],
-            np.full(tuple(shnan), np.nan),
-            axis=axis[0],
-        )
-
-        sh = dout[k0]['data'].shape
-        newpts = sh[axis[0]]*sh[axis[1]]
-        sh = tuple(np.r_[sh[:axis[0]], newpts, sh[axis[1]+1:]].astype(int))
-        newref = tuple(np.r_[
-            v0['ref'][:axis[0]],
-            [dref['npts']['key']],
-            v0['ref'][axis[1]+1:],
-        ])
-
-        dout[k0]['data'] = dout[k0]['data'].swapaxes(axis[0], axis[1]).reshape(sh)
-        dout[k0]['ref'] = newref
-
-    dref['npts']['size'] = newpts
-    dax.add_ref(**dref['npts'])
-
-    for k0, v0 in dout.items():
-        dax.add_data(**v0)
-
-    levels = np.atleast_1d(levels)
-
-    # ---------------
-    # prepare contour
-
     ndim = len(dgroup)
-    cont0 = dax.ddata[key_cont[0]]['data']
-    cont1 = dax.ddata[key_cont[1]]['data']
+    for ii, (k0, v0) in enumerate(dlevels.items()):
+        
+        for k1 in ['cont0', 'cont1']:
+        
+            v1 = v0[k1]
+            sh = v1['data'].shape
+            shnan = [1 if ii == v0['axis'][0] else ss for ii, ss in enumerate(sh)]
+    
+            dlevels[k0][k1]['data'] = np.append(
+                v1['data'],
+                np.full(tuple(shnan), np.nan),
+                axis=v0['axis'][0],
+            )
+    
+            sh = dlevels[k0][k1]['data'].shape
+            newpts = sh[v0['axis'][0]]*sh[v0['axis'][1]]
+            sh = tuple(np.r_[
+                sh[:v0['axis'][0]],
+                newpts,
+                sh[v0['axis'][1]+1:]
+            ].astype(int))
+            
+            newref = tuple(np.r_[
+                v1['ref'][:v0['axis'][0]],
+                [v0['dref']['npts']['key']],
+                v1['ref'][v0['axis'][1]+1:],
+            ])
+    
+            dlevels[k0][k1]['data'] = dlevels[k0][k1]['data'].swapaxes(
+                v0['axis'][0],
+                v0['axis'][1],
+            ).reshape(sh)
+            dlevels[k0][k1]['ref'] = newref
 
-    if ndim == 3:
-        sli = [
-            slice(None) if ii == axis[0] else 0
-            for ii in range(ndim-1)
-        ]
+        dlevels[k0]['dref']['npts']['size'] = newpts
+        
+        if ii == 0:
+            dax.add_ref(**dlevels[k0]['dref']['npts'])
+            dax.add_ref(**dlevels[k0]['dref']['levels'])
 
-    elif ndim == 4:
-        raise NotImplementedError()
+        for k1 in ['cont0', 'cont1']:
+            dax.add_data(**dlevels[k0][k1])
 
     # -----------
     # add contour
@@ -482,37 +523,57 @@ def _add_levels_2d(
 
         if ndim == 2:
 
-            for ii in range(len(levels)):
+            for ii, (k0, v0) in enumerate(dlevels.items()):
                 ax.plot(
-                    cont0,
-                    cont1,
+                    v0['cont0']['data'],
+                    v0['cont1']['data'],
                     ls='-',
                     lw=1.,
-                    c='k',
+                    c=dlevels[k0]['color'],
                 )
 
         elif ndim == 3:
 
-            l0, = ax.plot(
-                cont0[sli],
-                cont1[sli],
-                ls='-',
-                lw=1.,
-                c='k',
-            )
+            for ii, (k0, v0) in enumerate(dlevels.items()):
 
-            km = 'contours'
-            dax.add_mobile(
-                key=km,
-                handle=l0,
-                # group_vis='Z',
-                # refs=[(refZ, ref_lvls), (refZ, ref_lvls)],
-                refs=[(refZ,), (refZ,)],
-                data=[key_cont[0], key_cont[1]],
-                dtype=['xdata', 'ydata'],
-                axes=kax,
-                ind=0,
-            )
+                if v0['refZ'] is None:
+                    ax.plot(
+                        v0['cont0']['data'],
+                        v0['cont1']['data'],
+                        ls='-',
+                        lw=1.,
+                        c=dlevels[k0]['color'],
+                    )
+                    
+                else:
+                    # slice
+                    sli = [
+                        slice(None) if ii == v0['axis'][0] else 0
+                        for ii in range(ndim-1)
+                    ]
+                    
+                    # plot
+                    l0, = ax.plot(
+                        v0['cont0']['data'][sli],
+                        v0['cont1']['data'][sli],
+                        ls='-',
+                        lw=1.,
+                        c=dlevels[k0]['color'],
+                    )
+        
+                    # store mobile
+                    km = f'{k0}_contours'
+                    dax.add_mobile(
+                        key=km,
+                        handle=l0,
+                        # group_vis='Z',
+                        # refs=[(refZ, ref_lvls), (refZ, ref_lvls)],
+                        refs=[(v0['refZ'],), (v0['refZ'],)],
+                        data=[v0['cont0']['key'], v0['cont1']['key']],
+                        dtype=['xdata', 'ydata'],
+                        axes=kax,
+                        ind=0,
+                    )
 
         else:
             raise NotImplementedError()
@@ -526,13 +587,14 @@ def _add_levels_2d(
             # dax.add_mobile(
             # )
             
-            
+    # --------------------
     # add horizontal lines
+    
     kax = 'radial'
-    if dax.dax.get(kax) is not None:
+    if dax.dax.get(kax) is not None and key in dlevels.keys():
         ax = dax.dax[kax]['handle']
             
-        for ii, ll in enumerate(levels):
+        for ii, ll in enumerate(dlevels[key]['levels']):
             ax.axhline(ll, c='k', ls='--')
             
 
@@ -870,168 +932,6 @@ def _plot_profile2d_polar_add_radial(
                 dax.add_data(key=lk[ii], data=radial[:, :, ii], ref=ref)
 
     return kradius, lk, lkdet, reft
-
-
-# #############################################################################
-# #############################################################################
-#                   Plot submesh with levels
-# #############################################################################
-
-
-def _plot_submesh_with_levels(
-    coll2=None,
-    dout=None,
-    axis=None,
-    dref=None,
-    levels=None,
-    key_cont=None,
-    refZ=None,
-    # figure
-    vmin=None,
-    vmax=None,
-    cmap=None,
-    dax=None,
-    dmargin=None,
-    fs=None,
-    dcolorbar=None,
-    dleg=None,
-    interp=None,
-    dkeys=None,
-    # interactivity
-    connect=None,
-    dinc=None,
-):
-
-    dax, dgroup = coll2.plot_as_array(
-        vmin=vmin,
-        vmax=vmax,
-        cmap=cmap,
-        dax=dax,
-        dmargin=dmargin,
-        fs=fs,
-        dcolorbar=dcolorbar,
-        dleg=dleg,
-        interp=interp,
-        connect=False,
-        **dkeys,
-    )
-
-    # ---------------
-    # add contour
-
-    for k0, v0 in dout.items():
-        sh = dout[k0]['data'].shape
-        shnan = [1 if ii == axis[0] else ss for ii, ss in enumerate(sh)]
-
-        dout[k0]['data'] = np.append(
-            v0['data'],
-            np.full(tuple(shnan), np.nan),
-            axis=axis[0],
-        )
-
-        sh = dout[k0]['data'].shape
-        newpts = sh[axis[0]]*sh[axis[1]]
-        sh = tuple(np.r_[sh[:axis[0]], newpts, sh[axis[1]+1:]].astype(int))
-        newref = tuple(np.r_[
-            v0['ref'][:axis[0]],
-            [dref['npts']['key']],
-            v0['ref'][axis[1]+1:],
-        ])
-
-        dout[k0]['data'] = dout[k0]['data'].swapaxes(axis[0], axis[1]).reshape(sh)
-        dout[k0]['ref'] = newref
-
-    dref['npts']['size'] = newpts
-    dax.add_ref(**dref['npts'])
-
-    for k0, v0 in dout.items():
-        dax.add_data(**v0)
-
-    levels = np.atleast_1d(levels)
-
-    # ---------------
-    # prepare contour
-
-    ndim = len(dgroup)
-    cont0 = dax.ddata[key_cont[0]]['data']
-    cont1 = dax.ddata[key_cont[1]]['data']
-
-    if ndim == 3:
-        axisZ = None
-        sli = [
-            slice(None) if ii == axis[0] else 0
-            for ii in range(ndim-1)
-        ]
-
-    elif ndim == 4:
-        raise NotImplementedError()
-
-
-    # -----------
-    # add contour
-
-    kax = 'matrix'
-    if dax.dax.get(kax) is not None:
-        ax = dax.dax[kax]['handle']
-
-        if ndim == 2:
-
-            for ii in range(len(levels)):
-                ax.plot(
-                    cont0,
-                    cont1,
-                    ls='-',
-                    lw=1.,
-                    c='k',
-                )
-
-        elif ndim == 3:
-
-            l0, = ax.plot(
-                cont0[sli],
-                cont1[sli],
-                ls='-',
-                lw=1.,
-                c='k',
-            )
-
-            km = f'contours'
-            dax.add_mobile(
-                key=km,
-                handle=l0,
-                # group_vis='Z',
-                # refs=[(refZ, ref_lvls), (refZ, ref_lvls)],
-                refs=[(refZ,), (refZ,)],
-                data=[key_cont[0], key_cont[1]],
-                dtype=['xdata', 'ydata'],
-                axes=kax,
-                ind=0,
-            )
-
-        else:
-            raise NotImplementedError()
-
-            # sli = [slice(None)]
-
-            # l0, = ax.plot(
-            # )
-
-            # k0 = f'contour{ii}'
-            # dax.add_mobile(
-            # )
-
-    # -----------
-    # connect
-
-    if connect is True:
-        dax.setup_interactivity(kinter='inter0', dgroup=dgroup, dinc=dinc)
-        dax.disconnect_old()
-        dax.connect()
-
-        dax.show_commands()
-        return dax
-    else:
-        return dax, dgroup
 
 
 # ##############################################################
