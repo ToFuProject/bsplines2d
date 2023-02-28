@@ -32,6 +32,7 @@ def plot_as_profile2d(
     dres=None,
     # contours
     levels=None,
+    ref_com=None,
     # figure
     vmin=None,
     vmax=None,
@@ -87,6 +88,7 @@ def plot_as_profile2d(
         submtype=submtype,
         # levels
         levels=levels,
+        ref_com=ref_com,
     )
 
     # -----------------
@@ -94,7 +96,7 @@ def plot_as_profile2d(
 
     if submesh is not None:
 
-        return _plot_submesh(
+        dax, dgroup = _plot_submesh(
             coll=coll,
             coll2=coll2,
             key=key,
@@ -112,54 +114,68 @@ def plot_as_profile2d(
             interp=interp,
             dkeys=dkeys,
             lcol=lcol,
-            # interactivity
-            connect=connect,
-            dinc=dinc,
         )
 
     # -------------------
     # call right function
 
     else:
-        if levels is None:
-            return coll2.plot_as_array(
-                vmin=vmin,
-                vmax=vmax,
-                cmap=cmap,
-                dax=dax,
-                dmargin=dmargin,
-                fs=fs,
-                dcolorbar=dcolorbar,
-                dleg=dleg,
-                interp=interp,
-                connect=connect,
-                **dkeys,
-            )
+        dax, dgroup = coll2.plot_as_array(
+            vmin=vmin,
+            vmax=vmax,
+            cmap=cmap,
+            dax=dax,
+            dmargin=dmargin,
+            fs=fs,
+            dcolorbar=dcolorbar,
+            dleg=dleg,
+            interp=interp,
+            connect=False,
+            **dkeys,
+        )
 
-        else:
-            return _plot_fixed_with_levels(
-                coll2=coll2,
-                dout=dout,
-                axis=axis,
-                dref=dref,
-                levels=levels,
-                key_cont=key_cont,
-                refZ=refZ,
-                # figure
-                vmin=vmin,
-                vmax=vmax,
-                cmap=cmap,
-                dax=dax,
-                dmargin=dmargin,
-                fs=fs,
-                dcolorbar=dcolorbar,
-                dleg=dleg,
-                interp=interp,
-                dkeys=dkeys,
-                # interactivity
-                connect=connect,
-                dinc=dinc,
-            )
+        
+    # -----------
+    # add levels
+    
+    if levels is not None:
+        _add_levels_2d(
+            dax=dax,
+            dgroup=dgroup,
+            coll2=coll2,
+            dout=dout,
+            axis=axis,
+            dref=dref,
+            levels=levels,
+            key_cont=key_cont,
+            refZ=refZ,
+            # figure
+            vmin=vmin,
+            vmax=vmax,
+            cmap=cmap,
+            dmargin=dmargin,
+            fs=fs,
+            dcolorbar=dcolorbar,
+            dleg=dleg,
+            interp=interp,
+            dkeys=dkeys,
+        )
+    
+    
+    # -----------
+    # connect
+
+    if connect is True:
+        dax.setup_interactivity(kinter='inter0', dgroup=dgroup, dinc=dinc)
+        dax.disconnect_old()
+        dax.connect()
+
+        dax.show_commands()
+        return dax
+    else:
+        return dax, dgroup
+    
+    
 
 
 # #############################################################################
@@ -194,7 +210,7 @@ def _check(
     wbs = coll._which_bsplines
 
     keybs = dk[key]
-    refbs = coll.dobj[wbs][keybs]['ref']
+    # refbs = coll.dobj[wbs][keybs]['ref']
 
     keym = coll.dobj[wbs][keybs][wm]
     nd = coll.dobj[wm][keym]['nd']
@@ -209,7 +225,7 @@ def _check(
         submtype = mtype
     else:
         subbs = coll.dobj[wm][keym]['subbs']
-        subkey = coll.dobj[wm][keym]['subkey']
+        # subkey = coll.dobj[wm][keym]['subkey']
         submtype = coll.dobj[wm][keym]['type']
 
     # ----------
@@ -284,21 +300,14 @@ def _prepare(
     submtype=None,
     # levels
     levels=None,
+    ref_com=None,
 ):
-
-    # ----------
-    # check
-
-    if levels is not None and submesh is not None:
-        levels = None
-        msg = f"Arg levels is only usable for fixed meshes (submesh=None)"
-        warnings.warn(msg)
 
     # ------------
     # misc
 
     # deg and
-    wm = coll._which_mesh
+    # wm = coll._which_mesh
     wbs = coll._which_bsplines
     deg = coll.dobj[wbs][subbs]['deg']
     if deg == 0:
@@ -354,6 +363,7 @@ def _prepare(
         dout, dref = coll.get_profile2d_contours(
             key=key,
             levels=levels,
+            ref_com=ref_com,
             res=dres if isinstance(dres, (int, float)) else None,
             store=False,
             return_dref=True,
@@ -392,7 +402,9 @@ def _prepare(
 # #############################################################################
 
 
-def _plot_fixed_with_levels(
+def _add_levels_2d(
+    dax=None,
+    dgroup=None,
     coll2=None,
     dout=None,
     axis=None,
@@ -404,34 +416,16 @@ def _plot_fixed_with_levels(
     vmin=None,
     vmax=None,
     cmap=None,
-    dax=None,
     dmargin=None,
     fs=None,
     dcolorbar=None,
     dleg=None,
     interp=None,
     dkeys=None,
-    # interactivity
-    connect=None,
-    dinc=None,
 ):
 
-    dax, dgroup = coll2.plot_as_array(
-        vmin=vmin,
-        vmax=vmax,
-        cmap=cmap,
-        dax=dax,
-        dmargin=dmargin,
-        fs=fs,
-        dcolorbar=dcolorbar,
-        dleg=dleg,
-        interp=interp,
-        connect=False,
-        **dkeys,
-    )
-
-    # ---------------
-    # add contour
+    # ---------------------------------
+    # add make contours as single lines
 
     for k0, v0 in dout.items():
         sh = dout[k0]['data'].shape
@@ -471,7 +465,6 @@ def _plot_fixed_with_levels(
     cont1 = dax.ddata[key_cont[1]]['data']
 
     if ndim == 3:
-        axisZ = None
         sli = [
             slice(None) if ii == axis[0] else 0
             for ii in range(ndim-1)
@@ -479,7 +472,6 @@ def _plot_fixed_with_levels(
 
     elif ndim == 4:
         raise NotImplementedError()
-
 
     # -----------
     # add contour
@@ -509,7 +501,7 @@ def _plot_fixed_with_levels(
                 c='k',
             )
 
-            km = f'contours'
+            km = 'contours'
             dax.add_mobile(
                 key=km,
                 handle=l0,
@@ -533,20 +525,16 @@ def _plot_fixed_with_levels(
             # k0 = f'contour{ii}'
             # dax.add_mobile(
             # )
-
-    # -----------
-    # connect
-
-    if connect is True:
-        dax.setup_interactivity(kinter='inter0', dgroup=dgroup, dinc=dinc)
-        dax.disconnect_old()
-        dax.connect()
-
-        dax.show_commands()
-        return dax
-    else:
-        return dax, dgroup
-
+            
+            
+    # add horizontal lines
+    kax = 'radial'
+    if dax.dax.get(kax) is not None:
+        ax = dax.dax[kax]['handle']
+            
+        for ii, ll in enumerate(levels):
+            ax.axhline(ll, c='k', ls='--')
+            
 
 # #############################################################################
 # #############################################################################
@@ -609,9 +597,6 @@ def _plot_submesh(
     interp=None,
     dkeys=None,
     lcol=None,
-    # interactivity
-    connect=None,
-    dinc=None,
 ):
 
     if dax is None:
@@ -725,21 +710,10 @@ def _plot_submesh(
             ax.set_ylim(bottom=vmin)
         if vmax is not None:
             ax.set_ylim(top=vmax)
-
-    # -----------
-    # connect
-
-    if connect is True:
-        dax.setup_interactivity(kinter='inter0', dgroup=dgroup, dinc=dinc)
-        dax.disconnect_old()
-        dax.connect()
-
-        dax.show_commands()
-        return dax
-    else:
-        return dax, dgroup
-
-
+            
+    return dax, dgroup
+            
+            
 def _plot_profile2d_polar_add_radial(
     coll=None,
     key=None,
@@ -896,6 +870,174 @@ def _plot_profile2d_polar_add_radial(
                 dax.add_data(key=lk[ii], data=radial[:, :, ii], ref=ref)
 
     return kradius, lk, lkdet, reft
+
+
+# #############################################################################
+# #############################################################################
+#                   Plot submesh with levels
+# #############################################################################
+
+
+def _plot_submesh_with_levels(
+    coll2=None,
+    dout=None,
+    axis=None,
+    dref=None,
+    levels=None,
+    key_cont=None,
+    refZ=None,
+    # figure
+    vmin=None,
+    vmax=None,
+    cmap=None,
+    dax=None,
+    dmargin=None,
+    fs=None,
+    dcolorbar=None,
+    dleg=None,
+    interp=None,
+    dkeys=None,
+    # interactivity
+    connect=None,
+    dinc=None,
+):
+
+    dax, dgroup = coll2.plot_as_array(
+        vmin=vmin,
+        vmax=vmax,
+        cmap=cmap,
+        dax=dax,
+        dmargin=dmargin,
+        fs=fs,
+        dcolorbar=dcolorbar,
+        dleg=dleg,
+        interp=interp,
+        connect=False,
+        **dkeys,
+    )
+
+    # ---------------
+    # add contour
+
+    for k0, v0 in dout.items():
+        sh = dout[k0]['data'].shape
+        shnan = [1 if ii == axis[0] else ss for ii, ss in enumerate(sh)]
+
+        dout[k0]['data'] = np.append(
+            v0['data'],
+            np.full(tuple(shnan), np.nan),
+            axis=axis[0],
+        )
+
+        sh = dout[k0]['data'].shape
+        newpts = sh[axis[0]]*sh[axis[1]]
+        sh = tuple(np.r_[sh[:axis[0]], newpts, sh[axis[1]+1:]].astype(int))
+        newref = tuple(np.r_[
+            v0['ref'][:axis[0]],
+            [dref['npts']['key']],
+            v0['ref'][axis[1]+1:],
+        ])
+
+        dout[k0]['data'] = dout[k0]['data'].swapaxes(axis[0], axis[1]).reshape(sh)
+        dout[k0]['ref'] = newref
+
+    dref['npts']['size'] = newpts
+    dax.add_ref(**dref['npts'])
+
+    for k0, v0 in dout.items():
+        dax.add_data(**v0)
+
+    levels = np.atleast_1d(levels)
+
+    # ---------------
+    # prepare contour
+
+    ndim = len(dgroup)
+    cont0 = dax.ddata[key_cont[0]]['data']
+    cont1 = dax.ddata[key_cont[1]]['data']
+
+    if ndim == 3:
+        axisZ = None
+        sli = [
+            slice(None) if ii == axis[0] else 0
+            for ii in range(ndim-1)
+        ]
+
+    elif ndim == 4:
+        raise NotImplementedError()
+
+
+    # -----------
+    # add contour
+
+    kax = 'matrix'
+    if dax.dax.get(kax) is not None:
+        ax = dax.dax[kax]['handle']
+
+        if ndim == 2:
+
+            for ii in range(len(levels)):
+                ax.plot(
+                    cont0,
+                    cont1,
+                    ls='-',
+                    lw=1.,
+                    c='k',
+                )
+
+        elif ndim == 3:
+
+            l0, = ax.plot(
+                cont0[sli],
+                cont1[sli],
+                ls='-',
+                lw=1.,
+                c='k',
+            )
+
+            km = f'contours'
+            dax.add_mobile(
+                key=km,
+                handle=l0,
+                # group_vis='Z',
+                # refs=[(refZ, ref_lvls), (refZ, ref_lvls)],
+                refs=[(refZ,), (refZ,)],
+                data=[key_cont[0], key_cont[1]],
+                dtype=['xdata', 'ydata'],
+                axes=kax,
+                ind=0,
+            )
+
+        else:
+            raise NotImplementedError()
+
+            # sli = [slice(None)]
+
+            # l0, = ax.plot(
+            # )
+
+            # k0 = f'contour{ii}'
+            # dax.add_mobile(
+            # )
+
+    # -----------
+    # connect
+
+    if connect is True:
+        dax.setup_interactivity(kinter='inter0', dgroup=dgroup, dinc=dinc)
+        dax.disconnect_old()
+        dax.connect()
+
+        dax.show_commands()
+        return dax
+    else:
+        return dax, dgroup
+
+
+# ##############################################################
+# ##############################################################
+#          create default axes for submesh
+# ##############################################################
 
 
 def _plot_profile2d_submesh_create_axes(

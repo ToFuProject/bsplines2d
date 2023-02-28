@@ -44,7 +44,6 @@ def get_contours(
     # ----------
     # check
 
-    print('A')
     (
         key, keybs, keym0, levels,
         store, returnas, return_dref,
