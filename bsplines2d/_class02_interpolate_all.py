@@ -178,7 +178,7 @@ def _check(
     # safety check
     c0 = (
         isinstance(dres, dict)
-        and sorted(dres.keys()) == sorted(lbs)
+        and all([kk in lbs for kk in dres.keys()])
     )
     if not c0:
         msg = (
@@ -191,7 +191,9 @@ def _check(
 
     # loop
     for bs in lbs:
-        if isinstance(dres[bs], dict):
+        if bs not in dres.keys():
+            dres[bs] = {'res': None, 'mode': 'abs'}
+        elif isinstance(dres[bs], dict):
             dres[bs] = {
                 'res': dres[bs].get('res'),
                 'mode': dres[bs].get('mode', 'abs'),
