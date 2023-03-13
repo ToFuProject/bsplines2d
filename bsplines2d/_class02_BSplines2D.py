@@ -915,6 +915,8 @@ class BSplines2D(Previous):
         # levels
         dlevels=None,
         ref_com=None,
+        # details
+        plot_details=None,
         # plot options
         vmin=None,
         vmax=None,
@@ -937,6 +939,8 @@ class BSplines2D(Previous):
             # levels
             dlevels=dlevels,
             ref_com=ref_com,
+            # details
+            plot_details=plot_details,
             # plot options
             vmin=vmin,
             vmax=vmax,

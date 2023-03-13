@@ -33,6 +33,8 @@ def plot_as_profile2d(
     # contours
     dlevels=None,
     ref_com=None,
+    # details
+    plot_details=None,
     # figure
     vmin=None,
     vmax=None,
@@ -104,6 +106,8 @@ def plot_as_profile2d(
             key=key,
             keym=keym,
             keybs=keybs,
+            # details
+            plot_details=plot_details,
             # figure
             vmin=vmin,
             vmax=vmax,
@@ -135,7 +139,6 @@ def plot_as_profile2d(
             connect=False,
             **dkeys,
         )
-
         
     # -----------
     # add levels
@@ -647,6 +650,8 @@ def _plot_submesh(
     key=None,
     keym=None,
     keybs=None,
+    # plot_details
+    plot_details=None,
     # figure
     vmin=None,
     vmax=None,
@@ -661,11 +666,23 @@ def _plot_submesh(
     lcol=None,
 ):
 
+    # ------------
+    # check inputs
+    
+    plot_details = ds._generic_check._check_var(
+        plot_details, 'plot_details',
+        types=bool,
+        default=False,
+    )
+    
     if dax is None:
         dax = _plot_profile2d_submesh_create_axes(
             fs=fs,
             dmargin=dmargin,
         )
+
+    # ------------
+    # preliminary
 
     # plot usual parts
     dax, dgroup = coll2.plot_as_array(
@@ -692,6 +709,7 @@ def _plot_submesh(
         keym=keym,
         keybs=keybs,
         dax=dax,
+        plot_details=plot_details,
     )
 
     assert (reft is not None) == ('Z' in dgroup.keys())
@@ -782,6 +800,8 @@ def _plot_profile2d_polar_add_radial(
     keym=None,
     keybs=None,
     dax=None,
+    # details
+    plot_details=None,
 ):
 
     # -------------
@@ -793,7 +813,7 @@ def _plot_profile2d_polar_add_radial(
     kr2d = coll.dobj[wm][keym]['subkey'][0]
     kr = coll.dobj[wm][keym]['knots'][0]
     rr = coll.ddata[kr]['data']
-    rad = np.linspace(rr[0], rr[-1], rr.size*10)
+    rad = np.linspace(rr[0], rr[-1], rr.size+1)
 
     # -----------------
     # get angle if any
@@ -852,13 +872,14 @@ def _plot_profile2d_polar_add_radial(
     )[key]
 
     radial = dout['data']
+    
     # if reft is not None and radial.ndim == radmap.ndim:
     #     radial = np.repeat(radial[None, ...], t_radial.size, axis=0)
 
     # -------------------------------
     # details for purely-radial cases
     
-    if angle is None:
+    if angle is None and plot_details is True:
         # radial_details, t_radial, _ = coll.interpolate(
         dout_details = coll.interpolate(
             ref_key=keybs,
@@ -868,6 +889,7 @@ def _plot_profile2d_polar_add_radial(
         )[f'{keybs}_details']
 
         radial_details = dout_details['data']
+        
         if reft is None:
             radial_details = radial_details * coll.ddata[key]['data'][None, :]
             refdet = ('nradius',)
@@ -893,33 +915,27 @@ def _plot_profile2d_polar_add_radial(
     if angle is not None:
         dax.add_ref(key='nangle', size=angle.size)
 
-    if reft is not None:
-        assert radial.ndim > 1 and radial.shape[0] > 1
-        # if angle is not None:
-            # ref = (reft, 'nangle', 'nradius')
-        # else:
-        ref = (reft, 'nradius')
-    else:
-        # if angle is not None:
-            # ref = ('nangle', 'nradius')
-        # else:
-        ref = 'nradius'
+    ref = list(dout['ref'])
+    ref[ref.index(None)] = 'nradius'
+    ref = tuple(ref)
 
     # ------------
     # add to ddata
     
+    lkdet = None
     kradius = 'radius'
     dax.add_data(key=kradius, data=rad, ref='nradius')
     if angle is None:
         lk = ['radial']
         dax.add_data(key=lk[0], data=radial, ref=ref)
-        lkdet = [f'radial-detail-{ii}' for ii in range(nbs)]
-        for ii in range(nbs):
-            dax.add_data(
-                key=lkdet[ii], data=radial_details[..., ii], ref=refdet,
-            )
+        if plot_details is True:
+            lkdet = [f'radial-detail-{ii}' for ii in range(nbs)]
+            for ii in range(nbs):
+                dax.add_data(
+                    key=lkdet[ii], data=radial_details[..., ii], ref=refdet,
+                )
 
-    else:
+    elif angle is not None:
         kangle = 'angle'
         dax.add_data(key=kangle, data=angle, ref='nangle')
         lkdet = None
