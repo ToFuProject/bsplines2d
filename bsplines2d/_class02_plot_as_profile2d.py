@@ -1,20 +1,13 @@
 # -*- coding: utf-8 -*-
 
 
-# Built-in
-import warnings
-
-
 # Common
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
-import matplotlib.colors as mcolors
 import datastock as ds
 
 # specific
-from . import _generic_check
-from . import _class01_checks as _checks
 
 
 # #############################################################################
@@ -139,10 +132,10 @@ def plot_as_profile2d(
             connect=False,
             **dkeys,
         )
-        
+
     # -----------
     # add levels
-    
+
     if dlevels is not None:
         _add_levels_2d(
             key=key,
@@ -161,8 +154,8 @@ def plot_as_profile2d(
             interp=interp,
             dkeys=dkeys,
         )
-    
-    
+
+
     # -----------
     # connect
 
@@ -175,8 +168,8 @@ def plot_as_profile2d(
         return dax
     else:
         return dax, dgroup
-    
-    
+
+
 # #############################################################################
 # #############################################################################
 #                       Check
@@ -230,17 +223,17 @@ def _check(
 
     # ----------
     # dlevels
-    
+
     if dlevels is not None:
-        
+
         dp2d = coll.get_profiles2d()
         if isinstance(dlevels, (float, int)):
             dlevels = {key: np.r_[dlevels]}
-            
+
         elif isinstance(dlevels, (np.ndarray, list, tuple)):
             dlevels = np.atleast_1d(dlevels).ravel()
             dlevels = {key: dlevels}
-            
+
         c0 = (
             isinstance(dlevels, dict)
             and all([kk in dp2d.keys() for kk, vv in dlevels.items()])
@@ -253,17 +246,17 @@ def _check(
                 f"\nProvided: {dlevels}"
             )
             raise Exception(msg)
-            
+
         for k0, v0 in dlevels.items():
-            
+
             if isinstance(v0, (np.ndarray, list, tuple)):
                 dlevels[k0] = {'levels': np.atleast_1d(v0).ravel()}
                 v0 = dlevels[k0]
-            
+
             if not isinstance(v0, dict) or 'levels' not in v0.keys():
                 msg = f"dlevels['{k0}'] must have key 'levels'"
                 raise Exception(msg)
-            
+
             # check fields
             dlevels[k0]['levels'] = np.atleast_1d(v0['levels']).ravel()
             dlevels[k0]['color'] = v0.get('color', 'k')
@@ -392,9 +385,9 @@ def _prepare(
 
     if dlevels is not None:
 
-        for ii, (k0, v0) in enumerate(dlevels.items()):        
+        for ii, (k0, v0) in enumerate(dlevels.items()):
 
-            refi = coll.ddata[k0]['ref']            
+            refi = coll.ddata[k0]['ref']
 
             # get contours
             dout, dref = coll.get_profile2d_contours(
@@ -407,17 +400,17 @@ def _prepare(
                 key_cont0="cont0",
                 key_cont1="cont1",
             )
-    
+
             # ref
             dlevels[k0]['dref'] = dref
-            
+
             # axis
             ref = dout['cont0']['ref']
             axis = [
                 ii for ii, rr in enumerate(ref)
                 if rr not in coll.dref.keys()
             ]
-    
+
             # refZ, refU
             refZ, refU = None, None
             if len(ref) == 3:
@@ -425,12 +418,12 @@ def _prepare(
                     rr for ii, rr in enumerate(ref)
                     if ii not in axis
                 ][0]
-                
+
             # populate
             for k1 in ['cont0', 'cont1']:
                 dlevels[k0][k1] = dout[k1]
                 dlevels[k0]['cont0']['key'] = f'{k0}_{k1}'
-                
+
             dlevels[k0]['refZ'] = refZ
             dlevels[k0]['refU'] = refU
             dlevels[k0]['axis'] = axis
@@ -475,19 +468,19 @@ def _add_levels_2d(
 
     ndim = len(dgroup)
     for ii, (k0, v0) in enumerate(dlevels.items()):
-        
+
         for k1 in ['cont0', 'cont1']:
-        
+
             v1 = v0[k1]
             sh = v1['data'].shape
             shnan = [1 if ii == v0['axis'][0] else ss for ii, ss in enumerate(sh)]
-    
+
             dlevels[k0][k1]['data'] = np.append(
                 v1['data'],
                 np.full(tuple(shnan), np.nan),
                 axis=v0['axis'][0],
             )
-    
+
             sh = dlevels[k0][k1]['data'].shape
             newpts = sh[v0['axis'][0]]*sh[v0['axis'][1]]
             sh = tuple(np.r_[
@@ -495,13 +488,13 @@ def _add_levels_2d(
                 newpts,
                 sh[v0['axis'][1]+1:]
             ].astype(int))
-            
+
             newref = tuple(np.r_[
                 v1['ref'][:v0['axis'][0]],
                 [v0['dref']['npts']['key']],
                 v1['ref'][v0['axis'][1]+1:],
             ])
-    
+
             dlevels[k0][k1]['data'] = dlevels[k0][k1]['data'].swapaxes(
                 v0['axis'][0],
                 v0['axis'][1],
@@ -509,7 +502,7 @@ def _add_levels_2d(
             dlevels[k0][k1]['ref'] = newref
 
         dlevels[k0]['dref']['npts']['size'] = newpts
-        
+
         if ii == 0:
             dax.add_ref(**dlevels[k0]['dref']['npts'])
             dax.add_ref(**dlevels[k0]['dref']['levels'])
@@ -547,14 +540,14 @@ def _add_levels_2d(
                         lw=1.,
                         c=dlevels[k0]['color'],
                     )
-                    
+
                 else:
                     # slice
                     sli = [
                         slice(None) if ii == v0['axis'][0] else 0
                         for ii in range(ndim-1)
                     ]
-                    
+
                     # plot
                     l0, = ax.plot(
                         v0['cont0']['data'][sli],
@@ -563,7 +556,7 @@ def _add_levels_2d(
                         lw=1.,
                         c=dlevels[k0]['color'],
                     )
-        
+
                     # store mobile
                     km = f'{k0}_contours'
                     dax.add_mobile(
@@ -589,17 +582,17 @@ def _add_levels_2d(
             # k0 = f'contour{ii}'
             # dax.add_mobile(
             # )
-            
+
     # --------------------
     # add horizontal lines
-    
+
     kax = 'radial'
     if dax.dax.get(kax) is not None and key in dlevels.keys():
         ax = dax.dax[kax]['handle']
-            
+
         for ii, ll in enumerate(dlevels[key]['levels']):
             ax.axhline(ll, c='k', ls='--')
-            
+
 
 # #############################################################################
 # #############################################################################
@@ -668,13 +661,13 @@ def _plot_submesh(
 
     # ------------
     # check inputs
-    
+
     plot_details = ds._generic_check._check_var(
         plot_details, 'plot_details',
         types=bool,
         default=False,
     )
-    
+
     if dax is None:
         dax = _plot_profile2d_submesh_create_axes(
             fs=fs,
@@ -790,10 +783,10 @@ def _plot_submesh(
             ax.set_ylim(bottom=vmin)
         if vmax is not None:
             ax.set_ylim(top=vmax)
-            
+
     return dax, dgroup
-            
-            
+
+
 def _plot_profile2d_polar_add_radial(
     coll=None,
     key=None,
@@ -806,10 +799,10 @@ def _plot_profile2d_polar_add_radial(
 
     # -------------
     # key to radius
-    
+
     wm = coll._which_mesh
     wbs = coll._which_bsplines
-    
+
     kr2d = coll.dobj[wm][keym]['subkey'][0]
     kr = coll.dobj[wm][keym]['knots'][0]
     rr = coll.ddata[kr]['data']
@@ -817,7 +810,7 @@ def _plot_profile2d_polar_add_radial(
 
     # -----------------
     # get angle if any
-    
+
     clas = coll.dobj[wbs][keybs]['class']
     # if clas.knotsa is None:
     if True:
@@ -872,13 +865,13 @@ def _plot_profile2d_polar_add_radial(
     )[key]
 
     radial = dout['data']
-    
+
     # if reft is not None and radial.ndim == radmap.ndim:
     #     radial = np.repeat(radial[None, ...], t_radial.size, axis=0)
 
     # -------------------------------
     # details for purely-radial cases
-    
+
     if angle is None and plot_details is True:
         # radial_details, t_radial, _ = coll.interpolate(
         dout_details = coll.interpolate(
@@ -889,7 +882,7 @@ def _plot_profile2d_polar_add_radial(
         )[f'{keybs}_details']
 
         radial_details = dout_details['data']
-        
+
         if reft is None:
             radial_details = radial_details * coll.ddata[key]['data'][None, :]
             refdet = ('nradius',)
@@ -910,7 +903,7 @@ def _plot_profile2d_polar_add_radial(
 
     # -----------
     # add to dax
-    
+
     dax.add_ref(key='nradius', size=rad.size)
     if angle is not None:
         dax.add_ref(key='nangle', size=angle.size)
@@ -921,7 +914,7 @@ def _plot_profile2d_polar_add_radial(
 
     # ------------
     # add to ddata
-    
+
     lkdet = None
     kradius = 'radius'
     dax.add_data(key=kradius, data=rad, ref='nradius')
