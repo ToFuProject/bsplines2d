@@ -83,6 +83,23 @@ def plot_as_profile2d(
 
     lkeys = ['key', 'keyX', 'keyY', 'keyZ', 'keyU']
 
+    # --------------
+    #  Prepare dax
+
+    daxi = None
+    if dax is not None:
+        if not all([k0 in dax.keys() for k0 in dkeys.keys()]):
+            dax = {k0: dax for k0 in dkeys.keys()}
+
+    # nmax, color
+    if len(dkeys) == 1:
+        nmax = None
+        color_dict = {k0: None for k0 in dkeys.keys()}
+    else:
+        nmax = 1
+        lcol = ['k', 'b']
+        color_dict = {k0: lcol[ii] for ii, k0 in enumerate(dkeys.keys())}
+
     # -----------------
     # loop on profile 2d
 
@@ -91,9 +108,12 @@ def plot_as_profile2d(
         # -----------------
         # case with submesh
 
+        if dax is not None:
+            daxi = dax[k0]
+
         if v0['submesh'] is not None:
 
-            coll3, dgroup = _plot_submesh(
+            collax, dgroup = _plot_submesh(
                 coll=coll,
                 coll2=coll2,
                 key=k0,
@@ -106,7 +126,7 @@ def plot_as_profile2d(
                 vmax=vmax,
                 cmap=cmap,
                 # figure
-                dax=dax,
+                dax=daxi,
                 dmargin=dmargin,
                 fs=fs,
                 dcolorbar=dcolorbar,
@@ -120,17 +140,20 @@ def plot_as_profile2d(
         # without submesh
 
         else:
-            coll3, dgroup = coll2.plot_as_array(
+            collax, dgroup = coll2.plot_as_array(
                 vmin=vmin,
                 vmax=vmax,
                 cmap=cmap,
-                dax=dax,
+                dax=daxi,
                 dmargin=dmargin,
                 fs=fs,
                 dcolorbar=dcolorbar,
                 dleg=dleg,
                 interp=v0['interp'],
+                color_dict=color_dict[k0],
+                nmax=nmax,
                 connect=False,
+                inplace=True,
                 **{k1: v0[k1] for k1 in lkeys},
             )
 
@@ -139,7 +162,7 @@ def plot_as_profile2d(
 
         if dlevels is not None:
             _add_levels_2d(
-                dax=dax,
+                collax=collax,
                 dgroup=dgroup,
                 dlevels=dlevels,
             )
@@ -148,14 +171,14 @@ def plot_as_profile2d(
     # connect
 
     if connect is True:
-        coll3.setup_interactivity(kinter='inter0', dgroup=dgroup, dinc=dinc)
-        coll3.disconnect_old()
-        coll3.connect()
+        collax.setup_interactivity(kinter='inter0', dgroup=dgroup, dinc=dinc)
+        collax.disconnect_old()
+        collax.connect()
 
-        coll3.show_commands()
-        return coll3
+        collax.show_commands()
+        return collax
     else:
-        return coll3, dgroup
+        return collax, dgroup
 
 
 # #############################################################################
@@ -468,7 +491,7 @@ def _prepare(
 
 
 def _add_levels_2d(
-    dax=None,
+    collax=None,
     key=None,
     dgroup=None,
     dlevels=None,
@@ -515,18 +538,18 @@ def _add_levels_2d(
         dlevels[k0]['dref']['npts']['size'] = newpts
 
         if ii == 0:
-            dax.add_ref(**dlevels[k0]['dref']['npts'])
-            dax.add_ref(**dlevels[k0]['dref']['levels'])
+            collax.add_ref(**dlevels[k0]['dref']['npts'])
+            collax.add_ref(**dlevels[k0]['dref']['levels'])
 
         for k1 in ['cont0', 'cont1']:
-            dax.add_data(**dlevels[k0][k1])
+            collax.add_data(**dlevels[k0][k1])
 
     # -----------
     # add contour
 
     kax = 'matrix'
-    if dax.dax.get(kax) is not None:
-        ax = dax.dax[kax]['handle']
+    if collax.dax.get(kax) is not None:
+        ax = collax.dax[kax]['handle']
 
         if ndim == 2:
 
@@ -570,7 +593,7 @@ def _add_levels_2d(
 
                     # store mobile
                     km = f'{k0}_contours'
-                    dax.add_mobile(
+                    collax.add_mobile(
                         key=km,
                         handle=l0,
                         # group_vis='Z',
@@ -591,15 +614,15 @@ def _add_levels_2d(
             # )
 
             # k0 = f'contour{ii}'
-            # dax.add_mobile(
+            # collax.add_mobile(
             # )
 
     # --------------------
     # add horizontal lines
 
     kax = 'radial'
-    if dax.dax.get(kax) is not None and key in dlevels.keys():
-        ax = dax.dax[kax]['handle']
+    if collax.dax.get(kax) is not None and key in dlevels.keys():
+        ax = collax.dax[kax]['handle']
 
         for ii, ll in enumerate(dlevels[key]['levels']):
             ax.axhline(ll, c='k', ls='--')
@@ -1001,14 +1024,14 @@ def _plot_profile2d_submesh_create_axes(
     # dax
     dax = {
         # data
-        'matrix': {'handle': ax0, 'type': 'matrix'},
-        'vertical': {'handle': ax1, 'type': 'misc'},
-        'horizontal': {'handle': ax2, 'type': 'misc'},
-        'traces': {'handle': ax3, 'type': 'misc'},
-        'radial': {'handle': ax7, 'type': 'misc'},
+        'matrix': {'handle': ax0},
+        'vertical': {'handle': ax1},
+        'horizontal': {'handle': ax2},
+        'tracesZ': {'handle': ax3},
+        'radial': {'handle': ax7},
         # text
-        'textX': {'handle': ax4, 'type': 'text'},
-        'textY': {'handle': ax5, 'type': 'text'},
-        'textZ': {'handle': ax6, 'type': 'text'},
+        'textX': {'handle': ax4},
+        'textY': {'handle': ax5},
+        'textZ': {'handle': ax6},
     }
     return dax
