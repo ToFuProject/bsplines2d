@@ -6,6 +6,9 @@ import numpy as np
 import datastock as ds
 
 
+from . import _generic_mesh
+
+
 _ELEMENTS = 'knots'
 
 
@@ -42,8 +45,8 @@ def _mesh2D_polar_check(
     # --------------------
     # check / format input
 
-    krk, krc, kkr, kcr = _mesh_names(key=key, x_name='r')
-    kak, kac, kka, kca = _mesh_names(key=key, x_name='ang')
+    krk, krc, kkr, kcr = _generic_mesh.names_knots_cents(key=key, knots_name='r')
+    kak, kac, kka, kca = _generic_mesh.names_knots_cents(key=key, knots_name='ang')
 
     # radius data
     radius, _, _ = _mesh1D_check(

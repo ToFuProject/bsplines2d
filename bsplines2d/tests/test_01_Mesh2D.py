@@ -12,7 +12,7 @@ import numpy as np
 
 # specific
 from . import test_input
-from .. import _class01_checks as _checks
+from .. import _class01_checks_2d_rect as _checks
 from .._class03_Bins import Bins as BSplines2D
 
 
