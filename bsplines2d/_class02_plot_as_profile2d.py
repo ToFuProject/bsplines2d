@@ -49,17 +49,17 @@ def plot_as_profile2d(
         connect = True
 
     (
-        key, keybs, keym, nd, mtype,
-        submesh, subbs, submtype,
+        dkeys,
         dlevels,
-        cmap, dcolorbar, dleg,
+        cmap, _, dcolorbar, dleg,
         connect,
     ) = _check(
         coll=coll,
-        key=key,
+        keys=key,
         dlevels=dlevels,
-        # figure
+        # plotting
         cmap=cmap,
+        # figure
         dcolorbar=dcolorbar,
         dleg=dleg,
         # interactivity
@@ -70,91 +70,79 @@ def plot_as_profile2d(
     #  Prepare data
 
     (
-        coll2, dkeys, interp,
+        coll2, dkeys,
         dlevels, lcol,
     ) = _prepare(
         coll=coll,
-        key=key,
-        keybs=keybs,
-        keym=keym,
+        dkeys=dkeys,
         dres=dres,
-        mtype=mtype,
-        # submesh
-        submesh=submesh,
-        subbs=subbs,
-        submtype=submtype,
         # levels
         dlevels=dlevels,
         ref_com=ref_com,
     )
 
+    lkeys = ['key', 'keyX', 'keyY', 'keyZ', 'keyU']
+
     # -----------------
-    # case with submesh
+    # loop on profile 2d
 
-    if submesh is not None:
+    for k0, v0 in dkeys.items():
 
-        dax, dgroup = _plot_submesh(
-            coll=coll,
-            coll2=coll2,
-            key=key,
-            keym=keym,
-            keybs=keybs,
-            # details
-            plot_details=plot_details,
-            # figure
-            vmin=vmin,
-            vmax=vmax,
-            cmap=cmap,
-            dax=dax,
-            dmargin=dmargin,
-            fs=fs,
-            dcolorbar=dcolorbar,
-            dleg=dleg,
-            interp=interp,
-            dkeys=dkeys,
-            lcol=lcol,
-        )
+        # -----------------
+        # case with submesh
 
-    # -------------------
-    # call right function
+        if v0['submesh'] is not None:
 
-    else:
-        dax, dgroup = coll2.plot_as_array(
-            vmin=vmin,
-            vmax=vmax,
-            cmap=cmap,
-            dax=dax,
-            dmargin=dmargin,
-            fs=fs,
-            dcolorbar=dcolorbar,
-            dleg=dleg,
-            interp=interp,
-            connect=False,
-            **dkeys,
-        )
+            dax, dgroup = _plot_submesh(
+                coll=coll,
+                coll2=coll2,
+                key=k0,
+                keym=v0['keym'],
+                keybs=v0['keybs'],
+                # details
+                plot_details=plot_details,
+                # plotting
+                vmin=vmin,
+                vmax=vmax,
+                cmap=cmap,
+                # figure
+                dax=dax,
+                dmargin=dmargin,
+                fs=fs,
+                dcolorbar=dcolorbar,
+                dleg=dleg,
+                interp=v0['interp'],
+                dkeys={k1: v0[k1] for k1 in lkeys},
+                lcol=lcol,
+            )
 
-    # -----------
-    # add levels
+        # -------------------
+        # without submesh
 
-    if dlevels is not None:
-        _add_levels_2d(
-            key=key,
-            dax=dax,
-            dgroup=dgroup,
-            coll2=coll2,
-            dlevels=dlevels,
-            # figure
-            vmin=vmin,
-            vmax=vmax,
-            cmap=cmap,
-            dmargin=dmargin,
-            fs=fs,
-            dcolorbar=dcolorbar,
-            dleg=dleg,
-            interp=interp,
-            dkeys=dkeys,
-        )
+        else:
+            dax, dgroup = coll2.plot_as_array(
+                vmin=vmin,
+                vmax=vmax,
+                cmap=cmap,
+                dax=dax,
+                dmargin=dmargin,
+                fs=fs,
+                dcolorbar=dcolorbar,
+                dleg=dleg,
+                interp=v0['interp'],
+                connect=False,
+                **{k1: v0[k1] for k1 in lkeys},
+            )
 
+        # -----------
+        # add levels
+
+        if dlevels is not None:
+            _add_levels_2d(
+                dax=dax,
+                dgroup=dgroup,
+                dlevels=dlevels,
+            )
 
     # -----------
     # connect
@@ -178,10 +166,11 @@ def plot_as_profile2d(
 
 def _check(
     coll=None,
-    key=None,
+    keys=None,
     dlevels=None,
     # figure
     cmap=None,
+    cmap_err=None,
     dcolorbar=None,
     dleg=None,
     # interactivity
@@ -193,33 +182,66 @@ def _check(
 
     # key
     dk = coll.get_profiles2d()
-    key = ds._generic_check._check_var(
-        key, 'key',
-        types=str,
+
+    if isinstance(keys, str):
+        keys = [keys]
+    keys = ds._generic_check._check_var_iter(
+        keys, 'keys',
+        types=(list, tuple),
+        types_iter=str,
         allowed=list(dk.keys()),
     )
 
+    # check refs
+    dkeys = {}
     wm = coll._which_mesh
     wbs = coll._which_bsplines
+    for ii, k0 in enumerate(keys):
 
-    keybs = dk[key]
-    # refbs = coll.dobj[wbs][keybs]['ref']
+        keybs = dk[k0]
+        keym = coll.dobj[wbs][keybs][wm]
+        nd = coll.dobj[wm][keym]['nd']
+        mtype = coll.dobj[wm][keym]['type']
 
-    keym = coll.dobj[wbs][keybs][wm]
-    nd = coll.dobj[wm][keym]['nd']
-    mtype = coll.dobj[wm][keym]['type']
+        # submesh
+        submesh = coll.dobj[wm][keym]['submesh']
+        if submesh == '':
+            submesh = None
 
-    submesh = coll.dobj[wm][keym]['submesh']
-    if submesh == '':
-        submesh = None
+        if submesh is None:
+            subbs = keybs
+            submtype = mtype
+        else:
+            subbs = coll.dobj[wm][keym]['subbs']
+            # subkey = coll.dobj[wm][keym]['subkey']
+            submtype = coll.dobj[wm][keym]['type']
 
-    if submesh is None:
-        subbs = keybs
-        submtype = mtype
-    else:
-        subbs = coll.dobj[wm][keym]['subbs']
-        # subkey = coll.dobj[wm][keym]['subkey']
-        submtype = coll.dobj[wm][keym]['type']
+        # ref_other
+        ref_other = [
+            rr for rr in coll.ddata[k0]['ref']
+            if rr not in coll.dobj[wbs][keybs]['ref']
+        ]
+        if ii == 1:
+            if ref_other != dkeys[keys[0]]['ref_other']:
+                lstr = [f"\t- {kk}: {coll.ddata[kk]['ref']}" for kk in keys]
+                msg = (
+                    "Provided keys must be profile2d with identical ref!"
+                    " (apart from the actual profile2d bsplines)\n"
+                    f"\t- Provided:"
+                    + "\n".join(lstr)
+                )
+                raise Exception(msg)
+
+        dkeys[k0] = {
+            'keybs': keybs,
+            'keym': keym,
+            'nd': nd,
+            'mtype': mtype,
+            'submesh': submesh,
+            'subbs': subbs,
+            'submtype': submtype,
+            'ref_other': ref_other,
+        }
 
     # ----------
     # dlevels
@@ -268,6 +290,10 @@ def _check(
     if cmap is None:
         cmap = 'viridis'
 
+    # cmap_err
+    if cmap_err is None:
+        cmap_err = 'seismic'
+
     # dcolorbar
     defdcolorbar = {
         # 'location': 'right',
@@ -302,10 +328,9 @@ def _check(
     )
 
     return (
-        key, keybs, keym, nd, mtype,
-        submesh, subbs, submtype,
+        dkeys,
         dlevels,
-        cmap, dcolorbar, dleg,
+        cmap, cmap_err, dcolorbar, dleg,
         connect,
     )
 
@@ -318,67 +343,64 @@ def _check(
 
 def _prepare(
     coll=None,
-    key=None,
-    keybs=None,
-    keym=None,
-    coefs=None,
-    indt=None,
+    dkeys=None,
     dres=None,
-    mtype=None,
-    # submesh
-    submesh=None,
-    subbs=None,
-    submtype=None,
     # levels
     dlevels=None,
     ref_com=None,
 ):
 
-    # ------------
-    # misc
+    # ---------------------------
+    # get interpolated collection
 
-    # deg and
-    # wm = coll._which_mesh
-    wbs = coll._which_bsplines
-    deg = coll.dobj[wbs][subbs]['deg']
-    if deg == 0:
-        interp = 'nearest'
-    elif deg == 1:
-        interp = 'bilinear'
-    elif deg >= 2:
-        interp = 'bicubic'
+    coll2, dbs = coll.interpolate_all_bsplines(
+        keys=list(dkeys.keys()),
+        dres=dres,
+        submesh=True,
+    )
+    lbs2d = [k0 for k0, v0 in dbs.items() if len(v0['ref']) == 2]
 
     # -----------------
     # get plotting mesh
 
-    coll2, dbs = coll.interpolate_all_bsplines(
-        key=key,
-        dres=dres,
-        submesh=True,
-    )
+    for k0, v0 in dkeys.items():
 
-    bs2d = [k0 for k0, v0 in dbs.items() if len(v0['ref']) == 2][0]
-    rX, rY = dbs[bs2d]['ref']
-    lr1d = [k0 for k0 in coll2.ddata[key]['ref'] if k0 not in [rX, rY]]
-    ndim = coll2.ddata[key]['data'].ndim
+        # deg and interp
+        wbs = coll._which_bsplines
+        deg = coll.dobj[wbs][v0['subbs']]['deg']
+        if deg == 0:
+            interp = 'nearest'
+        elif deg == 1:
+            interp = 'bilinear'
+        elif deg >= 2:
+            interp = 'bicubic'
 
-    dkeys = {
-        'key': key,
-        'keyX': coll2.get_ref_vector(ref=rX)[3],
-        'keyY': coll2.get_ref_vector(ref=rY)[3],
-        'keyZ': None,
-        'keyU': None,
-    }
+        dkeys[k0]['deg'] = deg
+        dkeys[k0]['interp'] = interp
 
-    if ndim >= 3:
-        dkeys['keyZ'] = coll2.get_ref_vector(ref=lr1d[0])[3]
-        # uniform = ds._plot_as_array._check_uniform_lin(
-            # k0=keyZ, ddata=coll2.ddata,
-        # )
-        # if not uniform:
-            # keyZ = None
-        if ndim == 4:
-            dkeys['keyU'] = coll2.get_ref_vector(ref=lr1d[1])[3]
+        # key X, Y, Z, U
+        bs2d = [k1 for k1 in lbs2d if k1 in coll.ddata[k0][wbs]][0]
+        rX, rY = dbs[bs2d]['ref']
+        lr1d = [k0 for k0 in coll2.ddata[k0]['ref'] if k0 not in [rX, rY]]
+        ndim = coll2.ddata[k0]['data'].ndim
+
+        dkeys[k0].update({
+            'key': k0,
+            'keyX': coll2.get_ref_vector(ref=rX)[3],
+            'keyY': coll2.get_ref_vector(ref=rY)[3],
+            'keyZ': None,
+            'keyU': None,
+        })
+
+        if ndim >= 3:
+            dkeys[k0]['keyZ'] = coll2.get_ref_vector(ref=lr1d[0])[3]
+            # uniform = ds._plot_as_array._check_uniform_lin(
+                # k0=keyZ, ddata=coll2.ddata,
+            # )
+            # if not uniform:
+                # keyZ = None
+            if ndim == 4:
+                dkeys[k0]['keyU'] = coll2.get_ref_vector(ref=lr1d[1])[3]
 
     # -----------------
     # optional contours
@@ -434,7 +456,7 @@ def _prepare(
     lcol = ['k', 'r', 'b', 'g', 'm', 'c', 'y']
 
     return (
-        coll2, dkeys, interp,
+        coll2, dkeys,
         dlevels, lcol,
     )
 
@@ -446,21 +468,9 @@ def _prepare(
 
 
 def _add_levels_2d(
-    key=None,
     dax=None,
     dgroup=None,
-    coll2=None,
     dlevels=None,
-    # figure
-    vmin=None,
-    vmax=None,
-    cmap=None,
-    dmargin=None,
-    fs=None,
-    dcolorbar=None,
-    dleg=None,
-    interp=None,
-    dkeys=None,
 ):
 
     # ---------------------------------
