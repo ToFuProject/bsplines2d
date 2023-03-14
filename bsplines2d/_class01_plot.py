@@ -13,8 +13,6 @@ import datastock as ds
 
 # specific
 from . import _generic_check
-from . import _class01_checks as _checks
-from . import _class02_contours as _contours
 
 
 # #############################################################################
