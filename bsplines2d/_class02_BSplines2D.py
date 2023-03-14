@@ -20,6 +20,7 @@ from . import _class02_interpolate as _interpolate
 from . import _class02_interpolate_all as _interpolate_all
 from . import _class02_operators as _operators
 from . import _class02_plot_as_profile2d as _plot_as_profile2d
+from . import _class02_plot_as_profile2d_compare as _plot_as_profile2d_compare
 
 
 __all__ = ['BSplines2D']
@@ -91,6 +92,13 @@ class BSplines2D(Previous):
                 keybs=keybs,
                 keym=keym,
             )
+
+    # -----------------
+    # remove_bsplines
+    # ------------------
+
+    def remove_bsplines(self, key=None, propagate=None):
+        return _checks.remove_bsplines(coll=self, key=key, propagate=propagate)
 
     # -----------------
     # add_data
@@ -419,7 +427,7 @@ class BSplines2D(Previous):
 
     def interpolate_all_bsplines(
         self,
-        key=None,
+        keys=None,
         dres=None,
         submesh=None,
     ):
@@ -429,7 +437,7 @@ class BSplines2D(Previous):
 
         return _interpolate_all.interpolate_all_bsplines(
             coll=self,
-            key=key,
+            keys=keys,
             dres=dres,
             submesh=submesh,
         )
@@ -934,6 +942,54 @@ class BSplines2D(Previous):
         return _plot_as_profile2d.plot_as_profile2d(
             coll=self,
             key=key,
+            # parameters
+            dres=dres,
+            # levels
+            dlevels=dlevels,
+            ref_com=ref_com,
+            # details
+            plot_details=plot_details,
+            # plot options
+            vmin=vmin,
+            vmax=vmax,
+            cmap=cmap,
+            dax=dax,
+            dmargin=dmargin,
+            fs=fs,
+            dcolorbar=dcolorbar,
+            dleg=dleg,
+            # interactivity
+            dinc=dinc,
+            connect=connect,
+        )
+
+    def plot_as_profile2d_compare(
+        self,
+        keys=None,
+        # parameters
+        dres=None,
+        # levels
+        dlevels=None,
+        ref_com=None,
+        # details
+        plot_details=None,
+        # plot options
+        vmin=None,
+        vmax=None,
+        cmap=None,
+        dax=None,
+        dmargin=None,
+        fs=None,
+        dcolorbar=None,
+        dleg=None,
+        # interactivity
+        dinc=None,
+        connect=None,
+    ):
+
+        return _plot_as_profile2d_compare.plot_as_profile2d_compare(
+            coll=self,
+            keys=keys,
             # parameters
             dres=dres,
             # levels
