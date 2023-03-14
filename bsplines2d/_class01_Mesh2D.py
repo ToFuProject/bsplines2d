@@ -322,6 +322,17 @@ class Mesh2D(ds.DataStock):
             # self.add_bsplines(key=key, deg=deg)
 
     # -----------------
+    # remove mesh
+    # ------------------
+
+    def remove_mesh(self, key=None, propagate=None):
+        return _generic_mesh.remove_mesh(
+            coll=self,
+            key=key,
+            propagate=propagate,
+        )
+
+    # -----------------
     # crop
     # ------------------
 
