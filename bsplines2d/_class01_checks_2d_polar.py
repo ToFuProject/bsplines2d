@@ -17,7 +17,7 @@ _ELEMENTS = 'knots'
 #                           mesh generic check
 # ###############################################################
 
-
+"""
 def _mesh2D_polar_check(
     coll=None,
     radius=None,
@@ -267,3 +267,4 @@ def _check_polar_2dquant(
                 dquant[k0] = str(coll.ddata[quant2d][k0])
 
     return dquant
+"""
