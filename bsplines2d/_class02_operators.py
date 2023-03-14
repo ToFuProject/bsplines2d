@@ -79,6 +79,7 @@ def get_bsplines_operator(
 
             if operator == 'D1' and None in v0['ref']:
                 continue
+
             coll.add_data(**v0)
 
     # return
@@ -87,6 +88,7 @@ def get_bsplines_operator(
         if return_param:
             dpar = {
                 'key': key,
+                'keys': list(dout.keys()),
                 'operator': operator,
                 'geometry': geometry,
                 'crop': crop,
@@ -273,95 +275,73 @@ def _dout(
     geom = geometry[:3]
 
     # ----------
+    # matrix types
+
+    nnd = int(nd[0])
+    if operator == 'D1':
+        kmat = [f'M{ii}' for ii in range(nnd)]
+    if operator in ['D0N1']:
+        kmat = 'M'
+    elif operator in ['D0N2']:
+        kmat = 'tMM'
+    elif operator in ['D1N2']:
+        kmat = [f'tMM{ii}' for ii in range(nnd)]
+    elif operator in ['D2N2']:
+        lcomb = [] if nd == '1d' else [(0,1)]
+        kmat = (
+            [f'tMM{ii}{ii}' for ii in range(nnd)]
+            + [f'tMM{ii}{jj}' for ii, jj in lcomb]
+        )
+
+    # ----------
     # build dout
 
     dout = {}
-    if nd == '1d':
+    if operator in ['D0N1', 'D0N2']:
 
-        k0 = f'{key}_{operator}'
-        if 'N' in operator:
-            k0 = f'{k0}_{geom}'
+        k0 = f'{key}_{operator}_{geom}'
+        if crop is True:
+            k0 = f'{k0}_crop'
 
-        dout[k0] = {
+        dout[kmat] = {
             'key': k0,
             'data': opmat,
             'ref': ref,
-            'units': units,
+            'units': units[0],
             'dim': operator,
         }
 
-    elif nd == '2d' and mtype == 'rect':
+    elif operator in ['D1', 'D1N2']:
 
-        if operator in ['D0N1', 'D0N2']:
-            k0 = f'{key}_{operator}_{geom}'
-            if crop is True:
-                k0 = f'{k0}_cropped'
-            dout[k0] = {
-                'key': k0,
-                'data': opmat,
-                'ref': ref,
-                'units': units,
-                'dim': operator,
-            }
+        for ii in range(nnd):
 
-        elif operator in ['D1', 'D1N2']:
-            k0 = f'{key}_{operator}_d0'
+            k0 = f'{key}_{operator}_d{ii}'
             if 'N' in operator:
                 k0 = f'{k0}_{geom}'
             if crop is True:
-                k0 = f'{k0}_cropped'
-            dout[k0] = {
+                k0 = f'{k0}_crop'
+
+            dout[kmat[ii]] = {
                 'key': k0,
-                'data': opmat[0],
+                'data': opmat[ii],
                 'ref': ref,
-                'units': units[0],
+                'units': units[ii],
                 'dim': operator,
             }
 
-            k0 = f'{key}_{operator}_d1'
-            if 'N' in operator:
-                k0 = f'{k0}_{geom}'
-            if crop is True:
-                k0 = f'{k0}_cropped'
-            dout[k0] = {
-                'key': k0,
-                'data': opmat[1],
-                'ref': ref,
-                'units': units[1],
-                'dim': operator,
-            }
+    elif operator in ['D2N2']:
 
-        elif operator in ['D2N2']:
-            k0 = f'{key}_{operator}_d00_{geom}'
-            if crop is True:
-                k0 = f'{k0}_cropped'
-            dout[k0] = {
-                'key': k0,
-                'data': opmat[0],
-                'ref': ref,
-                'units': units[0],
-                'dim': operator,
-            }
+        for ii, kk in enumerate(kmat):
 
-            k0 = f'{key}_{operator}_d01_{geom}'
+            k0 = f'{key}_{operator}_d{kk[-2:]}_{geom}'
             if crop is True:
-                k0 = f'{k0}_cropped'
-            dout[k0] = {
-                'key': k0,
-                'data': opmat[1],
-                'ref': ref,
-                'units': units[1],
-                'dim': operator,
-            }
+                k0 = f'{k0}_crop'
 
-            k0 = f'{key}_{operator}_d11_{geom}'
-            if crop is True:
-                k0 = f'{k0}_cropped'
-            dout[k0] = {
+            dout[kk] = {
                 'key': k0,
-                'data': opmat[2],
+                'data': opmat[ii],
                 'ref': ref,
-                'units': units[2],
+                'units': units[ii],
                 'dim': operator,
             }
 
@@ -419,7 +399,7 @@ def _ref_units(
     apex = coll.dobj[wbs][key]['apex']
     u0 = coll.ddata[apex[0]]['units']
     if nd == '1d':
-        units = _units(u0, operator, geometry)
+        units = [_units(u0, operator, geometry)]
 
     else:
         u1 = coll.ddata[apex[1]]['units']
@@ -427,7 +407,7 @@ def _ref_units(
         units1 = _units(u1, operator, 'linear')
 
         if operator in ['D0N1', 'D0N2']:
-            units = units0 * units1
+            units = [units0 * units1]
 
         elif operator in ['D1', 'D1N2']:
             units = [units0, units1]

@@ -537,14 +537,14 @@ def sample_mesh_2d(
     kx0 = ds._generic_check._check_var(
         kx0, 'kx0',
         types=str,
-        default=f'{key}_x0',
+        default=f'{key}_x0_temp',
         excluded=lout,
     )
 
     kx1 = ds._generic_check._check_var(
         kx1, 'kx1',
         types=str,
-        default=f'{key}_x1',
+        default=f'{key}_x1_temp',
         excluded=lout,
     )
 

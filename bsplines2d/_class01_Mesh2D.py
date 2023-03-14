@@ -17,7 +17,6 @@ from . import _class01_checks_2d_rect as _checks_2d_rect
 from . import _class01_checks_2d_tri as _checks_2d_tri
 from . import _class01_checks_2d_polar as _checks_2d_polar
 
-from . import _class01_compute as _compute
 from . import _class01_rect_cropping as _cropping
 from . import _class01_select as _select
 from . import _class01_sample as _sample
@@ -321,6 +320,17 @@ class Mesh2D(ds.DataStock):
         # # optional bspline
         # if deg is not None:
             # self.add_bsplines(key=key, deg=deg)
+
+    # -----------------
+    # remove mesh
+    # ------------------
+
+    def remove_mesh(self, key=None, propagate=None):
+        return _generic_mesh.remove_mesh(
+            coll=self,
+            key=key,
+            propagate=propagate,
+        )
 
     # -----------------
     # crop

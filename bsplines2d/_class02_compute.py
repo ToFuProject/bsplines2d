@@ -184,83 +184,6 @@ def _mesh2DRect_bsplines(coll=None, keym=None, keybs=None, deg=None):
     return dref, ddata, dobj
 
 
-def _mesh2DRect_bsplines_knotscents(
-    returnas=None,
-    return_knots=None,
-    return_cents=None,
-    ind=None,
-    deg=None,
-    Rknots=None,
-    Zknots=None,
-    Rcents=None,
-    Zcents=None,
-):
-
-    # -------------
-    # check inputs
-
-    return_knots = ds._generic_check._check_var(
-        return_knots, 'return_knots',
-        types=bool,
-        default=True,
-    )
-    return_cents = ds._generic_check._check_var(
-        return_cents, 'return_cents',
-        types=bool,
-        default=True,
-    )
-    if return_knots is False and return_cents is False:
-        return
-
-    # -------------
-    # compute
-
-    if return_knots is True:
-
-        knots_per_bs_R = _utils_bsplines._get_knots_per_bs(
-            Rknots, deg=deg, returnas=returnas,
-        )
-        knots_per_bs_Z = _utils_bsplines._get_knots_per_bs(
-            Zknots, deg=deg, returnas=returnas,
-        )
-        if ind is not None:
-            knots_per_bs_R = knots_per_bs_R[:, ind[0]]
-            knots_per_bs_Z = knots_per_bs_Z[:, ind[1]]
-
-        nknots = knots_per_bs_R.shape[0]
-        knots_per_bs_R = np.tile(knots_per_bs_R, (nknots, 1))
-        knots_per_bs_Z = np.repeat(knots_per_bs_Z, nknots, axis=0)
-
-    if return_cents is True:
-
-        cents_per_bs_R = _utils_bsplines._get_cents_per_bs(
-            Rcents, deg=deg, returnas=returnas,
-        )
-        cents_per_bs_Z = _utils_bsplines._get_cents_per_bs(
-            Zcents, deg=deg, returnas=returnas,
-        )
-        if ind is not None:
-            cents_per_bs_R = cents_per_bs_R[:, ind[0]]
-            cents_per_bs_Z = cents_per_bs_Z[:, ind[1]]
-
-        ncents = cents_per_bs_R.shape[0]
-        cents_per_bs_R = np.tile(cents_per_bs_R, (ncents, 1))
-        cents_per_bs_Z = np.repeat(cents_per_bs_Z, ncents, axis=0)
-
-    # -------------
-    # return
-
-    if return_knots is True and return_cents is True:
-        out = (
-            (knots_per_bs_R, knots_per_bs_Z), (cents_per_bs_R, cents_per_bs_Z)
-        )
-    elif return_knots is True:
-        out = (knots_per_bs_R, knots_per_bs_Z)
-    else:
-        out = (cents_per_bs_R, cents_per_bs_Z)
-    return out
-
-
 # ##################################################################
 # ##################################################################
 #                           Mesh2 - Tri - bsplines
@@ -280,8 +203,8 @@ def _mesh2DTri_bsplines(coll=None, keym=None, keybs=None, deg=None):
         indices=coll.ddata[coll.dobj[coll._which_mesh][keym]['ind']]['data'],
     )
     keybsr = f'{keybs}-nbs'
-    kbscr = f'{keybs}-apR'
-    kbscz = f'{keybs}-apZ'
+    kbscr = f'{keybs}-ap0'
+    kbscz = f'{keybs}-ap1'
 
     bs_cents = clas._get_bs_cents()
 
@@ -351,11 +274,11 @@ def _get_profiles2d(coll=None):
         lbs = []
         for k1 in v0[wbs]:
             km = coll.dobj[wbs][k1][wm]
-            if coll.dobj[wm][km]['submesh'] is None:
+            subkm = coll.dobj[wm][km]['submesh']
+            if subkm is None:
                 if coll.dobj[wm][km]['nd'] == '2d':
                     lbs.append(k1)
             else:
-                subkm = coll.dobj[wm][km]['submesh']
                 if coll.dobj[wm][subkm]['nd'] == '2d':
                     lbs.append(k1)
 

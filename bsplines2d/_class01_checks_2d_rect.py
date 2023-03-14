@@ -118,7 +118,6 @@ def check(
 # #############################################################################
 
 
-
 def _mesh2DRect_check(
     key=None,
     knots0=None,
@@ -132,12 +131,12 @@ def _mesh2DRect_check(
 
     # (domain, res) vs (knots0, knots1)
     lc = [
-        domain is not None,
         knots0 is not None and knots1 is not None,
+        domain is not None,
     ]
-    if all(lc) or not any(lc):
+    if not any(lc):
         msg = (
-            "Please provide (domain, res) xor (knots0, knots1), not both:\n"
+            "Please at least (domain, res) or (knots0, knots1):\n"
             "Provided:\n"
             f"\t- domain, res: {domain}, {res}\n"
             f"\t- knots0, knots1: {knots0}, {knots1}\n"
@@ -145,6 +144,22 @@ def _mesh2DRect_check(
         raise Exception(msg)
 
     if lc[0]:
+
+        # knots0
+        knots0, res0 = _checks_1d._check_knots(
+            key=key,
+            knots=knots0,
+            uniform=True,
+        )
+
+        # knots1
+        knots1, res1 = _checks_1d._check_knots(
+            key=key,
+            knots=knots1,
+            uniform=True,
+        )
+
+    elif lc[1]:
         # domain
         c0 = (
             isinstance(domain, list)
@@ -181,22 +196,6 @@ def _mesh2DRect_check(
 
         knots0, res0, _ = _mesh2DRect_X_check(domain[0], res=res[0])
         knots1, res1, _ = _mesh2DRect_X_check(domain[1], res=res[1])
-
-    elif lc[1]:
-
-        # knots0
-        knots0, res0 = _checks_1d._check_knots(
-            key=key,
-            knots=knots0,
-            uniform=True,
-        )
-
-        # knots1
-        knots1, res1 = _checks_1d._check_knots(
-            key=key,
-            knots=knots1,
-            uniform=True,
-        )
 
     return knots0, knots1, res0, res1
 

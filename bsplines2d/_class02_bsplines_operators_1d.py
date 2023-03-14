@@ -136,7 +136,7 @@ def get_operators(
         elif deg >= 3:
             raise NotImplementedError()
 
-        opmat = scpsp.csc_matrix(grad)
+        opmat = (scpsp.csc_matrix(grad),)
 
     # ------------
     # D0N2
@@ -215,14 +215,14 @@ def get_operators(
 
             # Does not seem to give positive definite matrix, TBC?
             if returnas_element is True:
-                opmat = scpsp.csc_matrix(
+                opmat = (scpsp.csc_matrix(
                     grad*np.sqrt(dx[:, None])
-                )
+                ),)
 
             else:
-                opmat = scpsp.csc_matrix(
+                opmat = (scpsp.csc_matrix(
                     (grad.T.dot(grad))*(dx[:, None])
-                )
+                ),)
 
         else:
 
@@ -262,10 +262,10 @@ def get_operators(
                     i0 += 2
 
             assert i0 == nbtot
-            opmat = scpsp.csc_matrix(
+            opmat = (scpsp.csc_matrix(
                 (datadx, (row, column)),
                 shape=shape,
-            )
+            ),)
 
     # ------------
     # D2N2
@@ -309,10 +309,10 @@ def get_operators(
                     i0 += 2
 
         assert i0 == nbtot
-        opmat = scpsp.csc_matrix(
+        opmat = (scpsp.csc_matrix(
             (datad2x, (row, column)),
             shape=shape,
-        )
+        ),)
 
     # ------------
     # D3N2
