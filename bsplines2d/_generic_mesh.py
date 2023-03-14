@@ -357,6 +357,10 @@ def remove_mesh(coll=None, key=None, propagate=None):
     # key
     wm = coll._which_mesh
     wbs = coll._which_bsplines
+
+    if wm not in coll.dobj.keys():
+        return
+
     if isinstance(key, str):
         key = [key]
     key = ds._generic_check._check_var_iter(
@@ -402,4 +406,4 @@ def remove_mesh(coll=None, key=None, propagate=None):
                 coll.remove_ref(rr, propagate=propagate)
 
         # obj
-        coll.remove_obj(which=wm, key=key, propagate=propagate)
+        coll.remove_obj(which=wm, key=k0, propagate=propagate)
