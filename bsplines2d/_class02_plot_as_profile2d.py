@@ -712,7 +712,7 @@ def _plot_submesh(
     # preliminary
 
     # plot usual parts
-    dax, dgroup = coll2.plot_as_array(
+    collax, dgroup = coll2.plot_as_array(
         vmin=vmin,
         vmax=vmax,
         cmap=cmap,
@@ -735,7 +735,7 @@ def _plot_submesh(
         key=key,
         keym=keym,
         keybs=keybs,
-        dax=dax,
+        collax=collax,
         plot_details=plot_details,
     )
 
@@ -748,29 +748,29 @@ def _plot_submesh(
     # add radial profile
 
     kax = 'radial'
-    if dax.dax.get(kax) is not None:
-        ax = dax.dax[kax]['handle']
+    if collax.dax.get(kax) is not None:
+        ax = collax.dax[kax]['handle']
         for ii in range(len(lkradial)):
 
             if reft is None:
                 l0, = ax.plot(
-                    dax.ddata[kradius]['data'],
-                    dax.ddata[lkradial[ii]]['data'],
+                    collax.ddata[kradius]['data'],
+                    collax.ddata[lkradial[ii]]['data'],
                     c=lcol[ii],
                     ls='-',
                     lw=2,
                 )
             else:
                 l0, = ax.plot(
-                    dax.ddata[kradius]['data'],
-                    dax.ddata[lkradial[ii]]['data'][0, :],
+                    collax.ddata[kradius]['data'],
+                    collax.ddata[lkradial[ii]]['data'][0, :],
                     c=lcol[ii],
                     ls='-',
                     lw=2,
                 )
 
                 kl = f"radial{ii}"
-                dax.add_mobile(
+                collax.add_mobile(
                     key=kl,
                     handle=l0,
                     refs=(reft,),
@@ -784,21 +784,21 @@ def _plot_submesh(
             for ii in range(len(lkdet)):
                 if reft is None:
                     l0, = ax.plot(
-                        dax.ddata[kradius]['data'],
-                        dax.ddata[lkdet[ii]]['data'],
+                        collax.ddata[kradius]['data'],
+                        collax.ddata[lkdet[ii]]['data'],
                         ls='-',
                         lw=1,
                     )
                 else:
                     l0, = ax.plot(
-                        dax.ddata[kradius]['data'],
-                        dax.ddata[lkdet[ii]]['data'][0, :],
+                        collax.ddata[kradius]['data'],
+                        collax.ddata[lkdet[ii]]['data'][0, :],
                         ls='-',
                         lw=1,
                     )
 
                     kl = f"radial_det{ii}"
-                    dax.add_mobile(
+                    collax.add_mobile(
                         key=kl,
                         handle=l0,
                         refs=(reft,),
@@ -809,8 +809,8 @@ def _plot_submesh(
                     )
 
         ax.set_xlim(
-            dax.ddata[kradius]['data'].min(),
-            dax.ddata[kradius]['data'].max(),
+            collax.ddata[kradius]['data'].min(),
+            collax.ddata[kradius]['data'].max(),
         )
 
         if vmin is not None:
@@ -818,7 +818,7 @@ def _plot_submesh(
         if vmax is not None:
             ax.set_ylim(top=vmax)
 
-    return dax, dgroup
+    return collax, dgroup
 
 
 def _plot_profile2d_polar_add_radial(
@@ -826,7 +826,7 @@ def _plot_profile2d_polar_add_radial(
     key=None,
     keym=None,
     keybs=None,
-    dax=None,
+    collax=None,
     # details
     plot_details=None,
 ):
@@ -935,12 +935,12 @@ def _plot_profile2d_polar_add_radial(
 
         nbs = radial_details.shape[-1]
 
-    # -----------
-    # add to dax
+    # -------------
+    # add to collax
 
-    dax.add_ref(key='nradius', size=rad.size)
+    collax.add_ref(key='nradius', size=rad.size)
     if angle is not None:
-        dax.add_ref(key='nangle', size=angle.size)
+        collax.add_ref(key='nangle', size=angle.size)
 
     ref = list(dout['ref'])
     ref[ref.index(None)] = 'nradius'
@@ -951,28 +951,28 @@ def _plot_profile2d_polar_add_radial(
 
     lkdet = None
     kradius = 'radius'
-    dax.add_data(key=kradius, data=rad, ref='nradius')
+    collax.add_data(key=kradius, data=rad, ref='nradius')
     if angle is None:
         lk = ['radial']
-        dax.add_data(key=lk[0], data=radial, ref=ref)
+        collax.add_data(key=lk[0], data=radial, ref=ref)
         if plot_details is True:
             lkdet = [f'radial-detail-{ii}' for ii in range(nbs)]
             for ii in range(nbs):
-                dax.add_data(
+                collax.add_data(
                     key=lkdet[ii], data=radial_details[..., ii], ref=refdet,
                 )
 
     elif angle is not None:
         kangle = 'angle'
-        dax.add_data(key=kangle, data=angle, ref='nangle')
+        collax.add_data(key=kangle, data=angle, ref='nangle')
         lkdet = None
         lk = [f'radial-{ii}' for ii in range(angle.size)]
         if reft is None:
             for ii in range(angle.size):
-                dax.add_data(key=lk[ii], data=radial[:, ii], ref=ref)
+                collax.add_data(key=lk[ii], data=radial[:, ii], ref=ref)
         else:
             for ii in range(angle.size):
-                dax.add_data(key=lk[ii], data=radial[:, :, ii], ref=ref)
+                collax.add_data(key=lk[ii], data=radial[:, :, ii], ref=ref)
 
     return kradius, lk, lkdet, reft
 
