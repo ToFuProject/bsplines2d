@@ -93,7 +93,7 @@ def plot_as_profile2d(
 
         if v0['submesh'] is not None:
 
-            dax, dgroup = _plot_submesh(
+            coll3, dgroup = _plot_submesh(
                 coll=coll,
                 coll2=coll2,
                 key=k0,
@@ -120,7 +120,7 @@ def plot_as_profile2d(
         # without submesh
 
         else:
-            dax, dgroup = coll2.plot_as_array(
+            coll3, dgroup = coll2.plot_as_array(
                 vmin=vmin,
                 vmax=vmax,
                 cmap=cmap,
@@ -148,14 +148,14 @@ def plot_as_profile2d(
     # connect
 
     if connect is True:
-        dax.setup_interactivity(kinter='inter0', dgroup=dgroup, dinc=dinc)
-        dax.disconnect_old()
-        dax.connect()
+        coll3.setup_interactivity(kinter='inter0', dgroup=dgroup, dinc=dinc)
+        coll3.disconnect_old()
+        coll3.connect()
 
-        dax.show_commands()
-        return dax
+        coll3.show_commands()
+        return coll3
     else:
-        return dax, dgroup
+        return coll3, dgroup
 
 
 # #############################################################################
@@ -250,11 +250,11 @@ def _check(
 
         dp2d = coll.get_profiles2d()
         if isinstance(dlevels, (float, int)):
-            dlevels = {key: np.r_[dlevels]}
+            dlevels = {k0: np.r_[dlevels] for k0 in keys}
 
         elif isinstance(dlevels, (np.ndarray, list, tuple)):
             dlevels = np.atleast_1d(dlevels).ravel()
-            dlevels = {key: dlevels}
+            dlevels = {k0: dlevels for k0 in keys}
 
         c0 = (
             isinstance(dlevels, dict)
@@ -469,6 +469,7 @@ def _prepare(
 
 def _add_levels_2d(
     dax=None,
+    key=None,
     dgroup=None,
     dlevels=None,
 ):
