@@ -3,13 +3,13 @@
 
 # Built-in
 import copy
+import itertools as itt
 
 
 # Common
 import datastock as ds
 
 # local
-
 
 
 # ###########################################################
@@ -20,7 +20,8 @@ import datastock as ds
 
 def interpolate_all_bsplines(
     coll=None,
-    key=None,
+    keys=None,
+    # sampling
     dres=None,
     submesh=None,
 ):
@@ -28,9 +29,10 @@ def interpolate_all_bsplines(
     # ----------
     # check
 
-    dres, submesh = _check(
+    keys, coll2, dres, submesh = _check(
         coll=coll,
-        key=key,
+        keys=keys,
+        # sampling
         dres=dres,
         submesh=submesh,
     )
@@ -38,81 +40,88 @@ def interpolate_all_bsplines(
     # ----------------
     # interpolate loop
 
-    coli = coll
-    inplace = False
     wm = coll._which_mesh
     wbs = coll._which_bsplines
     dbs = {}
     for ii, (k0, v0) in enumerate(dres.items()):
 
         # get 2d mesh
-        dout = coli.get_sample_mesh(
-            key=v0[wm],
-            res=v0['res'],
-            mode=v0['mode'],
-            grid=False,
-            # store
-            store=True,
-            kx0=None,
-            kx1=None,
-        )
-
-        # submesh => ref_com
-        km = coll.dobj[wbs][k0][wm]
-        subkey = coll.dobj[wm][km]['subkey']
-        if submesh is True and subkey is not None:
-            refsub = coll.ddata[subkey[0]]['ref']
-            ref = coll.ddata[key]['ref']
-            if refsub[0] in ref:
-                ref_com = refsub[0]
-            elif refsub[-1] in ref:
-                ref_com = refsub[-1]
-            else:
-                ref_com = None
+        dout = None
+        if v0.get('x0') is None:
+            dout = coll2.get_sample_mesh(
+                key=v0[wm],
+                res=v0['res'],
+                mode=v0['mode'],
+                grid=False,
+                # store
+                store=True,
+                kx0=None,
+                kx1=None,
+            )
         else:
-            ref_com = None
+            x0str = f'{v0[wm]}_x0_temp'
+            dout = {'x0': {'key': x0str, 'ref': f'{x0str}_n'}}
+            if v0.get('x1') is not None:
+                x1str = f'{v0[wm]}_x1_temp'
+                dout = {'xi1': {'key': x1str, 'ref': f'{x1str}_n'}}
+                for k1, v1 in dout.items():
+                    coll.add_ref(key=v1['ref'], size=v0[k1].size)
+                    coll.add_data(
+                        key=v1['key'],
+                        data=v1[k1],
+                        ref=v1['ref'],
+                    )
 
         # compute
-        coll2 = coli.interpolate(
-            keys=key,
-            ref_key=k0,
-            x0=dout['x0']['key'],
-            x1=dout.get('x1', {}).get('key'),
-            submesh=submesh,
-            ref_com=ref_com,
-            grid=True,
-            details=False,
-            # return vs store
-            returnas=object,
-            return_params=False,
-            store=True,
-            inplace=inplace,
-        )
+        for key in keys:
 
-        # remove / replace
-        if ii == 0:
-            for k0, v0 in dout.items():
-                coli.remove_ref(v0['ref'])
+            if k0 in coll2.ddata[key][wbs]:
 
+                # submesh => ref_com
+                km = coll2.dobj[wbs][k0][wm]
+                subkey = coll2.dobj[wm][km]['subkey']
+                if submesh is True and subkey is not None:
+                    refsub = coll2.ddata[subkey[0]]['ref']
+                    ref = coll2.ddata[key]['ref']
+                    if refsub[0] in ref:
+                        ref_com = refsub[0]
+                    elif refsub[-1] in ref:
+                        ref_com = refsub[-1]
+                    else:
+                        ref_com = None
+                else:
+                    ref_com = None
 
-        # remove original data
-        if key in coll2.ddata.keys():
-            coll2.remove_data(key)
+                # interpolate
+                coll2 = coll2.interpolate(
+                    keys=key,
+                    ref_key=k0,
+                    x0=dout['x0']['key'],
+                    x1=dout.get('x1', {}).get('key'),
+                    submesh=submesh,
+                    ref_com=ref_com,
+                    grid=True,
+                    details=False,
+                    # return vs store
+                    returnas=object,
+                    return_params=False,
+                    store=True,
+                    inplace=True,
+                )
 
-        # rename new data
-        keynew = f'{key}_interp'
-        coll2.add_data(
-            key=key,
-            **{k0: v0 for k0, v0 in coll2.ddata[keynew].items()},
-        )
+            # remove original data
+            if key in coll2.ddata.keys():
+                coll2.remove_data(key)
 
-        # remove keynew
-        coll2.remove_data(keynew)
+            # rename new data
+            keynew = f'{key}_interp'
+            coll2.add_data(
+                key=key,
+                **{k0: v0 for k0, v0 in coll2.ddata[keynew].items()},
+            )
 
-        # udpate params
-        if ii == 0:
-            coli = coll2
-            inplace = True
+            # remove keynew
+            coll2.remove_data(keynew)
 
         # fill dbs
         dbs[k0] = {
@@ -122,14 +131,11 @@ def interpolate_all_bsplines(
     # -----------
     # clean-up
 
-    if wm in coll2.dobj.keys():
-        del coll2._dobj[wm]
     if wbs in coll2.dobj.keys():
-        del coll2._dobj[wbs]
+        coll2.remove_bsplines(key=list(dres.keys()), propagate=True)
 
-    for k0, v0 in coll2.ddata.items():
-        if wbs in v0.keys():
-            del coll2._ddata[k0][wbs]
+    if wm in coll2.dobj.keys():
+        coll2.remove_mesh(key=[v0[wm] for v0 in dres.values()], propagate=True)
 
     return coll2, dbs
 
@@ -142,7 +148,10 @@ def interpolate_all_bsplines(
 
 def _check(
     coll=None,
-    key=None,
+    keys=None,
+    # sampling
+    knots0=None,
+    knots1=None,
     dres=None,
     submesh=None,
 ):
@@ -158,13 +167,16 @@ def _check(
         if isinstance(v0[wbs], tuple)
     ]
 
-    key = ds._generic_check._check_var(
-        key, 'key',
-        types=str,
+    if isinstance(keys, str):
+        keys = [keys]
+    keys = ds._generic_check._check_var_iter(
+        keys, 'keys',
+        types=(list, tuple),
+        types_iter=str,
         allowed=lok,
     )
 
-    lbs = coll.ddata[key][wbs]
+    lbs = list(itt.chain.from_iterable([coll.ddata[k0][wbs] for k0 in keys]))
 
     # --------------
     # dres
@@ -191,12 +203,14 @@ def _check(
 
     # loop
     for bs in lbs:
-        if bs not in dres.keys():
+        if dres.get(bs) is None:
             dres[bs] = {'res': None, 'mode': 'abs'}
         elif isinstance(dres[bs], dict):
             dres[bs] = {
                 'res': dres[bs].get('res'),
                 'mode': dres[bs].get('mode', 'abs'),
+                'x0': dres[bs].get('x0'),
+                'x1': dres[bs].get('x1'),
             }
         elif isinstance(dres[bs], (float, int)):
             dres[bs] = {
@@ -227,4 +241,10 @@ def _check(
         else:
             dres[bs][wm] = km
 
-    return dres, submesh
+
+    # ----------
+    # coll2
+
+    coll2 = coll.extract(keys=keys, vectors=True)
+
+    return keys, coll2, dres, submesh
