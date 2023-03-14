@@ -191,6 +191,9 @@ def remove_bsplines(coll=None, key=None, propagate=None):
 
     # key
     wbs = coll._which_bsplines
+    if wbs not in coll.dobj.keys():
+        return
+
     if isinstance(key, str):
         key = [key]
     key = ds._generic_check._check_var_iter(
@@ -233,4 +236,4 @@ def remove_bsplines(coll=None, key=None, propagate=None):
                 coll.remove_ref(rr, propagate=propagate)
 
         # obj
-        coll.remove_obj(which=wbs, key=key)
+        coll.remove_obj(which=wbs, key=k0, propagate=propagate)
