@@ -388,7 +388,7 @@ def remove_mesh(coll=None, key=None, propagate=None):
             coll.remove_bsplines(key=lbs, propagate=propagate)
 
         # specific data
-        ldata = (
+        ldata = list(
             coll.dobj[wm][k0]['knots']
             + coll.dobj[wm][k0]['cents']
         )
