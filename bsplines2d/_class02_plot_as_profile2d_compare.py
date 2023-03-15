@@ -57,7 +57,9 @@ def plot_as_profile2d_compare(
     (
         dkeys,
         dlevels,
-        cmap, cmap_err, dcolorbar, dleg,
+        cmap, cmap_err,
+        vmin, vmax,
+        dcolorbar, dleg,
         connect,
     ) = _plot_as_profile2d._check(
         coll=coll,

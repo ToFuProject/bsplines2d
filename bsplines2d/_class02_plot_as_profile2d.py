@@ -52,13 +52,17 @@ def plot_as_profile2d(
     (
         dkeys,
         dlevels,
-        cmap, _, dcolorbar, dleg,
+        cmap, _,
+        vmin, vmax,
+        dcolorbar, dleg,
         connect,
     ) = _check(
         coll=coll,
         keys=key,
         dlevels=dlevels,
         # plotting
+        vmin=vmin,
+        vmax=vmax,
         cmap=cmap,
         # figure
         dcolorbar=dcolorbar,
@@ -194,6 +198,8 @@ def _check(
     keys=None,
     dlevels=None,
     # figure
+    vmin=None,
+    vmax=None,
     cmap=None,
     cmap_err=None,
     dcolorbar=None,
@@ -309,7 +315,7 @@ def _check(
             dlevels[k0]['color'] = v0.get('color', 'k')
 
     # ----------
-    # figure
+    # cmap
 
     # cmap
     if cmap is None:
@@ -318,6 +324,17 @@ def _check(
     # cmap_err
     if cmap_err is None:
         cmap_err = 'seismic'
+
+    # ----------
+    # vmin, vmax
+
+    if vmin is None:
+        vmin = min([0] + [np.nanmin(coll.ddata[kk]['data']) for kk in keys])
+    if vmin is None:
+        vmax = min([np.nanmax(coll.ddata[kk]['data']) for kk in keys])
+
+    # ----------
+    # figure
 
     # dcolorbar
     defdcolorbar = {
@@ -355,7 +372,9 @@ def _check(
     return (
         dkeys,
         dlevels,
-        cmap, cmap_err, dcolorbar, dleg,
+        cmap, cmap_err,
+        vmin, vmax,
+        dcolorbar, dleg,
         connect,
     )
 
