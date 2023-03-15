@@ -70,7 +70,7 @@ def plot_as_profile2d(
     #  Prepare data
 
     (
-        coll2, dkeys,
+        collax, dkeys,
         dlevels, lcol,
     ) = _prepare(
         coll=coll,
@@ -97,7 +97,6 @@ def plot_as_profile2d(
         color_dict = {k0: None for k0 in dkeys.keys()}
     else:
         nmax = 1
-        lcol = ['k', 'b']
         color_dict = {k0: lcol[ii] for ii, k0 in enumerate(dkeys.keys())}
 
     # -----------------
@@ -115,7 +114,7 @@ def plot_as_profile2d(
 
             collax, dgroup = _plot_submesh(
                 coll=coll,
-                coll2=coll2,
+                collax=collax,
                 key=k0,
                 keym=v0['keym'],
                 keybs=v0['keybs'],
@@ -125,6 +124,7 @@ def plot_as_profile2d(
                 vmin=vmin,
                 vmax=vmax,
                 cmap=cmap,
+                color_dict=color_dict[k0],
                 # figure
                 dax=daxi,
                 dmargin=dmargin,
@@ -140,7 +140,7 @@ def plot_as_profile2d(
         # without submesh
 
         else:
-            collax, dgroup = coll2.plot_as_array(
+            collax, dgroup = collax.plot_as_array(
                 vmin=vmin,
                 vmax=vmax,
                 cmap=cmap,
@@ -476,7 +476,7 @@ def _prepare(
     # --------------------
     # optional for submesh
 
-    lcol = ['k', 'r', 'b', 'g', 'm', 'c', 'y']
+    lcol = ['k', 'b', 'g', 'r', 'm', 'c', 'y']
 
     return (
         coll2, dkeys,
@@ -673,7 +673,7 @@ def _plot_bsplines_get_dx01(coll=None, km=None):
 
 def _plot_submesh(
     coll=None,
-    coll2=None,
+    collax=None,
     key=None,
     keym=None,
     keybs=None,
@@ -683,6 +683,7 @@ def _plot_submesh(
     vmin=None,
     vmax=None,
     cmap=None,
+    color_dict=None,
     dax=None,
     dmargin=None,
     fs=None,
@@ -712,10 +713,11 @@ def _plot_submesh(
     # preliminary
 
     # plot usual parts
-    collax, dgroup = coll2.plot_as_array(
+    collax, dgroup = collax.plot_as_array(
         vmin=vmin,
         vmax=vmax,
         cmap=cmap,
+        color_dict=color_dict,
         dax=dax,
         dmargin=dmargin,
         fs=fs,
@@ -724,6 +726,7 @@ def _plot_submesh(
         connect=False,
         interp=interp,
         label=True,
+        inplace=True,
         **dkeys,
     )
 
@@ -748,7 +751,9 @@ def _plot_submesh(
     # add radial profile
 
     kax = 'radial'
-    if collax.dax.get(kax) is not None:
+    lax = [k0 for k0, v0 in collax.dax.items() if kax in v0['type']]
+    if len(lax) == 1:
+        kax = lax[0]
         ax = collax.dax[kax]['handle']
         for ii in range(len(lkradial)):
 
@@ -756,20 +761,20 @@ def _plot_submesh(
                 l0, = ax.plot(
                     collax.ddata[kradius]['data'],
                     collax.ddata[lkradial[ii]]['data'],
-                    c=lcol[ii],
                     ls='-',
                     lw=2,
+                    c=color_dict,
                 )
             else:
                 l0, = ax.plot(
                     collax.ddata[kradius]['data'],
                     collax.ddata[lkradial[ii]]['data'][0, :],
-                    c=lcol[ii],
                     ls='-',
                     lw=2,
+                    c=color_dict,
                 )
 
-                kl = f"radial{ii}"
+                kl = f"{key}_radial{ii}"
                 collax.add_mobile(
                     key=kl,
                     handle=l0,
@@ -797,7 +802,7 @@ def _plot_submesh(
                         lw=1,
                     )
 
-                    kl = f"radial_det{ii}"
+                    kl = f"{key}_radial_det{ii}"
                     collax.add_mobile(
                         key=kl,
                         handle=l0,
@@ -841,6 +846,9 @@ def _plot_profile2d_polar_add_radial(
     kr = coll.dobj[wm][keym]['knots'][0]
     rr = coll.ddata[kr]['data']
     rad = np.linspace(rr[0], rr[-1], rr.size+1)
+
+    refr = f'{key}_nradius'
+    kradius = f'{key}_radius'
 
     # -----------------
     # get angle if any
@@ -919,9 +927,9 @@ def _plot_profile2d_polar_add_radial(
 
         if reft is None:
             radial_details = radial_details * coll.ddata[key]['data'][None, :]
-            refdet = ('nradius',)
+            refdet = (refr,)
         else:
-            refdet = (reft, 'nradius')
+            refdet = (reft, refr)
             if reft == coll.get_time(key)[2]:
                 radial_details = (
                     radial_details[None, :, :]
@@ -938,31 +946,30 @@ def _plot_profile2d_polar_add_radial(
     # -------------
     # add to collax
 
-    collax.add_ref(key='nradius', size=rad.size)
+    collax.add_ref(key=refr, size=rad.size)
     if angle is not None:
         collax.add_ref(key='nangle', size=angle.size)
 
     ref = list(dout['ref'])
-    ref[ref.index(None)] = 'nradius'
+    ref[ref.index(None)] = refr
     ref = tuple(ref)
 
     # ------------
     # add to ddata
 
     lkdet = None
-    kradius = 'radius'
-    collax.add_data(key=kradius, data=rad, ref='nradius')
+    collax.add_data(key=kradius, data=rad, ref=refr)
     if angle is None:
-        lk = ['radial']
+        lk = [f'{key}_radial']
         collax.add_data(key=lk[0], data=radial, ref=ref)
         if plot_details is True:
-            lkdet = [f'radial-detail-{ii}' for ii in range(nbs)]
+            lkdet = [f'{key}_radial-detail-{ii}' for ii in range(nbs)]
             for ii in range(nbs):
                 collax.add_data(
                     key=lkdet[ii], data=radial_details[..., ii], ref=refdet,
                 )
 
-    elif angle is not None:
+    else:
         kangle = 'angle'
         collax.add_data(key=kangle, data=angle, ref='nangle')
         lkdet = None

@@ -92,7 +92,7 @@ def plot_as_profile2d_compare(
     # ---------------
     # plot profiles2d
 
-    coll2, dgroup = coll.plot_as_profile2d(
+    collax, dgroup = coll.plot_as_profile2d(
         key=keys,
         dres=dres,
         dlevels=dlevels,
@@ -117,14 +117,14 @@ def plot_as_profile2d_compare(
     # connect
 
     if connect is True:
-        coll2.setup_interactivity(kinter='inter0', dgroup=dgroup, dinc=dinc)
-        coll2.disconnect_old()
-        coll2.connect()
+        collax.setup_interactivity(kinter='inter0', dgroup=dgroup, dinc=dinc)
+        collax.disconnect_old()
+        collax.connect()
 
-        coll2.show_commands()
-        return coll2
+        collax.show_commands()
+        return collax
     else:
-        return coll2, dgroup
+        return collax, dgroup
 
 
 # ################################################################
