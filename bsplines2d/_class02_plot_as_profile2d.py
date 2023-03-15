@@ -330,8 +330,8 @@ def _check(
 
     if vmin is None:
         vmin = min([0] + [np.nanmin(coll.ddata[kk]['data']) for kk in keys])
-    if vmin is None:
-        vmax = min([np.nanmax(coll.ddata[kk]['data']) for kk in keys])
+    if vmax is None:
+        vmax = max([np.nanmax(coll.ddata[kk]['data']) for kk in keys])
 
     # ----------
     # figure
