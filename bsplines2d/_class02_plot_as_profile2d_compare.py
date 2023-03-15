@@ -8,6 +8,7 @@ import matplotlib.gridspec as gridspec
 import datastock as ds
 
 
+from . import _class02_interpolate_all as _interpolate_all
 from . import _class02_plot_as_profile2d as _plot_as_profile2d
 
 
@@ -89,12 +90,47 @@ def plot_as_profile2d_compare(
         keys[1]: {k0: dax[k0] for k0 in lk1 if k0 in dax.keys()},
     }
 
+    # ----------------------
+    # get unique 2d sampling
+
+    keys, _, dres, submesh = _interpolate_all._check(
+        coll=coll,
+        keys=keys,
+        # sampling
+        dres=dres,
+        submesh=True,
+    )
+
+    # list meshes 2d
+    wm = coll._which_mesh
+    lm = list(dres.keys())
+    lm = [k0 for k0 in lm if coll.dobj[wm][k0]['nd'] == '2d']
+
+    if dres[lm[0]]['x0'] is None:
+        dunique = coll.get_sample_mesh(
+            key=lm[0],
+            res=dres[lm[0]]['res'],
+            mode=dres[lm[0]]['mode'],
+            grid=False,
+            # store
+            store=False,
+            kx0='unique_x0',
+            kx1='unique_x1',
+        )
+    else:
+        raise NotImplementedError()
+        dunique = {
+            'x0': {},
+            'x1': {},
+        }
+
     # ---------------
     # plot profiles2d
 
     collax, dgroup = coll.plot_as_profile2d(
         key=keys,
         dres=dres,
+        dunique_mesh_2d=dunique,
         dlevels=dlevels,
         ref_com=ref_com,
         # details

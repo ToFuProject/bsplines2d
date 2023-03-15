@@ -24,6 +24,7 @@ def interpolate_all_bsplines(
     # sampling
     dres=None,
     submesh=None,
+    dunique_mesh_2d=None,
 ):
 
     # ----------
@@ -37,6 +38,17 @@ def interpolate_all_bsplines(
         submesh=submesh,
     )
 
+    # ---------
+    # unique
+
+    if dunique_mesh_2d is not None:
+        for k0, v0 in dunique_mesh_2d.items():
+            kref = f"{v0['key']}_n"
+            coll2.add_ref(key=kref, size=v0['data'].size)
+            coll2.add_data(ref=kref, **v0)
+            dunique_mesh_2d[k0]['ref'] = kref
+        dout = dunique_mesh_2d
+
     # ----------------
     # interpolate loop
 
@@ -46,31 +58,31 @@ def interpolate_all_bsplines(
     for ii, (k0, v0) in enumerate(dres.items()):
 
         # get 2d mesh
-        dout = None
-        if v0.get('x0') is None:
-            dout = coll2.get_sample_mesh(
-                key=k0,
-                res=v0['res'],
-                mode=v0['mode'],
-                grid=False,
-                # store
-                store=True,
-                kx0=None,
-                kx1=None,
-            )
-        else:
-            x0str = f'{k0}_x0_temp'
-            dout = {'x0': {'key': x0str, 'ref': f'{x0str}_n'}}
-            if v0.get('x1') is not None:
-                x1str = f'{k0}_x1_temp'
-                dout = {'xi1': {'key': x1str, 'ref': f'{x1str}_n'}}
-                for k1, v1 in dout.items():
-                    coll.add_ref(key=v1['ref'], size=v0[k1].size)
-                    coll.add_data(
-                        key=v1['key'],
-                        data=v1[k1],
-                        ref=v1['ref'],
-                    )
+        if dunique_mesh_2d is None:
+            if v0.get('x0') is None:
+                dout = coll2.get_sample_mesh(
+                    key=k0,
+                    res=v0['res'],
+                    mode=v0['mode'],
+                    grid=False,
+                    # store
+                    store=True,
+                    kx0=None,
+                    kx1=None,
+                )
+            else:
+                x0str = f'{k0}_x0_temp'
+                dout = {'x0': {'key': x0str, 'ref': f'{x0str}_n'}}
+                if v0.get('x1') is not None:
+                    x1str = f'{k0}_x1_temp'
+                    dout['x1'] = {'key': x1str, 'ref': f'{x1str}_n'}
+                    for k1, v1 in dout.items():
+                        coll2.add_ref(key=v1['ref'], size=v0[k1].size)
+                        coll2.add_data(
+                            key=v1['key'],
+                            data=v0[k1],
+                            ref=v1['ref'],
+                        )
 
         # compute
         for bs in v0[wbs]:

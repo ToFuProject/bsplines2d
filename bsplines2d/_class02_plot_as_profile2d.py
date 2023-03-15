@@ -23,6 +23,7 @@ def plot_as_profile2d(
     key=None,
     # parameters
     dres=None,
+    dunique_mesh_2d=None,
     # contours
     dlevels=None,
     ref_com=None,
@@ -76,6 +77,7 @@ def plot_as_profile2d(
         coll=coll,
         dkeys=dkeys,
         dres=dres,
+        dunique_mesh_2d=dunique_mesh_2d,
         # levels
         dlevels=dlevels,
         ref_com=ref_com,
@@ -368,6 +370,7 @@ def _prepare(
     coll=None,
     dkeys=None,
     dres=None,
+    dunique_mesh_2d=None,
     # levels
     dlevels=None,
     ref_com=None,
@@ -379,6 +382,7 @@ def _prepare(
     coll2, dbs = coll.interpolate_all_bsplines(
         keys=list(dkeys.keys()),
         dres=dres,
+        dunique_mesh_2d=dunique_mesh_2d,
         submesh=True,
     )
     lbs2d = [k0 for k0, v0 in dbs.items() if len(v0['ref']) == 2]

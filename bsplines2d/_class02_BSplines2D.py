@@ -429,6 +429,7 @@ class BSplines2D(Previous):
         self,
         keys=None,
         dres=None,
+        dunique_mesh_2d=None,
         submesh=None,
     ):
         """ Return a new instance with fully interpolated data
@@ -439,6 +440,7 @@ class BSplines2D(Previous):
             coll=self,
             keys=keys,
             dres=dres,
+            dunique_mesh_2d=dunique_mesh_2d,
             submesh=submesh,
         )
 
@@ -920,6 +922,7 @@ class BSplines2D(Previous):
         key=None,
         # parameters
         dres=None,
+        dunique_mesh_2d=None,
         # levels
         dlevels=None,
         ref_com=None,
@@ -944,6 +947,7 @@ class BSplines2D(Previous):
             key=key,
             # parameters
             dres=dres,
+            dunique_mesh_2d=dunique_mesh_2d,
             # levels
             dlevels=dlevels,
             ref_com=ref_com,
