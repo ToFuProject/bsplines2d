@@ -889,6 +889,12 @@ def _plot_profile2d_polar_add_radial(
     plot_details=None,
 ):
 
+    # ----------
+    # check
+
+    if dref_vector is None:
+        dref_vector = {}
+
     # -------------
     # key to radius
 
