@@ -229,10 +229,10 @@ def _check(
     )
     if not c0:
         msg = (
-            "Arg dres must be a dict with, for each bsplines\n"
+            "Arg dres must be a dict with, for each mesh\n"
             "\t- {'res': float, 'mode': str}\n"
             f"\nFor the following keys ({wm}): {lm}\n"
-            f"Provided:\n{dres}"
+            f"Provided:\n{dres}\n"
         )
         raise Exception(msg)
 

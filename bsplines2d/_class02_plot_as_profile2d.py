@@ -868,7 +868,7 @@ def _plot_profile2d_polar_add_radial(
     kr2d = coll.dobj[wm][keym]['subkey'][0]
     kr = coll.dobj[wm][keym]['knots'][0]
     rr = coll.ddata[kr]['data']
-    rad = np.linspace(rr[0], rr[-1], rr.size+1)
+    rad = np.linspace(rr[0], rr[-1], 10*rr.size)
 
     refr = f'{key}_nradius'
     kradius = f'{key}_radius'
