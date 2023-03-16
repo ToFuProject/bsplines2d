@@ -30,6 +30,9 @@ def plot_as_profile2d_compare(
     ref_com=None,
     # details
     plot_details=None,
+    # ref vectors
+    dref_vectorZ=None,
+    dref_vectorU=None,
     # plotting
     vmin=None,
     vmax=None,
@@ -137,6 +140,9 @@ def plot_as_profile2d_compare(
         ref_com=ref_com,
         # details
         plot_details=plot_details,
+        # ref vectors
+        dref_vectorZ=dref_vectorZ,
+        dref_vectorU=dref_vectorU,
         # plotting
         vmin=vmin,
         vmax=vmax,

@@ -29,6 +29,9 @@ def plot_as_profile2d(
     ref_com=None,
     # details
     plot_details=None,
+    # ref vectors
+    dref_vectorZ=None,
+    dref_vectorU=None,
     # figure
     vmin=None,
     vmax=None,
@@ -85,6 +88,9 @@ def plot_as_profile2d(
         # levels
         dlevels=dlevels,
         ref_com=ref_com,
+        # ref vectors
+        dref_vectorZ=dref_vectorZ,
+        dref_vectorU=dref_vectorU,
     )
 
     lkeys = ['key', 'keyX', 'keyY', 'keyZ', 'keyU']
@@ -117,13 +123,14 @@ def plot_as_profile2d(
             daxi = dax[k0]
 
         if v0['submesh'] is not None:
-
             collax, dgroup = _plot_submesh(
                 coll=coll,
                 collax=collax,
                 key=k0,
                 keym=v0['keym'],
                 keybs=v0['keybs'],
+                # ref vector
+                dref_vector=dref_vectorZ,
                 # details
                 plot_details=plot_details,
                 # plotting
@@ -393,7 +400,19 @@ def _prepare(
     # levels
     dlevels=None,
     ref_com=None,
+    # ref vectors
+    dref_vectorZ=None,
+    dref_vectorU=None,
 ):
+
+    # -----------
+    # check
+
+    if dref_vectorZ is None:
+        dref_vectorZ = {}
+
+    if dref_vectorU is None:
+        dref_vectorU = {}
 
     # ---------------------------
     # get interpolated collection
@@ -439,14 +458,20 @@ def _prepare(
         })
 
         if ndim >= 3:
-            dkeys[k0]['keyZ'] = coll2.get_ref_vector(ref=lr1d[0])[3]
+            dkeys[k0]['keyZ'] = coll2.get_ref_vector(
+                ref=lr1d[0],
+                **dref_vectorZ,
+            )[3]
             # uniform = ds._plot_as_array._check_uniform_lin(
                 # k0=keyZ, ddata=coll2.ddata,
             # )
             # if not uniform:
                 # keyZ = None
             if ndim == 4:
-                dkeys[k0]['keyU'] = coll2.get_ref_vector(ref=lr1d[1])[3]
+                dkeys[k0]['keyU'] = coll2.get_ref_vector(
+                    ref=lr1d[1],
+                    **dref_vectorU,
+                )[3]
 
     # -----------------
     # optional contours
@@ -700,6 +725,8 @@ def _plot_submesh(
     key=None,
     keym=None,
     keybs=None,
+    # ref vetcor
+    dref_vector=None,
     # plot_details
     plot_details=None,
     # figure
@@ -762,6 +789,7 @@ def _plot_submesh(
         keym=keym,
         keybs=keybs,
         collax=collax,
+        dref_vector=dref_vector,
         plot_details=plot_details,
     )
 
@@ -855,6 +883,8 @@ def _plot_profile2d_polar_add_radial(
     keym=None,
     keybs=None,
     collax=None,
+    # ref_vector
+    dref_vector=None,
     # details
     plot_details=None,
 ):
@@ -906,16 +936,11 @@ def _plot_profile2d_polar_add_radial(
     else:
         refc = None
 
+    # find reft
     reft, keyt, _, dind = coll.get_ref_vector_common(
         keys=[key, kr2d],
         ref=refc,
-        dim=None,
-        quant=None,
-        name=None,
-        units=None,
-        values=None,
-        indices=None,
-        ind_strict=None,
+        **dref_vector,
     )[1:]
 
     # radial total profile

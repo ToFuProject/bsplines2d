@@ -928,6 +928,9 @@ class BSplines2D(Previous):
         ref_com=None,
         # details
         plot_details=None,
+        # ref vectors
+        dref_vectorZ=None,
+        dref_vectorU=None,
         # plot options
         vmin=None,
         vmax=None,
@@ -953,6 +956,9 @@ class BSplines2D(Previous):
             ref_com=ref_com,
             # details
             plot_details=plot_details,
+            # ref vectors
+            dref_vectorZ=dref_vectorZ,
+            dref_vectorU=dref_vectorU,
             # plot options
             vmin=vmin,
             vmax=vmax,
@@ -977,6 +983,9 @@ class BSplines2D(Previous):
         ref_com=None,
         # details
         plot_details=None,
+        # ref vectors
+        dref_vectorZ=None,
+        dref_vectorU=None,
         # plot options
         vmin=None,
         vmax=None,
@@ -1001,6 +1010,9 @@ class BSplines2D(Previous):
             ref_com=ref_com,
             # details
             plot_details=plot_details,
+            # ref vectors
+            dref_vectorZ=dref_vectorZ,
+            dref_vectorU=dref_vectorU,
             # plot options
             vmin=vmin,
             vmax=vmax,
@@ -1014,8 +1026,6 @@ class BSplines2D(Previous):
             dinc=dinc,
             connect=connect,
         )
-
-
 
 
     # def plot_bsplines(
