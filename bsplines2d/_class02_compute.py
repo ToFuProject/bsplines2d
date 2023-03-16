@@ -347,10 +347,11 @@ def extract(coll=None, coll2=None, vectors=None):
     # add bsplines
 
     wm = coll._which_bsplines
-    coll2._dobj[wbs] = {
-        k0: copy.deepcopy(coll.dobj[wbs][k0])
-        for k0 in lbs
-    }
+    for k0 in lbs:
+        coll2.add_bsplines(
+            key=k0,
+            deg=int(coll.dobj[wbs][k0]['deg']),
+        )
 
     # ----------------
     # add ref and data
