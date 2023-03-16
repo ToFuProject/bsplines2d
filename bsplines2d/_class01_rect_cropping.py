@@ -11,9 +11,9 @@ import datastock as ds
 
 
 # specific
-from . import _class02_compute as _compute
+from . import _class01_select as _select
 
-    
+
 # #############################################################################
 # #############################################################################
 #                          crop rect mesh
@@ -72,7 +72,7 @@ def crop(
             return_neighbours=True,
             returnas='data',
         )
-        
+
         nR, nZ = Rc.shape
         npts = Rk.shape[-1] + 1
 
@@ -251,7 +251,7 @@ def _get_cropbs_from_crop(coll=None, crop=None, keybs=None):
     kRk, kZk = coll.dobj['mesh'][keym]['knots']
     kRc, kZc = coll.dobj['mesh'][keym]['cents']
 
-    cents_per_bs_R, cents_per_bs_Z = _compute._mesh2DRect_bsplines_knotscents(
+    cents_per_bs_R, cents_per_bs_Z = _select._mesh2DRect_bsplines_knotscents(
         returnas='ind',
         return_knots=False,
         return_cents=True,

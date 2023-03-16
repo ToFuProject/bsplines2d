@@ -54,6 +54,7 @@ def interpolate(
     deriv=None,
     val_out=None,
     log_log=None,
+    nan0=None,
     # store vs return
     returnas=None,
     return_params=None,
@@ -88,11 +89,16 @@ def interpolate(
         debug = False
 
     # keys
-    isbs, keys, ref_key, daxis, dunits, units_ref = _check_keys(
+    (
+        isbs, keys, ref_key,
+        daxis, dunits, units_ref,
+        details, ktemp,
+    ) = _check_keys(
         coll=coll,
         keys=keys,
         ref_key=ref_key,
         only1d=False,
+        details=details,
     )
 
     # -----------
@@ -106,7 +112,6 @@ def interpolate(
 
         keybs, keym, mtype, ref_key = _prepare_bsplines(
             coll=coll,
-            keys=keys,
             ref_key=ref_key,
         )
 
@@ -120,7 +125,7 @@ def interpolate(
         # check bsplines-specific params
 
         (
-            details, val_out, crop, cropbs, indbs_tf, nbs, submesh,
+            val_out, crop, cropbs, indbs_tf, nbs, submesh,
         ) = _check_params_bsplines(
             coll=coll,
             details=details,
@@ -196,7 +201,7 @@ def interpolate(
             # ------------------------------------------
             # handle ref_com, add ref and data if needed
 
-            refcom = _submesh_ref_com(
+            ref_com = _submesh_ref_com(
                 coll=coll,
                 kd0=kd0,
                 keys=keys,
@@ -219,14 +224,14 @@ def interpolate(
             # substitue x0, x1
 
             x0_str = isinstance(x0, str)
-            if ref_com is None:
-                x0 = dout_temp[kd0[0]]['data']
-                if len(kd0) > 1:
-                    x1 = dout_temp[kd0[1]]['data']
-            else:
-                x0 = dout_temp[kd0[0]]['key']
-                if len(kd0) > 1:
-                    x1 = dout_temp[kd0[1]]['key']
+            # if ref_com is None:
+                # x0 = dout_temp[kd0[0]]['data']
+                # if len(kd0) > 1:
+                    # x1 = dout_temp[kd0[1]]['data']
+            # else:
+            x0 = dout_temp[kd0[0]]['key']
+            if len(kd0) > 1:
+                x1 = dout_temp[kd0[1]]['key']
 
             if len(kd0) == 1:
                 x1 = None
@@ -242,7 +247,7 @@ def interpolate(
         deg, deriv,
         kx0, kx1, x0, x1, refx, dref_com,
         ddata, dout, dsh_other, sli_c, sli_x, sli_v,
-        log_log, grid, ndim, xunique,
+        log_log, nan0, grid, ndim, xunique,
         returnas, return_params, store, inplace,
     ) = ds._class1_interpolate._check(
         coll=coll,
@@ -263,6 +268,7 @@ def interpolate(
         deg=None,
         deriv=deriv,
         log_log=None,
+        nan0=nan0,
         # return vs store
         returnas=returnas,
         return_params=return_params,
@@ -299,6 +305,7 @@ def interpolate(
             dref_com=dref_com,
             lr_add=lr_add,
             ld_add=ld_add,
+            nan0=nan0,
         )
 
     else:
@@ -321,7 +328,14 @@ def interpolate(
             sli_x=sli_x,
             sli_c=sli_c,
             sli_v=sli_v,
+            nan0=nan0,
         )
+
+    # ------------------------------
+    # cleanup if details
+
+    if details is True:
+        coll.remove_data(ktemp)
 
     # ------------------------------
     # adjust data and ref if xunique
@@ -333,7 +347,6 @@ def interpolate(
     # store
 
     if store is True:
-
         coll2 = ds._class1_interpolate._store(
             coll=coll,
             dout=dout,
@@ -362,6 +375,7 @@ def interpolate(
                 'x1': x1,
                 'grid': grid,
                 'refx': refx,
+                'ref_com': ref_com,
                 'dref_com': dref_com,
                 'daxis': daxis,
                 'dsh_other': dsh_other,
@@ -370,12 +384,13 @@ def interpolate(
                 'crop': crop,
                 'cropbs': cropbs,
                 'indbs_tf': indbs_tf,
+                'submesh': submesh,
+                'subbs': kbs0 if submesh else None,
             }
 
             # debug
             if debug is True:
                 dparam['x0.shape'] = x0.shape
-                dparam['axis'] = daxis[keys[0]]
 
             return dout, dparam
         else:
@@ -393,9 +408,21 @@ def _check_keys(
     keys=None,
     ref_key=None,
     only1d=None,
+    details=None,
 ):
 
+    # -------------
+    # details
+
+    details = ds._generic_check._check_var(
+        details, 'details',
+        types=bool,
+        default=False,
+    )
+
+    # -------------
     # only1d
+
     only1d = ds._generic_check._check_var(
         only1d, 'only1d',
         types=bool,
@@ -403,6 +430,29 @@ def _check_keys(
     )
 
     maxd = 1 if only1d else 2
+
+    # ---------------
+    # details is True
+
+    wbs = coll._which_bsplines
+    lbs = list(coll.dobj[wbs].keys())
+
+    ktemp = None
+    if details is True:
+        ref_key = ds._generic_check._check_var(
+            ref_key, 'ref_key',
+            types=str,
+            allowed=lbs,
+        )
+
+        # add temporary data
+        ktemp = f'{ref_key}_details'
+        coll.add_data(
+            key=ktemp,
+            data=np.ones(coll.dobj[wbs][ref_key]['shape'], dtype=float),
+            ref=ref_key,
+        )
+        keys = ktemp
 
     # ---------------
     # keys vs ref_key
@@ -417,7 +467,6 @@ def _check_keys(
 
         lref = list(coll.dref.keys())
         ldata = list(coll.ddata.keys())
-        lbs = list(coll.dobj[coll._which_bsplines].keys())
 
         ref_key = list(ds._generic_check._check_var_iter(
             ref_key, 'ref_key',
@@ -451,7 +500,7 @@ def _check_keys(
             ref_key = ref_key[0]
             lok_bs = [
                 k0 for k0, v0 in coll.ddata.items()
-                if ref_key in v0[coll._which_bsplines]
+                if v0[wbs] is not None and ref_key in v0[wbs]
             ]
             lok_nobs = []
 
@@ -531,7 +580,6 @@ def _check_keys(
     if isbs:
 
         # check ref_key
-        wbs = coll._which_bsplines
         lbs = [
             [
                 bs for bs in coll.ddata[k0][wbs]
@@ -595,7 +643,7 @@ def _check_keys(
     # dunits
     dunits = {k0: coll.ddata[k0]['units'] for k0 in keys}
 
-    return isbs, keys, ref_key, daxis, dunits, units_ref
+    return isbs, keys, ref_key, daxis, dunits, units_ref, details, ktemp
 
 
 def _check_params_bsplines(
@@ -609,14 +657,6 @@ def _check_params_bsplines(
     indbs_tf=None,
     submesh=None,
 ):
-    # -------------
-    # details
-
-    details = ds._generic_check._check_var(
-        details, 'details',
-        types=bool,
-        default=False,
-    )
 
     # -------------
     # val_out
@@ -691,7 +731,7 @@ def _check_params_bsplines(
     if coll.dobj[coll._which_mesh][keym]['subkey'] is None:
         submesh = False
 
-    return details, val_out, crop, cropbs, indbs_tf, nbs, submesh
+    return val_out, crop, cropbs, indbs_tf, nbs, submesh
 
 
 # ################################################################
@@ -716,7 +756,9 @@ def _submesh_ref_com(
     lrcom = [
         (rr, ref0.index(rr))
         for ii, rr in enumerate(ref0)
-        if rr in coll.ddata[keys[0]]['ref']
+        if rr in list(itt.chain.from_iterable([
+            coll.ddata[kk]['ref'] for kk in keys
+        ]))
         and ii in [0, len(ref0) - 1]
     ]
 
@@ -763,38 +805,38 @@ def _submesh_addtemp(
     dout_temp=None,
     # coordinates
     x0=None,
-    ref_com=None,
 ):
-
-    # -------------
-    # trivial
-
-    if not isinstance(x0, str) and ref_com is None:
-        return None, None
-
-    if isinstance(x0, str):
-       assert not any([rr is None for rr in dout_temp[kd0[0]]['ref']])
-       dr_add, lr_add = None, None
 
     # ----------------
     # add ref and data
 
-    if not isinstance(x0, str):
+    if isinstance(x0, str):
+
+       assert not any([rr is None for rr in dout_temp[kd0[0]]['ref']])
+       dr_add, lr_add = None, None
+
+    else:
 
         # dref
         ii, dr_add, lref = 0, {}, []
         for jj, rr in enumerate(dout_temp[kd0[0]]['ref']):
+
+            # ref name
             if rr is None:
-                kk = f"r{len(coll.dref) + ii:03.0f}"
-                dr_add[kk] = {
-                    'key': kk,
-                    'size': dout_temp[kd0[0]]['data'].shape[jj],
-                }
-                lref.append(kk)
+                rr = f"r{len(coll.dref) + ii:03.0f}"
+                lref.append(rr)
                 ii += 1
             else:
                 lref.append(None)
 
+            # dr_add
+            if rr not in coll.dref.keys():
+                dr_add[rr] = {
+                    'key': rr,
+                    'size': dout_temp[kd0[0]]['data'].shape[jj],
+                }
+
+        # combine
         for kk in dout_temp.keys():
             dout_temp[kk]['ref'] = tuple([
                 rr if rr is not None else dout_temp[kd0[0]]['ref'][jj]
@@ -834,7 +876,6 @@ def _submesh_addtemp(
 
 def _prepare_bsplines(
     coll=None,
-    keys=None,
     ref_key=None,
 ):
 
@@ -891,6 +932,7 @@ def _interp(
     dref_com=None,
     lr_add=None,
     ld_add=None,
+    nan0=None,
 ):
 
     # ----------
@@ -982,9 +1024,13 @@ def _interp(
                     indokx0=indokx0,
                     shape_o=dsh_other[k0],
                     shape_v=dout[k0]['data'].shape,
-                    dref_com=dref_com.get(k0),
+                    dref_com=dref_com[k0],
                     axis_v=axis_v,
                 )
+
+                # nan0
+                if nan0 is True:
+                      dout[k0]['data'][dout[k0]['data'] == 0.] = np.nan
 
         except Exception as err:
             raise err
@@ -1021,6 +1067,13 @@ def _interp(
             dout[k0]['ref'] = tuple([
                 None if rr in lr_add else rr
                 for rr in v0['ref']
+            ])
+
+    if details:
+        wbs = coll._which_bsplines
+        for k0, v0 in dout.items():
+            dout[k0]['ref'] = tuple(np.r_[
+                v0['ref'], coll.dobj[wbs][keybs]['ref-bs'],
             ])
 
     return
@@ -2027,647 +2080,3 @@ def get_bsplines_operator(
         ref = (keycropped, keycropped)
 
     return opmat, operator, geometry, dim, ref, crop, store, returnas, key
-
-
-# #################################################################
-# #################################################################
-#               Contour computation
-# #################################################################
-
-
-# def _get_contours(
-    # RR=None,
-    # ZZ=None,
-    # val=None,
-    # levels=None,
-    # largest=None,
-    # uniform=None,
-# ):
-    # """ Return R, Z coordinates of contours (time-dependent)
-
-    # For contourpy algorithm, the dimensions shoud be (ny, nx), from meshgrid
-
-    # RR = (nz, nr)
-    # ZZ = (nz, nr)
-    # val = (nt, nz, nr)
-    # levels = (nlevels,)
-
-    # cR = (nt, nlevels, nmax) array of R coordinates
-    # cZ = (nt, nlevels, nmax) array of Z coordinates
-
-    # The contour coordinates are uniformzied to always have the same nb of pts
-
-    # """
-
-    # # -------------
-    # # check inputs
-
-    # if largest is None:
-        # largest = False
-
-    # if uniform is None:
-        # uniform = True
-
-    # # val.shape = (nt, nR, nZ)
-    # lc = [
-        # val.shape == RR.shape,
-        # val.ndim == RR.ndim + 1 and val.shape[1:] == RR.shape,
-    # ]
-    # if lc[0]:
-        # val = val[None, ...]
-    # elif lc[1]:
-        # pass
-    # else:
-        # msg = "Incompatible val.shape!"
-        # raise Exception(msg)
-
-    # nt, nR, nZ = val.shape
-
-    # # ------------------------
-    # # Compute list of contours
-
-    # # compute contours at rknots
-    # # see https://github.com/matplotlib/matplotlib/blob/main/src/_contour.h
-
-    # contR = [[] for ii in range(nt)]
-    # contZ = [[] for ii in range(nt)]
-    # for ii in range(nt):
-
-        # # define map
-        # contgen = contour_generator(
-            # x=RR,
-            # y=ZZ,
-            # z=val[ii, ...],
-            # name='serial',
-            # corner_mask=None,
-            # line_type='Separate',
-            # fill_type=None,
-            # chunk_size=None,
-            # chunk_count=None,
-            # total_chunk_count=None,
-            # quad_as_tri=True,       # for sub-mesh precision
-            # # z_interp=<ZInterp.Linear: 1>,
-            # thread_count=0,
-        # )
-
-        # for jj in range(len(levels)):
-
-            # # compute concatenated contour
-            # no_cont = False
-            # cj = contgen.lines(levels[jj])
-
-            # c0 = (
-                # isinstance(cj, list)
-                # and all([
-                    # isinstance(cjj, np.ndarray)
-                    # and cjj.ndim == 2
-                    # and cjj.shape[1] == 2
-                    # for cjj in cj
-                # ])
-            # )
-            # if not c0:
-                # msg = f"Wrong output from contourpy!\n{cj}"
-                # raise Exception(msg)
-
-            # if len(cj) > 0:
-                # cj = [
-                    # cc[np.all(np.isfinite(cc), axis=1), :]
-                    # for cc in cj
-                    # if np.sum(np.all(np.isfinite(cc), axis=1)) >= 3
-                # ]
-
-                # if len(cj) == 0:
-                    # no_cont = True
-                # elif len(cj) == 1:
-                    # cj = cj[0]
-                # elif len(cj) > 1:
-                    # if largest:
-                        # nj = [
-                            # 0.5*np.abs(np.sum(
-                                # (cc[1:, 0] + cc[:-1, 0])
-                                # *(cc[1:, 1] - cc[:-1, 1])
-                            # ))
-                            # for cc in cj
-                        # ]
-                        # cj = cj[np.argmax(nj)]
-                    # else:
-                        # ij = np.cumsum([cc.shape[0] for cc in cj])
-                        # cj = np.concatenate(cj, axis=0)
-                        # cj = np.insert(cj, ij, np.nan, axis=0)
-
-                # elif np.sum(np.all(~np.isnan(cc), axis=1)) < 3:
-                    # no_cont = True
-            # else:
-                # no_cont = True
-
-            # if no_cont is True:
-                # cj = np.full((3, 2), np.nan)
-
-            # contR[ii].append(cj[:, 0])
-            # contZ[ii].append(cj[:, 1])
-
-    # # ------------------------------------------------
-    # # Interpolate / concatenate to uniformize as array
-
-    # if uniform:
-        # ln = [[pp.size for pp in cc] for cc in contR]
-        # nmax = np.max(ln)
-        # cR = np.full((nt, len(levels), nmax), np.nan)
-        # cZ = np.full((nt, len(levels), nmax), np.nan)
-
-        # for ii in range(nt):
-            # for jj in range(len(levels)):
-                # cR[ii, jj, :] = np.interp(
-                    # np.linspace(0, ln[ii][jj], nmax),
-                    # np.arange(0, ln[ii][jj]),
-                    # contR[ii][jj],
-                # )
-                # cZ[ii, jj, :] = np.interp(
-                    # np.linspace(0, ln[ii][jj], nmax),
-                    # np.arange(0, ln[ii][jj]),
-                    # contZ[ii][jj],
-                # )
-
-        # return cR, cZ
-    # else:
-        # return contR, contZ
-
-
-# # #############################################################################
-# # #############################################################################
-# #                   Polygon simplification
-# # #############################################################################
-
-
-# def _simplify_polygon(pR=None, pZ=None, res=None):
-    # """ Use convex hull with a constraint on the maximum discrepancy """
-
-    # # ----------
-    # # preliminary 1: check there is non redundant point
-
-    # dp = np.sqrt((pR[1:] - pR[:-1])**2 + (pZ[1:] - pZ[:-1])**2)
-    # ind = (dp > 1.e-6).nonzero()[0]
-    # pR = pR[ind]
-    # pZ = pZ[ind]
-
-    # # check new poly is closed
-    # if (pR[0] != pR[-1]) or (pZ[0] != pZ[-1]):
-        # pR = np.append(pR, pR[0])
-        # pZ = np.append(pZ, pZ[0])
-
-    # # check it is counter-clockwise
-    # clock = np.nansum((pR[1:] - pR[:-1]) * (pZ[1:] + pZ[:-1]))
-    # if clock > 0:
-        # pR = pR[::-1]
-        # pZ = pZ[::-1]
-
-    # # threshold = diagonal of resolution + 10%
-    # thresh = res * np.sqrt(2) * 1.1
-
-    # # ----------
-    # # preliminary 2: get convex hull and copy
-
-    # poly = np.array([pR, pZ]).T
-    # iconv = ConvexHull(poly, incremental=False).vertices
-
-    # # close convex hull to iterate on edges
-    # pR_conv = np.append(pR[iconv], pR[iconv[0]])
-    # pZ_conv = np.append(pZ[iconv], pZ[iconv[0]])
-
-    # # copy to create new polygon that will serve as buffer
-    # pR_bis, pZ_bis = np.copy(pR), np.copy(pZ)
-
-    # # -------------------------
-    # # loop on convex hull edges
-
-    # for ii in range(pR_conv.size - 1):
-
-        # pR1, pR2 = pR_conv[ii], pR_conv[ii+1]
-        # pZ1, pZ2 = pZ_conv[ii], pZ_conv[ii+1]
-        # i0 = np.argmin(np.hypot(pR_bis - pR1, pZ_bis - pZ1))
-
-        # # make sure it starts from p1
-        # pR_bis = np.append(pR_bis[i0:], pR_bis[:i0])
-        # pZ_bis = np.append(pZ_bis[i0:], pZ_bis[:i0])
-
-        # # get indices of closest points to p1, p2
-        # i1 = np.argmin(np.hypot(pR_bis - pR1, pZ_bis - pZ1))
-        # i2 = np.argmin(np.hypot(pR_bis - pR2, pZ_bis - pZ2))
-
-        # # get corresponding indices of poly points to be included
-        # if i2 == i1 + 1:
-            # itemp = [i1, i2]
-
-        # else:
-            # # several points in-between
-            # # => check they are all within distance before exclusing them
-
-            # # get unit vector of segment
-            # norm12 = np.hypot(pR2 - pR1, pZ2 - pZ1)
-            # u12R = (pR2 - pR1) / norm12
-            # u12Z = (pZ2 - pZ1) / norm12
-
-            # # get points standing between p1 nd p2
-            # lpR = pR_bis[i1 + 1:i2]
-            # lpZ = pZ_bis[i1 + 1:i2]
-
-            # # indices of points standing too far from edge (use cross-product)
-            # iout = np.abs(u12R*(lpZ - pZ1) - u12Z*(lpR - pR1)) > thresh
-
-            # # if any pts too far => include all pts
-            # if np.any(iout):
-                # itemp = np.arange(i1, i2 + 1)
-            # else:
-                # itemp = [i1, i2]
-
-        # # build pts_in
-        # pR_in = pR_bis[itemp]
-        # pZ_in = pZ_bis[itemp]
-
-        # # concatenate to add to new polygon
-        # pR_bis = np.append(pR_in, pR_bis[i2 + 1:])
-        # pZ_bis = np.append(pZ_in, pZ_bis[i2 + 1:])
-
-    # # check new poly is closed
-    # if (pR_bis[0] != pR_bis[-1]) or (pZ_bis[0] != pZ_bis[-1]):
-        # pR_bis = np.append(pR_bis, pR_bis[0])
-        # pZ_bis = np.append(pZ_bis, pZ_bis[0])
-
-    # return pR_bis, pZ_bis
-
-
-# # #############################################################################
-# # #############################################################################
-# #                   radius2d special points handling
-# # #############################################################################
-
-
-# def radius2d_special_points(
-    # coll=None,
-    # key=None,
-    # keym0=None,
-    # res=None,
-# ):
-
-    # keybs = coll.ddata[key]['bsplines']
-    # keym = coll.dobj['bsplines'][keybs]['mesh']
-    # mtype = coll.dobj[coll._which_mesh][keym]['type']
-    # assert mtype in ['rect', 'tri']
-
-    # # get map sampling
-    # RR, ZZ = coll.get_sample_mesh(
-        # key=keym,
-        # res=res,
-        # grid=True,
-    # )
-
-    # # get map
-    # val, t, _ = coll.interpolate_profile2d(
-        # key=key,
-        # R=RR,
-        # Z=ZZ,
-        # grid=False,
-        # imshow=True,        # for contour
-    # )
-
-    # # get min max values
-    # rmin = np.nanmin(val)
-    # rmax = np.nanmax(val)
-
-    # # get contour of 0
-    # cR, cZ = _get_contours(
-        # RR=RR,
-        # ZZ=ZZ,
-        # val=val,
-        # levels=[rmin + 0.05*(rmax-rmin)],
-    # )
-
-    # # dref
-    # ref_O = f'{keym0}-pts-O-n'
-    # dref = {
-        # ref_O: {'size': 1},
-    # }
-
-    # # get barycenter
-    # if val.ndim == 3:
-        # assert cR.shape[1] == 1
-        # ax_R = np.nanmean(cR[:, 0, :], axis=-1)[:, None]
-        # ax_Z = np.nanmean(cZ[:, 0, :], axis=-1)[:, None]
-        # reft = coll.ddata[key]['ref'][0]
-        # ref = (reft, ref_O)
-    # else:
-        # ax_R = np.r_[np.nanmean(cR)]
-        # ax_Z = np.r_[np.nanmean(cZ)]
-        # ref = (ref_O,)
-
-    # kR = f'{keym0}-pts-O-R'
-    # kZ = f'{keym0}-pts-O-Z'
-    # ddata = {
-        # kR: {
-            # 'ref': ref,
-            # 'data': ax_R,
-            # 'dim': 'distance',
-            # 'quant': 'R',
-            # 'name': 'O-points_R',
-            # 'units': 'm',
-        # },
-        # kZ: {
-            # 'ref': ref,
-            # 'data': ax_Z,
-            # 'dim': 'distance',
-            # 'quant': 'Z',
-            # 'name': 'O-points_Z',
-            # 'units': 'm',
-        # },
-    # }
-
-    # return dref, ddata, kR, kZ
-
-
-# # #############################################################################
-# # #############################################################################
-# #                   angle2d discontinuity handling
-# # #############################################################################
-
-
-# def angle2d_zone(
-    # coll=None,
-    # key=None,
-    # keyrad2d=None,
-    # key_ptsO=None,
-    # res=None,
-    # keym0=None,
-# ):
-
-    # keybs = coll.ddata[key]['bsplines']
-    # keym = coll.dobj['bsplines'][keybs]['mesh']
-    # mtype = coll.dobj[coll._which_mesh][keym]['type']
-    # assert mtype in ['rect', 'tri']
-
-    # # --------------
-    # # prepare
-
-    # hastime, hasvect, reft, keyt = coll.get_time(key=key)[:4]
-    # if hastime:
-        # nt = coll.dref[reft]['size']
-    # else:
-        # msg = (
-            # "Non time-dependent angle2d not implemented yet\n"
-            # "=> ping @Didou09 on Github to open an issue"
-        # )
-        # raise NotImplementedError(msg)
-
-    # if res is None:
-        # res = _get_sample_mesh_res(
-            # coll=coll,
-            # keym=keym,
-            # mtype=mtype,
-        # )
-
-    # # get map sampling
-    # RR, ZZ = coll.get_sample_mesh(
-        # key=keym,
-        # res=res/2.,
-        # grid=True,
-        # imshow=True,    # for contour
-    # )
-
-    # # get map
-    # val, t, _ = coll.interpolate_profile2d(
-        # key=key,
-        # R=RR,
-        # Z=ZZ,
-        # grid=False,
-        # azone=False,
-    # )
-    # val[np.isnan(val)] = 0.
-    # amin = np.nanmin(val)
-    # amax = np.nanmax(val)
-
-    # # get contours of absolute value
-    # cRmin, cZmin = _get_contours(
-        # RR=RR,
-        # ZZ=ZZ,
-        # val=val,
-        # levels=[amin + 0.10*(amax - amin)],
-        # largest=True,
-        # uniform=True,
-    # )
-    # cRmax, cZmax = _get_contours(
-        # RR=RR,
-        # ZZ=ZZ,
-        # val=val,
-        # levels=[amax - 0.10*(amax - amin)],
-        # largest=True,
-        # uniform=True,
-    # )
-
-    # cRmin, cZmin = cRmin[:, 0, :], cZmin[:, 0, :]
-    # cRmax, cZmax = cRmax[:, 0, :], cZmax[:, 0, :]
-
-    # rmin = np.full(cRmin.shape, np.nan)
-    # rmax = np.full(cRmax.shape, np.nan)
-
-    # # get points inside contour
-    # for ii in range(nt):
-        # rmin[ii, :], _, _ = coll.interpolate_profile2d(
-            # key=keyrad2d,
-            # R=cRmin[ii, :],
-            # Z=cZmin[ii, :],
-            # grid=False,
-            # indt=ii,
-        # )
-        # rmax[ii, :], _, _ = coll.interpolate_profile2d(
-            # key=keyrad2d,
-            # R=cRmax[ii, :],
-            # Z=cZmax[ii, :],
-            # grid=False,
-            # indt=ii,
-        # )
-
-    # # get magnetic axis
-    # kR, kZ = key_ptsO
-    # axR = coll.ddata[kR]['data']
-    # axZ = coll.ddata[kZ]['data']
-    # assert coll.ddata[kR]['ref'][0] == coll.ddata[key]['ref'][0]
-
-    # start_min = np.nanargmin(rmin, axis=-1)
-    # start_max = np.nanargmin(rmax, axis=-1)
-
-    # # re-order from start_min, start_max
-    # lpR, lpZ = [], []
-    # for ii in range(rmin.shape[0]):
-        # imin = np.r_[
-            # np.arange(start_min[ii], rmin.shape[1]),
-            # np.arange(0, start_min[ii]),
-        # ]
-
-        # cRmin[ii] = cRmin[ii, imin]
-        # cZmin[ii] = cZmin[ii, imin]
-        # rmin[ii] = rmin[ii, imin]
-        # # check it is counter-clockwise
-        # clock = np.nansum(
-            # (cRmin[ii, 1:] - cRmin[ii, :-1])
-            # *(cZmin[ii, 1:] + cZmin[ii, :-1])
-        # )
-        # if clock > 0:
-            # cRmin[ii, :] = cRmin[ii, ::-1]
-            # cZmin[ii, :] = cZmin[ii, ::-1]
-            # rmin[ii, :] = rmin[ii, ::-1]
-
-        # imax = np.r_[
-            # np.arange(start_max[ii], rmax.shape[1]),
-            # np.arange(0, start_max[ii])
-        # ]
-        # cRmax[ii] = cRmax[ii, imax]
-        # cZmax[ii] = cZmax[ii, imax]
-        # rmax[ii] = rmax[ii, imax]
-        # # check it is clockwise
-        # clock = np.nansum(
-            # (cRmax[ii, 1:] - cRmax[ii, :-1])
-            # *(cZmax[ii, 1:] + cZmax[ii, :-1])
-        # )
-        # if clock < 0:
-            # cRmax[ii, :] = cRmax[ii, ::-1]
-            # cZmax[ii, :] = cZmax[ii, ::-1]
-            # rmax[ii, :] = rmax[ii, ::-1]
-
-        # # i0
-        # dr = np.diff(rmin[ii, :])
-        # i0 = (np.isnan(dr) | (dr < 0)).nonzero()[0][0]
-        # # rmin[ii, i0-1:] = np.nan
-        # dr = np.diff(rmax[ii, :])
-        # i1 = (np.isnan(dr) | (dr < 0)).nonzero()[0][0]
-        # # rmax[ii, i1-1:] = np.nan
-
-        # # polygon
-        # pR = np.r_[axR[ii], cRmin[ii, :i0-1], cRmax[ii, :i1-1][::-1]]
-        # pZ = np.r_[axZ[ii], cZmin[ii, :i0-1], cZmax[ii, :i1-1][::-1]]
-
-        # pR, pZ = _simplify_polygon(pR=pR, pZ=pZ, res=res)
-
-        # lpR.append(pR)
-        # lpZ.append(pZ)
-
-    # # Ajust sizes
-    # nb = np.array([pR.size for pR in lpR])
-
-    # #
-    # nmax = np.max(nb)
-    # pR = np.full((nt, nmax), np.nan)
-    # pZ = np.full((nt, nmax), np.nan)
-
-    # for ii in range(nt):
-        # pR[ii, :] = np.interp(
-            # np.linspace(0, nb[ii], nmax),
-            # np.arange(0, nb[ii]),
-            # lpR[ii],
-        # )
-        # pZ[ii, :] = np.interp(
-            # np.linspace(0, nb[ii], nmax),
-            # np.arange(0, nb[ii]),
-            # lpZ[ii],
-        # )
-
-    # # ----------------
-    # # prepare output dict
-
-    # # ref
-    # kref = f'{keym0}-azone-npt'
-    # dref = {
-        # kref: {'size': nmax}
-    # }
-
-    # # data
-    # kR = f'{keym0}-azone-R'
-    # kZ = f'{keym0}-azone-Z'
-    # ddata = {
-        # kR: {
-            # 'data': pR,
-            # 'ref': (reft, kref),
-            # 'units': 'm',
-            # 'dim': 'distance',
-            # 'quant': 'R',
-            # 'name': None,
-        # },
-        # kZ: {
-            # 'data': pZ,
-            # 'ref': (reft, kref),
-            # 'units': 'm',
-            # 'dim': 'distance',
-            # 'quant': 'R',
-            # 'name': None,
-        # },
-    # }
-
-    # return dref, ddata, kR, kZ
-
-
-# def angle2d_inzone(
-    # coll=None,
-    # keym0=None,
-    # keya2d=None,
-    # R=None,
-    # Z=None,
-    # t=None,
-    # indt=None,
-# ):
-
-
-    # # ------------
-    # # prepare points
-
-    # if R.ndim == 1:
-        # shape0 = None
-        # pts = np.array([R, Z]).T
-    # else:
-        # shape0 = R.shape
-        # pts = np.array([R.ravel(), Z.ravel()]).T
-
-    # # ------------
-    # # prepare path
-
-    # kazR, kazZ = coll.dobj[coll._which_mesh][keym0]['azone']
-    # pR = coll.ddata[kazR]['data']
-    # pZ = coll.ddata[kazZ]['data']
-
-    # hastime, hasvect, reft, keyt, tnew, dind = coll.get_time(
-        # key=kazR,
-        # t=t,
-        # indt=indt,
-    # )
-
-    # # ------------
-    # # test points
-
-    # if hastime:
-        # if dind is None:
-            # nt = coll.dref[reft]['size']
-            # ind = np.zeros((nt, R.size), dtype=bool)
-            # for ii in range(nt):
-                # path = Path(np.array([pR[ii, :], pZ[ii, :]]).T)
-                # ind[ii, :] = path.contains_points(pts)
-        # else:
-            # import pdb; pdb.set_trace()     # DB
-            # raise NotImplementedError()
-            # # TBC / TBF
-            # nt = None
-            # ind = np.zeros((nt, R.size), dtype=bool)
-            # for ii in range(nt):
-                # path = Path(np.array([pR[ii, :], pZ[ii, :]]).T)
-                # ind[ii, :] = path.contains_points(pts)
-
-    # else:
-        # path = Path(np.array([pR, pZ]).T)
-        # ind = path.contains_points(pts)
-
-    # # -------------------------
-    # # fromat output and return
-
-    # if shape0 is not None:
-        # if hastime:
-            # ind = ind.reshape(tuple(np.r_[nt, shape0]))
-        # else:
-            # ind = ind.reshape(shape0)
-
-    # return ind

@@ -40,10 +40,10 @@ def _mesh1d_bsplines(
     kbsn = f'{keybs}_nbs'
     kbsap = f'{keybs}_ap'
 
-    clas = _class02_bsplines_1d.get_bs_class(
+    clas = get_bs_class(
+        nd='1d',
         deg=deg,
-        knots=knots,
-        coll=coll,
+        knots0=knots,
     )
 
     # ------------
@@ -123,13 +123,13 @@ def _mesh2DRect_bsplines(coll=None, keym=None, keybs=None, deg=None):
     )
     nbs = int(np.prod(shapebs))
 
-    clas = _class02_bsplines_rect.get_bs_class(
+    clas = get_bs_class(
+        nd='2d',
+        mtype='rect',
         deg=deg,
         knots0=knots0,
         knots1=knots1,
         shapebs=shapebs,
-        # knots_per_bs_R=knots_per_bs_R,
-        # knots_per_bs_Z=knots_per_bs_Z,
     )
 
     # ----------------
@@ -184,83 +184,6 @@ def _mesh2DRect_bsplines(coll=None, keym=None, keybs=None, deg=None):
     return dref, ddata, dobj
 
 
-def _mesh2DRect_bsplines_knotscents(
-    returnas=None,
-    return_knots=None,
-    return_cents=None,
-    ind=None,
-    deg=None,
-    Rknots=None,
-    Zknots=None,
-    Rcents=None,
-    Zcents=None,
-):
-
-    # -------------
-    # check inputs
-
-    return_knots = ds._generic_check._check_var(
-        return_knots, 'return_knots',
-        types=bool,
-        default=True,
-    )
-    return_cents = ds._generic_check._check_var(
-        return_cents, 'return_cents',
-        types=bool,
-        default=True,
-    )
-    if return_knots is False and return_cents is False:
-        return
-
-    # -------------
-    # compute
-
-    if return_knots is True:
-
-        knots_per_bs_R = _utils_bsplines._get_knots_per_bs(
-            Rknots, deg=deg, returnas=returnas,
-        )
-        knots_per_bs_Z = _utils_bsplines._get_knots_per_bs(
-            Zknots, deg=deg, returnas=returnas,
-        )
-        if ind is not None:
-            knots_per_bs_R = knots_per_bs_R[:, ind[0]]
-            knots_per_bs_Z = knots_per_bs_Z[:, ind[1]]
-
-        nknots = knots_per_bs_R.shape[0]
-        knots_per_bs_R = np.tile(knots_per_bs_R, (nknots, 1))
-        knots_per_bs_Z = np.repeat(knots_per_bs_Z, nknots, axis=0)
-
-    if return_cents is True:
-
-        cents_per_bs_R = _utils_bsplines._get_cents_per_bs(
-            Rcents, deg=deg, returnas=returnas,
-        )
-        cents_per_bs_Z = _utils_bsplines._get_cents_per_bs(
-            Zcents, deg=deg, returnas=returnas,
-        )
-        if ind is not None:
-            cents_per_bs_R = cents_per_bs_R[:, ind[0]]
-            cents_per_bs_Z = cents_per_bs_Z[:, ind[1]]
-
-        ncents = cents_per_bs_R.shape[0]
-        cents_per_bs_R = np.tile(cents_per_bs_R, (ncents, 1))
-        cents_per_bs_Z = np.repeat(cents_per_bs_Z, ncents, axis=0)
-
-    # -------------
-    # return
-
-    if return_knots is True and return_cents is True:
-        out = (
-            (knots_per_bs_R, knots_per_bs_Z), (cents_per_bs_R, cents_per_bs_Z)
-        )
-    elif return_knots is True:
-        out = (knots_per_bs_R, knots_per_bs_Z)
-    else:
-        out = (cents_per_bs_R, cents_per_bs_Z)
-    return out
-
-
 # ##################################################################
 # ##################################################################
 #                           Mesh2 - Tri - bsplines
@@ -272,16 +195,19 @@ def _mesh2DTri_bsplines(coll=None, keym=None, keybs=None, deg=None):
     # --------------
     # create bsplines
 
-    kknots = coll.dobj[coll._which_mesh][keym]['knots']
-    clas = _class02_bsplines_tri.get_bs_class(
+    wm = coll._which_mesh
+    kknots = coll.dobj[wm][keym]['knots']
+    clas = get_bs_class(
+        nd='2d',
+        mtype='tri',
         deg=deg,
         knots0=coll.ddata[kknots[0]]['data'],
         knots1=coll.ddata[kknots[1]]['data'],
-        indices=coll.ddata[coll.dobj[coll._which_mesh][keym]['ind']]['data'],
+        indices=coll.ddata[coll.dobj[wm][keym]['ind']]['data'],
     )
-    keybsr = f'{keybs}-nbs'
-    kbscr = f'{keybs}-apR'
-    kbscz = f'{keybs}-apZ'
+    keybsr = f'{keybs}_nbs'
+    kbscr = f'{keybs}_ap0'
+    kbscz = f'{keybs}_ap1'
 
     bs_cents = clas._get_bs_cents()
 
@@ -338,6 +264,41 @@ def _mesh2DTri_bsplines(coll=None, keym=None, keybs=None, deg=None):
 # ##############################################################
 
 
+def get_bs_class(
+    nd=None,
+    mtype=None,
+    deg=None,
+    knots0=None,
+    knots1=None,
+    shapebs=None,
+    indices=None,
+):
+
+    if nd == '1d':
+        clas = _class02_bsplines_1d.get_bs_class(
+            deg=deg,
+            knots=knots0,
+        )
+
+    elif mtype == 'rect':
+        clas = _class02_bsplines_rect.get_bs_class(
+            deg=deg,
+            knots0=knots0,
+            knots1=knots1,
+            shapebs=shapebs,
+        )
+
+    else:
+        clas = _class02_bsplines_tri.get_bs_class(
+            deg=deg,
+            knots0=knots0,
+            knots1=knots1,
+            indices=indices,
+        )
+
+    return clas
+
+
 def _get_profiles2d(coll=None):
 
     dout = {}
@@ -351,11 +312,11 @@ def _get_profiles2d(coll=None):
         lbs = []
         for k1 in v0[wbs]:
             km = coll.dobj[wbs][k1][wm]
-            if coll.dobj[wm][km]['submesh'] is None:
+            subkm = coll.dobj[wm][km]['submesh']
+            if subkm is None:
                 if coll.dobj[wm][km]['nd'] == '2d':
                     lbs.append(k1)
             else:
-                subkm = coll.dobj[wm][km]['submesh']
                 if coll.dobj[wm][subkm]['nd'] == '2d':
                     lbs.append(k1)
 
@@ -405,7 +366,7 @@ def extract(coll=None, coll2=None, vectors=None):
     ]))
 
     # get all ref and data
-    lref, ldata = ds._class1_compute._extract_dataref(
+    lref2, ldata2 = ds._class1_compute._extract_dataref(
         coll=coll,
         keys=list(set(kmesh + kbs + ldata)),
         vectors=vectors
@@ -414,28 +375,56 @@ def extract(coll=None, coll2=None, vectors=None):
     # ---------------
     # add mesh
 
-    wm = coll._which_mesh
     coll2._dobj[wm] = {
         k0: copy.deepcopy(coll.dobj[wm][k0])
         for k0 in lmesh
     }
 
-    # ------------
+    # ----------------
     # add bsplines
 
-    wm = coll._which_bsplines
-    coll2._dobj[wbs] = {
-        k0: copy.deepcopy(coll.dobj[wbs][k0])
-        for k0 in lbs
-    }
+    coll2._dobj[wbs] = {}
+    for k0 in lbs:
+        din = {
+            k1: copy.deepcopy(v1)
+            for k1, v1 in coll.dobj[wbs][k0].items()
+            if k1 != 'class'
+        }
 
-    # ----------------
-    # add ref and data
+        # clas has to be treated sepearately (cannot be copied)
+        km = coll.dobj[wbs][k0][wm]
+        nd = str(coll.dobj[wm][km]['nd'])
+        mtype = str(coll.dobj[wm][km]['type'])
+        deg = int(coll.dobj[wbs][k0]['deg'])
+        kn = coll.dobj[wm][km]['knots']
+        knots0 = np.copy(coll.ddata[kn[0]]['data'])
+        knots1 = np.copy(coll.ddata[kn[1]]['data']) if nd == '2d' else None
+        shapebs = tuple(coll.dobj[wbs][k0]['shape'])
+        if mtype == 'tri':
+            kind = coll2.dobj[wm][km]['ind']
+            indices = np.copy(coll.ddata[kind]['data'])
+        else:
+            indices = None
+
+        din['class'] = get_bs_class(
+            nd=nd,
+            mtype=mtype,
+            deg=deg,
+            knots0=knots0,
+            knots1=knots1,
+            shapebs=shapebs,
+            indices=indices,
+        )
+
+        coll2._dobj[wbs][k0] = din
+
+    # --------------------
+    # extract
 
     coll2 = ds._class1_compute._extract_instance(
         coll=coll,
-        lref=lref,
-        ldata=ldata,
+        lref=lref2,
+        ldata=ldata2,
         coll2=coll2,
     )
 

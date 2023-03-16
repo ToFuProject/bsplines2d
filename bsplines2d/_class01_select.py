@@ -255,7 +255,9 @@ def _select_mesh(
     # ------------
     # check inputs
 
-    meshtype = coll.dobj[coll._which_mesh][key]['type']
+    wm = coll._which_mesh
+    nd = coll.dobj[wm][key]['nd']
+    mtype = coll.dobj[wm][key]['type']
 
     (
         elements, returnas,
@@ -270,16 +272,15 @@ def _select_mesh(
     # ------------
     # prepare
 
-    if meshtype in ['rect', 'tri']:
-        kR, kZ = coll.dobj[coll._which_mesh][key][elements]
+    if mtype in ['rect', 'tri']:
+        kR, kZ = coll.dobj[wm][key][elements]
         R = coll.ddata[kR]['data']
         Z = coll.ddata[kZ]['data']
         nR = R.size
         nZ = Z.size
     else:
-        kr = coll.dobj[coll._which_mesh][key][elements][0]
+        kr = coll.dobj[wm][key][elements][0]
         rad = coll.ddata[kr]['data']
-
 
     # ------------
     # non-trivial case
@@ -287,9 +288,9 @@ def _select_mesh(
     if returnas == 'ind':
         out = ind
     else:
-        if meshtype == 'rect':
+        if mtype == 'rect':
             out = R[ind[0]], Z[ind[1]]
-        elif meshtype == 'tri':
+        elif mtype == 'tri':
             out = R[ind], Z[ind]
         else:
             out = rad[ind]
@@ -298,7 +299,7 @@ def _select_mesh(
     # neighbours
 
     if return_neighbours is True:
-        if meshtype == 'rect':
+        if mtype == 'rect':
             neigh = _select_mesh_neighbours_rect(
                 coll=coll,
                 key=key,
@@ -306,7 +307,7 @@ def _select_mesh(
                 elements=elements,
                 returnas=returnas,
             )
-        elif meshtype == 'tri':
+        elif mtype == 'tri':
             neigh = _select_mesh_neighbours_tri(
                 coll=coll,
                 key=key,
@@ -316,20 +317,68 @@ def _select_mesh(
                 return_ind_as=return_ind_as,
             )
         else:
-            # TBF
-            raise NotImplementedError()
-            # neigh = _select_mesh_neighbours_polar(
-                # coll=coll,
-                # key=key,
-                # ind=ind,
-                # elements=elements,
-                # returnas=returnas,
-                # return_ind_as=return_ind_as,
-            # )
+            neigh = _select_mesh_neighbours_1d(
+                coll=coll,
+                key=key,
+                ind=ind,
+                elements=elements,
+                returnas=returnas,
+                return_ind_as=return_ind_as,
+            )
 
         return out, neigh
     else:
         return out
+
+
+# TBF
+def _select_mesh_neighbours_1d(
+    coll=None,
+    key=None,
+    ind=None,
+    elements=None,
+    returnas=None,
+    return_ind_as=None,
+):
+    """ ind is a bool
+
+    if returnas = 'ind', ind is returned as a bool array
+    (because the nb. of neighbours is not constant on a triangular mesh)
+
+    """
+    # ------------
+    # neighbours
+
+    elneig = 'cents' if elements == 'knots' else 'knots'
+    kneig = coll.dobj[coll._which_mesh][key][f'{elneig}'][0]
+    neig = coll.ddata[kneig]['data']
+    nneig = neig.size
+
+    # get tuple indices of neighbours
+    ind = ind.nonzero()[0]
+    shape = tuple(np.r_[ind.shape, 2].astype(int))
+    ineig = np.zeros(shape, dtype=int)
+
+    rsh = tuple(
+        [2 if ii == len(shape)-1 else 1 for ii in range(len(shape))]
+    )
+
+    if elements == 'cents':
+        ineig[...] = ind[..., None] + np.r_[0, 1].reshape(rsh)
+
+    elif elements == 'knots':
+        ineig[...] = ind[..., None] + np.r_[-1, 0].reshape(rsh)
+        ineig[(ineig < 0) | (ineig >= nneig)] = -1
+
+    # return neighbours in desired format
+    if returnas == 'ind':
+        neig_out = ineig
+    else:
+        neig_out = neig[ineig]
+        neig_out[ineig == -1] = np.nan
+
+    return neig_out
+
 
 
 def _select_mesh_neighbours_rect(
@@ -352,7 +401,7 @@ def _select_mesh_neighbours_rect(
     nZneig = Zneig.size
 
     # get tuple indices of neighbours
-    shape = tuple(np.r_[ind[0].shape, 4])
+    shape = tuple(np.r_[ind[0].shape, 4].astype(int))
     neig = (
         np.zeros(shape, dtype=int),
         np.zeros(shape, dtype=int),
@@ -519,111 +568,232 @@ def _select_mesh_neighbours_tri(
 # #############################################################################
 
 
-# def _select_bsplines(
-    # coll=None,
-    # key=None,
-    # ind=None,
-    # returnas=None,
-    # return_cents=None,
-    # return_knots=None,
-    # crop=None,
-# ):
-    # """ ind is a tuple """
+def _select_bsplines(
+    coll=None,
+    key=None,
+    ind=None,
+    returnas=None,
+    return_cents=None,
+    return_knots=None,
+    crop=None,
+):
+    """ ind is a tuple """
 
-    # # ------------
-    # # check inputs
+    # ------------
+    # check inputs
 
-    # _, returnas, _, _ = _checks._select_check(returnas=returnas)
+    wm = coll._which_mesh
+    wbs = coll._which_bsplines
 
-    # (
-     # which_mesh, which_bsplines, keym, key, cat,
-     # ) = _checks._get_key_mesh_vs_bplines(
-        # coll=coll,
-        # key=key,
-        # forcecat='bsplines',
-    # )
-    # meshtype = coll.dobj[which_mesh][keym]['type']
+    # check key
+    keym, keybs, _ = _generic_mesh._get_key_mesh_vs_bplines(
+        coll=coll,
+        key=key,
+        which=wbs,
+    )
 
-    # # ----
-    # # ind
+    nd = coll.dobj[wm][keym]['nd']
+    mtype = coll.dobj[wm][keym]['type']
 
-    # if meshtype == 'rect':
-        # returnasind = tuple
-    # elif meshtype == 'polar' and len(coll.dobj[which_bsplines][key]['shape']) == 2:
-        # returnasind = tuple
-    # else:
-        # returnasind = bool
+    # ----
+    # ind
 
-    # ind = _select_ind(
-        # coll=coll,
-        # key=key,
-        # ind=ind,
-        # elements=None,
-        # returnas=returnasind,
-        # crop=crop,
-    # )
+    if mtype == 'rect':
+        returnasind = tuple
+    else:
+        returnasind = bool
 
-    # # ------------
-    # # knots, cents
+    ind = _select_ind(
+        coll=coll,
+        key=key,
+        ind=ind,
+        elements=None,
+        returnas=returnasind,
+        crop=crop,
+    )
 
-    # if meshtype == 'rect':
-        # kRk, kZk = coll.dobj[which_mesh][keym]['knots']
-        # kRc, kZc = coll.dobj[which_mesh][keym]['cents']
+    # ------------
+    # knots, cents
 
-        # out = _mesh2DRect_bsplines_knotscents(
-            # returnas=returnas,
-            # return_knots=return_knots,
-            # return_cents=return_cents,
-            # ind=ind,
-            # deg=coll.dobj[which_bsplines][key]['deg'],
-            # Rknots=coll.ddata[kRk]['data'],
-            # Zknots=coll.ddata[kZk]['data'],
-            # Rcents=coll.ddata[kRc]['data'],
-            # Zcents=coll.ddata[kZc]['data'],
-        # )
+    if mtype == 'rect':
+        kRk, kZk = coll.dobj[wm][keym]['knots']
+        kRc, kZc = coll.dobj[wm][keym]['cents']
 
-    # elif meshtype == 'tri':
-        # clas = coll.dobj[which_bsplines][key]['class']
-        # out = clas._get_knotscents_per_bs(
-            # returnas=returnas,
-            # return_knots=return_knots,
-            # return_cents=return_cents,
-            # ind=ind,
-        # )
+        out = _mesh2DRect_bsplines_knotscents(
+            returnas=returnas,
+            return_knots=return_knots,
+            return_cents=return_cents,
+            ind=ind,
+            deg=coll.dobj[wbs][key]['deg'],
+            Rknots=coll.ddata[kRk]['data'],
+            Zknots=coll.ddata[kZk]['data'],
+            Rcents=coll.ddata[kRc]['data'],
+            Zcents=coll.ddata[kZc]['data'],
+        )
 
-    # else:
-        # clas = coll.dobj[which_bsplines][key]['class']
-        # shape2d = len(coll.dobj[which_bsplines][key]['shape']) == 2
-        # if which_bsplines == coll._which_bssp:
-            # kpbs, cpbs = 'knots_per_bs', 'cents_per_bs'
-        # else:
-            # kpbs, cpbs = 'knots_per_bs_r', 'cents_per_bs_r'
+    elif mtype == 'tri':
+        clas = coll.dobj[wbs][key]['class']
+        out = clas._get_knotscents_per_bs(
+            returnas=returnas,
+            return_knots=return_knots,
+            return_cents=return_cents,
+            ind=ind,
+        )
 
-        # if return_cents is True and return_knots is True:
-            # if shape2d:
-                # out = (
-                    # (getattr(clas, kpbs), clas.knots_per_bs_a),
-                    # (getattr(clas, cpbs), clas.cents_per_bs_a),
-                # )
-            # else:
-                # out = ((getattr(clas, kpbs),), (getattr(clas, cpbs),))
-        # elif return_cents is True:
-            # if shape2d:
-                # out = (getattr(clas, cpbs), clas.cents_per_bs_a)
-            # else:
-                # out = (getattr(clas, cpbs),)
-        # elif return_knots is True:
-            # if shape2d:
-                # out = (getattr(clas, kpbs), clas.knots_per_bs_a)
-            # else:
-                # out = (getattr(clas, kpbs),)
+    else:
+        kk = coll.dobj[wm][keym]['knots'][0]
+        kc = coll.dobj[wm][keym]['cents'][0]
 
-    # # ------------
-    # # return
+        out = _mesh1d_bsplines_knotscents(
+            returnas=returnas,
+            return_knots=return_knots,
+            return_cents=return_cents,
+            ind=ind,
+            deg=coll.dobj[wbs][key]['deg'],
+            knots=coll.ddata[kk]['data'],
+            cents=coll.ddata[kc]['data'],
+        )
 
-    # if return_cents is True and return_knots is True:
-        # return ind, out[0], out[1]
-    # elif return_cents is True or return_knots is True:
-        # return ind, out
-    # else:
-        # return ind
+    # ------------
+    # return
+
+    if return_cents is True and return_knots is True:
+        return ind, out[0], out[1]
+    elif return_cents is True or return_knots is True:
+        return ind, out
+    else:
+        return ind
+
+
+def _mesh1d_bsplines_knotscents(
+    returnas=None,
+    return_knots=None,
+    return_cents=None,
+    ind=None,
+    deg=None,
+    knots=None,
+    cents=None,
+):
+
+    # -------------
+    # check inputs
+
+    return_knots = ds._generic_check._check_var(
+        return_knots, 'return_knots',
+        types=bool,
+        default=True,
+    )
+    return_cents = ds._generic_check._check_var(
+        return_cents, 'return_cents',
+        types=bool,
+        default=True,
+    )
+    if return_knots is False and return_cents is False:
+        return
+
+    # -------------
+    # compute
+
+    if return_knots is True:
+
+        knots_per_bs = _utils_bsplines._get_knots_per_bs(
+            knots, deg=deg, returnas=returnas,
+        )
+        if ind is not None:
+            knots_per_bs = knots_per_bs[:, ind]
+
+    if return_cents is True:
+
+        cents_per_bs = _utils_bsplines._get_cents_per_bs(
+            cents, deg=deg, returnas=returnas,
+        )
+        if ind is not None:
+            cents_per_bs = cents_per_bs[:, ind]
+
+    # -------------
+    # return
+
+    if return_knots is True and return_cents is True:
+        out = (knots_per_bs, cents_per_bs)
+    elif return_knots is True:
+        out = knots_per_bs
+    else:
+        out = cents_per_bs
+    return out
+
+
+def _mesh2DRect_bsplines_knotscents(
+    returnas=None,
+    return_knots=None,
+    return_cents=None,
+    ind=None,
+    deg=None,
+    Rknots=None,
+    Zknots=None,
+    Rcents=None,
+    Zcents=None,
+):
+
+    # -------------
+    # check inputs
+
+    return_knots = ds._generic_check._check_var(
+        return_knots, 'return_knots',
+        types=bool,
+        default=True,
+    )
+    return_cents = ds._generic_check._check_var(
+        return_cents, 'return_cents',
+        types=bool,
+        default=True,
+    )
+    if return_knots is False and return_cents is False:
+        return
+
+    # -------------
+    # compute
+
+    if return_knots is True:
+
+        knots_per_bs_R = _utils_bsplines._get_knots_per_bs(
+            Rknots, deg=deg, returnas=returnas,
+        )
+        knots_per_bs_Z = _utils_bsplines._get_knots_per_bs(
+            Zknots, deg=deg, returnas=returnas,
+        )
+        if ind is not None:
+            knots_per_bs_R = knots_per_bs_R[:, ind[0]]
+            knots_per_bs_Z = knots_per_bs_Z[:, ind[1]]
+
+        nknots = knots_per_bs_R.shape[0]
+        knots_per_bs_R = np.tile(knots_per_bs_R, (nknots, 1))
+        knots_per_bs_Z = np.repeat(knots_per_bs_Z, nknots, axis=0)
+
+    if return_cents is True:
+
+        cents_per_bs_R = _utils_bsplines._get_cents_per_bs(
+            Rcents, deg=deg, returnas=returnas,
+        )
+        cents_per_bs_Z = _utils_bsplines._get_cents_per_bs(
+            Zcents, deg=deg, returnas=returnas,
+        )
+        if ind is not None:
+            cents_per_bs_R = cents_per_bs_R[:, ind[0]]
+            cents_per_bs_Z = cents_per_bs_Z[:, ind[1]]
+
+        ncents = cents_per_bs_R.shape[0]
+        cents_per_bs_R = np.tile(cents_per_bs_R, (ncents, 1))
+        cents_per_bs_Z = np.repeat(cents_per_bs_Z, ncents, axis=0)
+
+    # -------------
+    # return
+
+    if return_knots is True and return_cents is True:
+        out = (
+            (knots_per_bs_R, knots_per_bs_Z), (cents_per_bs_R, cents_per_bs_Z)
+        )
+    elif return_knots is True:
+        out = (knots_per_bs_R, knots_per_bs_Z)
+    else:
+        out = (cents_per_bs_R, cents_per_bs_Z)
+    return out

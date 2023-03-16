@@ -394,6 +394,7 @@ def _select_mesh_elements(bsplines, nd=None, kind=None):
                 crop=comb[0],
             )
 
+
 def _sample_mesh(bsplines, nd=None, kind=None):
     lkm = _get_mesh(bsplines, nd=nd, kind=kind)
 
@@ -441,6 +442,28 @@ def _plot_mesh(bsplines, nd=None, kind=None):
 #
 #######################################################
 
+
+def _select_bsplines(bs, nd=None, kind=None):
+    lkb = _get_bs(bs, nd=nd, kind=kind)
+
+    lind = [None, 0, [0, 3]]
+    if kind == 'rect':
+        lcrop = [False, True]
+    else:
+        lcrop = [None]
+    lretc = [True, False]
+    lretk = [True, False]
+
+    for km in lkb:
+
+        for comb in itt.product(lind, lretc, lretk, lcrop):
+            out = bs.select_bsplines(
+                key=km,
+                ind=comb[0],
+                return_cents=comb[1],
+                return_knots=comb[2],
+                crop=comb[3],
+            )
 
 def _add_data_1bs_fix(bs, nd=None, kind=None, remove=None):
     lkb = _get_bs(bs, nd=nd, kind=kind)
@@ -560,7 +583,9 @@ def _add_data_multibs_arrays(bs, nd=None, kind=None, subbs=None, remove=None):
 
 
 def _interpolate(bs, nd=None, kind=None, details=None, submesh=None):
-    dkd = _get_data(bs, nd=nd, kind=kind, submesh=submesh)
+    dkd = _get_data(
+        bs, nd=nd, kind=kind, submesh=submesh, maxref=int(nd[0]) + 2,
+    )
 
     wm = bs._which_mesh
     wbs = bs._which_bsplines
@@ -669,7 +694,7 @@ def _interpolate(bs, nd=None, kind=None, details=None, submesh=None):
 
         # interpolate
         dout, dparam = bs.interpolate(
-            keys=kd,
+            keys=None if details is True else (None if ii%2 == 0 else kd),
             ref_key=ref_key,
             return_params=True,
             debug=True,
@@ -679,10 +704,11 @@ def _interpolate(bs, nd=None, kind=None, details=None, submesh=None):
         # expected shape
         if details is True:
             shape = tuple(np.r_[vect.shape, nbs].astype(int))
+            kd = f'{ref_key}_details'
         else:
             shape = list(bs.ddata[kd]['shape'])
-            ax0 = dparam['axis'][0]
-            ax1 = dparam['axis'][-1]
+            ax0 = dparam['daxis'][kd][0]
+            ax1 = dparam['daxis'][kd][-1]
 
             # submesh
             if submesh is True:
@@ -743,19 +769,26 @@ def _interpolate(bs, nd=None, kind=None, details=None, submesh=None):
 
 
 def _bin_bs(bs, nd=None, kind=None):
-    dkd = _get_data(bs, nd=nd, kind=kind)
+    dkd = _get_data(bs, nd=nd, kind=kind, maxref=3)
+
 
     wbs = bs._which_bsplines
     for ii, (kd, vd) in enumerate(dkd.items()):
 
-        if ii % 10 == 0 and len(vd['ref']) > 1:
-            ref_key = vd['ref'][0]
-            ax = 0
-        elif len(vd['ref']) > 1:
+
+        if len(bs.ddata[kd]['ref']) > 3:
+            continue
+
+        if len(vd['ref']) > 1:
+            if ii % 10 == 0:
+                ref_key = vd['ref'][0]
+                ax = 0
+            else:
+                ref_key = vd['bs'][0]
+                ax = bs.ddata[kd]['ref'].index(bs.dobj[wbs][ref_key]['ref'][0])
+        else:
             ref_key = vd['bs'][0]
             ax = bs.ddata[kd]['ref'].index(bs.dobj[wbs][ref_key]['ref'][0])
-        else:
-            continue
 
         vect = bs.dobj[bs._which_bsplines][vd['bs'][0]]['apex'][0]
         vect = bs.ddata[vect]['data']
@@ -814,16 +847,30 @@ def _add_data_var(bsplines, key):
 
 
 def _plot_as_profile2d(bs,  nd=None, kind=None):
-    dkd = _get_data(bs, nd=nd, kind=kind)
+    dkd = _get_data(bs, nd=nd, kind=kind, maxref=4)
+
+    wm = bs._which_mesh
+    wbs = bs._which_bsplines
 
     for ii, (k0, v0) in enumerate(dkd.items()):
 
         if bs.ddata[k0]['data'].ndim > 4:
             continue
+        if k0 in bs.dobj[wbs][v0['bs'][0]]['apex']:
+            continue
         if ii%2 == 0:
             continue
 
-        dax = bs.plot_as_profile2d(key=k0)
+        # knots
+        knots = bs.dobj[wbs][v0['bs'][0]]['apex'][0]
+        knots = bs.ddata[knots]['data']
+        span = np.abs(knots[-1] - knots[0])
+        res = span / 3.
+
+        dax = bs.plot_as_profile2d(
+            key=k0,
+            dres=res,
+        )
         plt.close('all')
 
 
@@ -907,7 +954,7 @@ def _get_bs(bs, nd=None, kind=None, subbs=None):
     ]
 
 
-def _get_data(bs, nd=None, kind=None, submesh=None):
+def _get_data(bs, nd=None, kind=None, submesh=None, maxref=None):
 
     dkd = {}
     wm = bs._which_mesh
@@ -927,6 +974,7 @@ def _get_data(bs, nd=None, kind=None, submesh=None):
                         and bs.dobj[wm][km]['submesh'] is not None
                     )
                 ),
+                maxref is None or len(bs.ddata[k0]['ref']) <= maxref,
             ]
             if all(lc):
                 if k0 not in dkd.keys():

@@ -12,7 +12,7 @@ import datastock as ds
 
 
 # specific
-from . import _class01_checks as _checks
+from . import _class01_checks_2d_tri as _checks
 # from . import _class02_bsplines_operators_tri
 from . import _class02_bsplines_rect as _mbr
 
@@ -47,7 +47,7 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
         indices, knots = _checks._mesh2DTri_conformity(
             knots=knots, indices=indices, key='class',
         )
-        indices = _checks._mesh2DTri_clockwise(
+        indices = _checks._mesh2DTri_ccw(
             knots=knots, indices=indices, key='class',
         )
 
@@ -533,7 +533,7 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
                     ) * coefs[tuple(sli_c)]
 
         # clean out-of-mesh
-        if dref_com is None and val_out is not False:
+        if dref_com['ix'] is None and val_out is not False:
             slio = sli_o(ind == -1)
             val[slio] = val_out
         return val

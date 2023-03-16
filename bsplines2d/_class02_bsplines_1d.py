@@ -166,7 +166,8 @@ class UnivariateSpline():
             slix = sli_x(
                 ind,
                 indokx0=indokx0,
-                iother=None if dref_com is None else dref_com['iother'],
+                ix=dref_com['ix'],
+                iother=dref_com['iother'],
             )
 
             sliv = sli_v(
@@ -174,7 +175,8 @@ class UnivariateSpline():
                 indokx0=indokx0,
                 ddim=coefs.ndim,
                 axis=axis,
-                iother=None if dref_com is None else dref_com['iother'],
+                ix=dref_com['ix'],
+                iother=dref_com['iother'],
             )
 
             # call be called on any shape of x0
@@ -187,7 +189,7 @@ class UnivariateSpline():
             )(x0[slix], nu=deriv)
 
         # clean out-of-mesh
-        if dref_com is None and val_out is not False:
+        if dref_com['ix'] is None and val_out is not False:
             slio = sli_o((x0 < self.knots[0]) | (x0 > self.knots[-1]))
             val[slio] = val_out
 
@@ -246,6 +248,87 @@ class UnivariateSpline():
             ni += 1
 
         return val
+
+    # -----------------
+    # constraints methods
+    # -----------------
+
+    def get_constraints_out_rlim(
+        self,
+        rlim=None,
+        rm=None,
+        lim=None,
+    ):
+        """
+        Return indices of bslines fully out of rlim (min or max)
+
+        Assumes rlim is a 1d array, one per time step
+        """
+
+
+        # ------------
+        # check inputs
+
+        if rm not in ['rmin', 'rmax']:
+            msg = f"Invalid rm!\nShould be in ['rmax', 'rmin']\nProvided: {rm}"
+            raise Exception(msg)
+
+        if np.isscalar(rlim):
+            rlim = np.r_[rlim]
+
+        if not (isinstance(rlim, np.ndarray) and rlim.ndim == 1):
+            msg = "rlim must ba a 1d array!"
+            raise Exception(msg)
+
+        # ------------
+        # get index of bsplines out of limits
+
+        kpbs = self.knots_per_bs
+        if rm == 'rmax':
+            if lim == 'allout':
+                ind = np.all(
+                    kpbs[None, :, :] > rlim[:, None, None],
+                    axis=1,
+                )
+            elif lim == 'outer':
+                ind = np.sum(
+                    kpbs[None, :, :] > rlim[:, None, None],
+                    axis=1,
+                ) > 1
+            elif lim == 'inner':
+                ind = np.any(
+                    kpbs[None, :, :] > rlim[:, None, None],
+                    axis=1,
+                )
+
+        else:
+            if lim == 'allin':
+                ind = np.all(
+                    kpbs[None, :, :] < rlim[:, None, None],
+                    axis=1,
+                )
+            elif lim == 'inner':
+                ind = np.sum(
+                    kpbs[None, :, :] < rlim[:, None, None],
+                    axis=1,
+                ) > 1
+            elif lim == 'outer':
+                ind = np.any(
+                    kpbs[None, :, :] < rlim[:, None, None],
+                    axis=1,
+                )
+
+        # if self.knotsa is None:
+            # pass
+        # else:
+            # ind = np.repeat(ind, self.nbs_a_per_r, axis=1)
+
+        # ------------
+        # get coefs / offset
+
+        offset = np.zeros((self.nbs,), dtype=float)
+
+        return ind, offset
 
     def get_constraints_deriv(
         self,
@@ -366,7 +449,6 @@ def _get_overlap(
 def get_bs_class(
     deg=None,
     knots=None,
-    coll=None,
 ):
 
     # ----------------

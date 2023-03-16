@@ -51,10 +51,10 @@ def _get_kwdargs_2d(kwdargs, latt=None):
     return dim, quant, name, units
 
 
-# #############################################################################
-# #############################################################################
+# ###############################################################
+# ###############################################################
 #               mesh vs bsplines
-# #############################################################################
+# ###############################################################
 
 
 def _get_key_mesh_vs_bplines(
@@ -341,3 +341,69 @@ def _mesh_bsplines(key=None, lkeys=None, deg=None):
     keybs = f'{key}-bs{deg}'
 
     return key, keybs, deg
+
+
+# ###############################################################
+# ###############################################################
+#                       Remove bsplines
+# ###############################################################
+
+
+def remove_mesh(coll=None, key=None, propagate=None):
+
+    # ----------
+    # check
+
+    # key
+    wm = coll._which_mesh
+    wbs = coll._which_bsplines
+
+    if wm not in coll.dobj.keys():
+        return
+
+    if isinstance(key, str):
+        key = [key]
+    key = ds._generic_check._check_var_iter(
+        key, 'key',
+        types=(list, tuple),
+        types_iter=str,
+        allowed=coll.dobj.get(wm, {}).keys(),
+    )
+
+    # propagate
+    propagate = ds._generic_check._check_var(
+        propagate, 'propagate',
+        types=bool,
+        default=True,
+    )
+
+    # ---------
+    # remove
+
+    for k0 in key:
+
+        # remove bsplines
+        if wbs in coll.dobj.keys():
+            lbs = [k1 for k1, v1 in coll.dobj[wbs].items() if v1[wm] == k0]
+            coll.remove_bsplines(key=lbs, propagate=propagate)
+
+        # specific data
+        ldata = list(
+            coll.dobj[wm][k0]['knots']
+            + coll.dobj[wm][k0]['cents']
+        )
+        lref = [coll.ddata[kk]['ref'] for kk in ldata]
+        crop = coll.dobj[wm][k0]['crop']
+        if crop is not None and crop is not False:
+            ldata.append(crop)
+
+        for dd in ldata:
+            coll.remove_data(dd, propagate=propagate)
+
+        # specific ref
+        for rr in lref:
+            if rr in coll.dref.keys():
+                coll.remove_ref(rr, propagate=propagate)
+
+        # obj
+        coll.remove_obj(which=wm, key=k0, propagate=propagate)
