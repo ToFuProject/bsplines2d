@@ -2,6 +2,8 @@
 
 
 # Built-in
+import copy
+import itertools as itt
 
 
 # Common
@@ -38,10 +40,10 @@ def _mesh1d_bsplines(
     kbsn = f'{keybs}_nbs'
     kbsap = f'{keybs}_ap'
 
-    clas = _class02_bsplines_1d.get_bs_class(
+    clas = get_bs_class(
+        nd='1d',
         deg=deg,
-        knots=knots,
-        coll=coll,
+        knots0=knots,
     )
 
     # ------------
@@ -108,10 +110,10 @@ def _mesh2DRect_bsplines(coll=None, keym=None, keybs=None, deg=None):
     knots1 = coll.ddata[k1]['data']
 
     keybsr = f'{keybs}_nbs'
-    kRbsapn = f'{keybs}_nR'
-    kZbsapn = f'{keybs}_nZ'
-    kRbsap = f'{keybs}_apR'
-    kZbsap = f'{keybs}_apZ'
+    kRbsapn = f'{keybs}_n0'
+    kZbsapn = f'{keybs}_n1'
+    kRbsap = f'{keybs}_ap0'
+    kZbsap = f'{keybs}_ap1'
 
     (
         shapebs, Rbs_apex, Zbs_apex,
@@ -121,13 +123,13 @@ def _mesh2DRect_bsplines(coll=None, keym=None, keybs=None, deg=None):
     )
     nbs = int(np.prod(shapebs))
 
-    clas = _class02_bsplines_rect.get_bs_class(
+    clas = get_bs_class(
+        nd='2d',
+        mtype='rect',
         deg=deg,
         knots0=knots0,
         knots1=knots1,
         shapebs=shapebs,
-        # knots_per_bs_R=knots_per_bs_R,
-        # knots_per_bs_Z=knots_per_bs_Z,
     )
 
     # ----------------
@@ -182,83 +184,6 @@ def _mesh2DRect_bsplines(coll=None, keym=None, keybs=None, deg=None):
     return dref, ddata, dobj
 
 
-def _mesh2DRect_bsplines_knotscents(
-    returnas=None,
-    return_knots=None,
-    return_cents=None,
-    ind=None,
-    deg=None,
-    Rknots=None,
-    Zknots=None,
-    Rcents=None,
-    Zcents=None,
-):
-
-    # -------------
-    # check inputs
-
-    return_knots = ds._generic_check._check_var(
-        return_knots, 'return_knots',
-        types=bool,
-        default=True,
-    )
-    return_cents = ds._generic_check._check_var(
-        return_cents, 'return_cents',
-        types=bool,
-        default=True,
-    )
-    if return_knots is False and return_cents is False:
-        return
-
-    # -------------
-    # compute
-
-    if return_knots is True:
-
-        knots_per_bs_R = _utils_bsplines._get_knots_per_bs(
-            Rknots, deg=deg, returnas=returnas,
-        )
-        knots_per_bs_Z = _utils_bsplines._get_knots_per_bs(
-            Zknots, deg=deg, returnas=returnas,
-        )
-        if ind is not None:
-            knots_per_bs_R = knots_per_bs_R[:, ind[0]]
-            knots_per_bs_Z = knots_per_bs_Z[:, ind[1]]
-
-        nknots = knots_per_bs_R.shape[0]
-        knots_per_bs_R = np.tile(knots_per_bs_R, (nknots, 1))
-        knots_per_bs_Z = np.repeat(knots_per_bs_Z, nknots, axis=0)
-
-    if return_cents is True:
-
-        cents_per_bs_R = _utils_bsplines._get_cents_per_bs(
-            Rcents, deg=deg, returnas=returnas,
-        )
-        cents_per_bs_Z = _utils_bsplines._get_cents_per_bs(
-            Zcents, deg=deg, returnas=returnas,
-        )
-        if ind is not None:
-            cents_per_bs_R = cents_per_bs_R[:, ind[0]]
-            cents_per_bs_Z = cents_per_bs_Z[:, ind[1]]
-
-        ncents = cents_per_bs_R.shape[0]
-        cents_per_bs_R = np.tile(cents_per_bs_R, (ncents, 1))
-        cents_per_bs_Z = np.repeat(cents_per_bs_Z, ncents, axis=0)
-
-    # -------------
-    # return
-
-    if return_knots is True and return_cents is True:
-        out = (
-            (knots_per_bs_R, knots_per_bs_Z), (cents_per_bs_R, cents_per_bs_Z)
-        )
-    elif return_knots is True:
-        out = (knots_per_bs_R, knots_per_bs_Z)
-    else:
-        out = (cents_per_bs_R, cents_per_bs_Z)
-    return out
-
-
 # ##################################################################
 # ##################################################################
 #                           Mesh2 - Tri - bsplines
@@ -270,16 +195,19 @@ def _mesh2DTri_bsplines(coll=None, keym=None, keybs=None, deg=None):
     # --------------
     # create bsplines
 
-    kknots = coll.dobj[coll._which_mesh][keym]['knots']
-    clas = _class02_bsplines_tri.get_bs_class(
+    wm = coll._which_mesh
+    kknots = coll.dobj[wm][keym]['knots']
+    clas = get_bs_class(
+        nd='2d',
+        mtype='tri',
         deg=deg,
         knots0=coll.ddata[kknots[0]]['data'],
         knots1=coll.ddata[kknots[1]]['data'],
-        indices=coll.ddata[coll.dobj[coll._which_mesh][keym]['ind']]['data'],
+        indices=coll.ddata[coll.dobj[wm][keym]['ind']]['data'],
     )
-    keybsr = f'{keybs}-nbs'
-    kbscr = f'{keybs}-apR'
-    kbscz = f'{keybs}-apZ'
+    keybsr = f'{keybs}_nbs'
+    kbscr = f'{keybs}_ap0'
+    kbscz = f'{keybs}_ap1'
 
     bs_cents = clas._get_bs_cents()
 
@@ -328,6 +256,272 @@ def _mesh2DTri_bsplines(coll=None, keym=None, keybs=None, deg=None):
     }
 
     return dref, ddata, dobj
+
+
+# ##############################################################
+# ##############################################################
+#                   Utils
+# ##############################################################
+
+
+def get_bs_class(
+    nd=None,
+    mtype=None,
+    deg=None,
+    knots0=None,
+    knots1=None,
+    shapebs=None,
+    indices=None,
+):
+
+    if nd == '1d':
+        clas = _class02_bsplines_1d.get_bs_class(
+            deg=deg,
+            knots=knots0,
+        )
+
+    elif mtype == 'rect':
+        clas = _class02_bsplines_rect.get_bs_class(
+            deg=deg,
+            knots0=knots0,
+            knots1=knots1,
+            shapebs=shapebs,
+        )
+
+    else:
+        clas = _class02_bsplines_tri.get_bs_class(
+            deg=deg,
+            knots0=knots0,
+            knots1=knots1,
+            indices=indices,
+        )
+
+    return clas
+
+
+def _get_profiles2d(coll=None):
+
+    dout = {}
+    wm = coll._which_mesh
+    wbs = coll._which_bsplines
+    for k0, v0 in coll.ddata.items():
+
+        if v0.get(wbs) is None or v0.get(wbs) == '':
+            continue
+
+        lbs = []
+        for k1 in v0[wbs]:
+            km = coll.dobj[wbs][k1][wm]
+            subkm = coll.dobj[wm][km]['submesh']
+            if subkm is None:
+                if coll.dobj[wm][km]['nd'] == '2d':
+                    lbs.append(k1)
+            else:
+                if coll.dobj[wm][subkm]['nd'] == '2d':
+                    lbs.append(k1)
+
+        if len(lbs) == 1:
+            dout[k0] = lbs[0]
+
+    return dout
+
+
+# ##################################################################
+# ##################################################################
+#                       Extract
+# ##################################################################
+
+
+def extract(coll=None, coll2=None, vectors=None):
+
+    wm = coll._which_mesh
+    wbs = coll._which_bsplines
+
+    # -------------
+    # find bsplines and meshes
+
+    lbs, lmesh, ldata = _extract_bsplines_mesh(
+        coll=coll,
+        coll2=coll2,
+    )
+
+    # ---------------
+    # trivial
+
+    if len(lmesh) == 0:
+        return coll2
+
+    # ---------------
+    # extract data
+
+    dmesh = _extract_refdata_from_obj(coll=coll, which=wm, keys=lmesh)
+    dbs = _extract_refdata_from_obj(coll=coll, which=wbs, keys=lbs)
+
+    # get all keys for mesh and bsplines
+    kmesh = list(itt.chain.from_iterable([
+        v0['ref'] + v0['data'] for v0 in dmesh.values()
+    ]))
+    kbs = list(itt.chain.from_iterable([
+        v0['ref'] + v0['data'] for v0 in dbs.values()
+    ]))
+
+    # get all ref and data
+    lref2, ldata2 = ds._class1_compute._extract_dataref(
+        coll=coll,
+        keys=list(set(kmesh + kbs + ldata)),
+        vectors=vectors
+    )
+
+    # ---------------
+    # add mesh
+
+    coll2._dobj[wm] = {
+        k0: copy.deepcopy(coll.dobj[wm][k0])
+        for k0 in lmesh
+    }
+
+    # ----------------
+    # add bsplines
+
+    coll2._dobj[wbs] = {}
+    for k0 in lbs:
+        din = {
+            k1: copy.deepcopy(v1)
+            for k1, v1 in coll.dobj[wbs][k0].items()
+            if k1 != 'class'
+        }
+
+        # clas has to be treated sepearately (cannot be copied)
+        km = coll.dobj[wbs][k0][wm]
+        nd = str(coll.dobj[wm][km]['nd'])
+        mtype = str(coll.dobj[wm][km]['type'])
+        deg = int(coll.dobj[wbs][k0]['deg'])
+        kn = coll.dobj[wm][km]['knots']
+        knots0 = np.copy(coll.ddata[kn[0]]['data'])
+        knots1 = np.copy(coll.ddata[kn[1]]['data']) if nd == '2d' else None
+        shapebs = tuple(coll.dobj[wbs][k0]['shape'])
+        if mtype == 'tri':
+            kind = coll2.dobj[wm][km]['ind']
+            indices = np.copy(coll.ddata[kind]['data'])
+        else:
+            indices = None
+
+        din['class'] = get_bs_class(
+            nd=nd,
+            mtype=mtype,
+            deg=deg,
+            knots0=knots0,
+            knots1=knots1,
+            shapebs=shapebs,
+            indices=indices,
+        )
+
+        coll2._dobj[wbs][k0] = din
+
+    # --------------------
+    # extract
+
+    coll2 = ds._class1_compute._extract_instance(
+        coll=coll,
+        lref=lref2,
+        ldata=ldata2,
+        coll2=coll2,
+    )
+
+    return coll2
+
+
+def _extract_bsplines_mesh(coll=None, coll2=None):
+
+    # -------------
+    # find bsplines
+
+    # bs from data['bsplines']
+    wbs = coll._which_bsplines
+    lbs = list(set(itt.chain.from_iterable([
+        v0[wbs] for v0 in coll2.ddata.values()
+        if isinstance(v0.get(wbs), tuple)
+    ])))
+
+    # bs from ref
+    lbs2 = []
+    if wbs in coll.dobj.keys():
+        for k0, v0 in coll.dobj[wbs].items():
+            for k1 in coll2.dref.keys():
+                if k1 in v0['ref'] + v0['ref-bs']:
+                    lbs2.append(k0)
+            for k1 in coll2.ddata.keys():
+                if k1 in v0['apex']:
+                    lbs2.append(k0)
+
+    lbs = list(set(lbs + lbs2))
+
+    # -----------
+    # find meshes
+
+    wm = coll._which_mesh
+    lmesh = list({coll.dobj[wbs][k0][wm] for k0 in lbs})
+
+    # -----------
+    # get submesh
+
+    ldata = list(set(itt.chain.from_iterable([
+        coll.dobj[wm][k0]['subkey'] for k0 in lmesh
+        if coll.dobj[wm][k0]['subkey'] is not None
+    ])))
+
+    lbs2 = list(itt.chain.from_iterable([coll.ddata[k0][wbs] for k0 in ldata]))
+    lmesh2 = list({coll.dobj[wbs][k0][wm] for k0 in lbs2})
+
+    return sorted(set(lbs + lbs2)), sorted(set(lmesh + lmesh2)), ldata
+
+
+def _extract_refdata_from_obj(coll=None, which=None, keys=None):
+
+    dout = {}
+    for k0 in keys:
+        dout[k0] = {'ref': [], 'data': []}
+        _extract_refdata_from_dict(
+            dout=dout[k0],
+            din=coll.dobj[which][k0],
+            lref=list(coll.dref.keys()),
+            ldata=list(coll.ddata.keys()),
+        )
+
+    return dout
+
+
+def _extract_refdata_from_dict(
+    dout=None,
+    din=None,
+    lref=None,
+    ldata=None,
+):
+
+    for k1, v1 in din.items():
+
+        if isinstance(v1, str):
+            if v1 in lref:
+                dout['ref'].append(v1)
+            elif v1 in ldata:
+                dout['data'].append(v1)
+
+        elif isinstance(v1, (list, tuple)):
+            for v2 in v1:
+                if not isinstance(v2, str):
+                    continue
+                if v2 in lref:
+                    dout['ref'].append(v2)
+                elif v2 in ldata:
+                    dout['data'].append(v2)
+
+        elif isinstance(v1, dict):
+            _extract_refdata_from_dict(
+                dout=dout,
+                din=v1,
+                lref=lref,
+                ldata=ldata,
+            )
 
 
 # ##################################################################

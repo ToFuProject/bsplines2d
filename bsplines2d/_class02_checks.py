@@ -10,10 +10,10 @@ import numpy as np
 import datastock as ds
 
 
-# ##################################################################
-# ##################################################################
+# ##############################################################
+# ##############################################################
 #                          add data on mesh / bsplines
-# ##################################################################
+# ###############################################################
 
 
 def add_data_meshbsplines_ref(
@@ -69,7 +69,7 @@ def add_data_meshbsplines_ref(
 
             rbs = [(ii, rr) for ii, rr in enumerate(ref) if rr in dbsplines.keys()]
 
-            # repeat data if taken from ntri > 1 
+            # repeat data if taken from ntri > 1
             data = _repeat_data_ntri(
                 ref=ref,
                 rbs1=kb,
@@ -81,7 +81,9 @@ def add_data_meshbsplines_ref(
                 dbsplines=dbsplines,
             )
 
-    return tuple(ref), data
+        ref = tuple(ref)
+
+    return ref, data
 
 
 def _repeat_data_ntri(
@@ -128,7 +130,7 @@ def _set_data_bsplines(coll=None):
         for k0, v0 in coll._ddata.items():
 
             lbs = [
-                (v0['ref'].index(v1['ref'][0]), k1) 
+                (v0['ref'].index(v1['ref'][0]), k1)
                 for k1, v1 in coll.dobj[wbs].items()
                 if v1['ref'] == tuple([
                     rr for rr in v0['ref']
@@ -147,10 +149,10 @@ def _set_data_bsplines(coll=None):
                 coll._ddata[k0]['bsplines'] = tuple(lbs)
 
 
-# ##################################################################
-# ##################################################################
+# ###############################################################
+# ###############################################################
 #                           Mesh2DRect - bsplines
-# ##################################################################
+# ###############################################################
 
 
 def _mesh_bsplines(key=None, lkeys=None, deg=None):
@@ -174,3 +176,64 @@ def _mesh_bsplines(key=None, lkeys=None, deg=None):
     keybs = f'{key}_bs{deg}'
 
     return key, keybs, deg
+
+
+# ###############################################################
+# ###############################################################
+#                       Remove bsplines
+# ###############################################################
+
+
+def remove_bsplines(coll=None, key=None, propagate=None):
+
+    # ----------
+    # check
+
+    # key
+    wbs = coll._which_bsplines
+    if wbs not in coll.dobj.keys():
+        return
+
+    if isinstance(key, str):
+        key = [key]
+    key = ds._generic_check._check_var_iter(
+        key, 'key',
+        types=(list, tuple),
+        types_iter=str,
+        allowed=coll.dobj.get(wbs, {}).keys(),
+    )
+
+    # propagate
+    propagate = ds._generic_check._check_var(
+        propagate, 'propagate',
+        types=bool,
+        default=True,
+    )
+
+    # ---------
+    # remove
+
+    for k0 in key:
+
+        # specific data
+        ldata = list(set((
+            list(coll.dobj[wbs][k0]['apex'])
+            + [
+                k1 for k1, v1 in coll.ddata.items()
+                if k0 in v1[wbs]
+            ]
+        )))
+        for dd in ldata:
+            coll.remove_data(dd, propagate=propagate)
+
+        # specific ref
+        lref = (
+            coll.dobj[wbs][k0]['ref']
+            + coll.dobj[wbs][k0]['ref-bs']
+        )
+        for rr in lref:
+            if rr in coll.dref.keys():
+                coll.remove_ref(rr, propagate=propagate)
+
+        # obj
+        coll.remove_obj(which=wbs, key=k0, propagate=propagate)

@@ -15,10 +15,10 @@ from . import _utils_bsplines
 from . import _class02_bsplines_operators_rect
 
 
-# #############################################################################
-# #############################################################################
+# ################################################################
+# ################################################################
 #                       BivariateSplineRect - scipy subclass
-# #############################################################################
+# ################################################################
 
 
 class BivariateSplineRect(scpinterp.BivariateSpline):
@@ -164,7 +164,8 @@ class BivariateSplineRect(scpinterp.BivariateSpline):
             slix = sli_x(
                 ind,
                 indokx0=indokx0,
-                iother=None if dref_com is None else dref_com['iother'],
+                ix=dref_com['ix'],
+                iother=dref_com['iother'],
             )
 
             sliv = sli_v(
@@ -172,7 +173,8 @@ class BivariateSplineRect(scpinterp.BivariateSpline):
                 indokx0=indokx0,
                 ddim=coefs.ndim,
                 axis=axis,
-                iother=None if dref_com is None else dref_com['iother'],
+                ix=dref_com['ix'],
+                iother=dref_com['iother'],
             )
 
             self.set_coefs(
@@ -184,7 +186,7 @@ class BivariateSplineRect(scpinterp.BivariateSpline):
             val[sliv] = super().__call__(x0[slix], x1[slix], grid=False)
 
         # clean out-of-mesh
-        if dref_com is None and val_out is not False:
+        if dref_com['ix'] is None and val_out is not False:
             indout = (
                 (x0 < self.tck[0][0]) | (x0 > self.tck[0][-1])
                 | (x1 < self.tck[1][0]) | (x1 > self.tck[1][-1])
@@ -280,8 +282,8 @@ class BivariateSplineRect(scpinterp.BivariateSpline):
     def get_overlap(self):
         return _get_overlap(
             deg=self.degrees[0],
-            knotsx=self.knots_per_bs_x0,
-            knotsy=self.knots_per_bs_x1,
+            knots0=self.knots_per_bs_x0,
+            knots1=self.knots_per_bs_x1,
             shapebs=self.shapebs,
         )
 
@@ -315,10 +317,10 @@ class BivariateSplineRect(scpinterp.BivariateSpline):
         )
 
 
-# #############################################################################
-# #############################################################################
+# ################################################################
+# ################################################################
 #                       Mesh2DRect - bsplines - overlap
-# #############################################################################
+# ################################################################
 
 
 def _get_overlap(

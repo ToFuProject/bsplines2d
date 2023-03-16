@@ -11,12 +11,16 @@ import numpy as np
 
 # local
 from ._class01_Mesh2D import Mesh2D as Previous
+from . import _class01_select as _select
 from . import _class02_checks as _checks
 from . import _class02_compute as _compute
+from . import _class02_contours as _contours
 from . import _class01_rect_cropping as _cropping
 from . import _class02_interpolate as _interpolate
-from . import _class02_binning as _binning
+from . import _class02_interpolate_all as _interpolate_all
 from . import _class02_operators as _operators
+from . import _class02_plot_as_profile2d as _plot_as_profile2d
+from . import _class02_plot_as_profile2d_compare as _plot_as_profile2d_compare
 
 
 __all__ = ['BSplines2D']
@@ -38,6 +42,7 @@ class BSplines2D(Previous):
     _ddef['params']['dref'] = None
 
     _dshow = dict(Previous._dshow)
+    _dshow['data'].append('bsplines')
 
     # -----------------
     # bsplines
@@ -87,6 +92,13 @@ class BSplines2D(Previous):
                 keybs=keybs,
                 keym=keym,
             )
+
+    # -----------------
+    # remove_bsplines
+    # ------------------
+
+    def remove_bsplines(self, key=None, propagate=None):
+        return _checks.remove_bsplines(coll=self, key=key, propagate=propagate)
 
     # -----------------
     # add_data
@@ -196,7 +208,7 @@ class BSplines2D(Previous):
         Can return indices / values of neighbourgs
 
         """
-        return _compute._select_bsplines(
+        return _select._select_bsplines(
             coll=self,
             key=key,
             ind=ind,
@@ -205,6 +217,29 @@ class BSplines2D(Previous):
             return_knots=return_knots,
             crop=crop,
         )
+
+    # -----------------
+    # utils
+    # ------------------
+
+    def get_profiles2d(self):
+        """ Return dict of data relying on 2d bsplines """
+
+        return _compute._get_profiles2d(self)
+
+    def extract(self, keys=None, vectors=None):
+        """ Extract some selected data and return as new instance
+
+        Includes:
+            - all desired data keys
+            - all relevant ref
+            - all associated monotonous vectors (optional)
+            - all relevant bsplines and meshes
+
+        """
+
+        coll2 = super().extract(keys=keys, vectors=vectors)
+        return _compute.extract(self, coll2=coll2, vectors=vectors)
 
     # -----------------
     # Integration operators
@@ -216,8 +251,10 @@ class BSplines2D(Previous):
         operator=None,
         geometry=None,
         crop=None,
+        # store vs return
         store=None,
         returnas=None,
+        return_param=None,
         # specific to deg = 0
         centered=None,
         # to return gradR, gradZ, for D1N2 deg 0, for tomotok
@@ -245,29 +282,68 @@ class BSplines2D(Previous):
             crop=crop,
             store=store,
             returnas=returnas,
+            return_param=return_param,
             # specific to deg = 0
             centered=centered,
             # to return gradR, gradZ, for D1N2 deg 0, for tomotok
             returnas_element=returnas_element,
         )
 
+    def apply_bsplines_operator(
+        self,
+        key=None,
+        operator=None,
+        store=None,
+        returnas=None,
+    ):
+        """ Apply an operator to desired data """
+
+        raise NotImplementedError("TBD")
+        return _operators.apply_operator(
+            coll=self,
+            key=key,
+            operator=operator,
+            store=store,
+            returnas=returnas,
+        )
+
     # -----------------
-    # binning tools
+    # contours
     # ------------------
 
-    def binning(
+    def get_profile2d_contours(
         self,
-        keys=None,
-        ref_key=None,
-        bins=None,
+        key=None,
+        levels=None,
+        res=None,
+        npts=None,
+        largest=None,
+        ref_com=None,
+        # return vs store
+        returnas=None,
+        return_dref=None,
+        store=None,
+        key_npts=None,
+        key_cont0=None,
+        key_cont1=None,
     ):
-        """ Return binned data along the desired axis """
+        """ Return a dict of contour data """
 
-        return _binning.binning(
+        return _contours.get_contours(
             coll=self,
-            keys=keys,
-            ref_key=ref_key,
-            bins=bins,
+            key=key,
+            levels=levels,
+            res=res,
+            npts=npts,
+            largest=largest,
+            ref_com=ref_com,
+            # return vs store
+            returnas=returnas,
+            return_dref=return_dref,
+            store=store,
+            key_npts=key_npts,
+            key_cont0=key_cont0,
+            key_cont1=key_cont1,
         )
 
     # -----------------
@@ -283,6 +359,8 @@ class BSplines2D(Previous):
         x0=None,
         x1=None,
         grid=None,
+        res=None,
+        mode=None,
         submesh=None,
         # domain limitation
         domain=None,
@@ -298,14 +376,17 @@ class BSplines2D(Previous):
         deriv=None,
         val_out=None,
         log_log=None,
+        nan0=None,
+        # store vs return
+        returnas=None,
         return_params=None,
+        store=None,
+        inplace=None,
+        # debug
         debug=None,
         # # bsplines
         # res=None,
         # imshow=None,
-        # # storing
-        # store=None,
-        # inplace=None,
     ):
         """ Interpolate along a given ref or bspline, in 1d or 2d """
 
@@ -318,6 +399,8 @@ class BSplines2D(Previous):
             x0=x0,
             x1=x1,
             grid=grid,
+            res=res,
+            mode=mode,
             submesh=submesh,
             # domain limitation
             domain=domain,
@@ -333,8 +416,40 @@ class BSplines2D(Previous):
             deriv=deriv,
             val_out=val_out,
             log_log=log_log,
+            # store vs return
+            returnas=returnas,
             return_params=return_params,
+            store=store,
+            inplace=inplace,
+            # debug
             debug=debug,
+        )
+
+    def interpolate_all_bsplines(
+        self,
+        keys=None,
+        # sampling
+        dres=None,
+        dunique_mesh_2d=None,
+        submesh=None,
+        # parameters
+        val_out=None,
+        nan0=None,
+    ):
+        """ Return a new instance with fully interpolated data
+
+        """
+
+        return _interpolate_all.interpolate_all_bsplines(
+            coll=self,
+            keys=keys,
+            # sampling
+            dres=dres,
+            dunique_mesh_2d=dunique_mesh_2d,
+            submesh=submesh,
+            # parameters
+            val_out=val_out,
+            nan0=nan0,
         )
 
     """
@@ -810,6 +925,129 @@ class BSplines2D(Previous):
     # plotting
     # ------------------
 
+    def plot_as_profile2d(
+        self,
+        key=None,
+        # parameters
+        dres=None,
+        dunique_mesh_2d=None,
+        # levels
+        dlevels=None,
+        ref_com=None,
+        # details
+        plot_details=None,
+        # ref vectors
+        dref_vectorZ=None,
+        dref_vectorU=None,
+        # interpolation
+        val_out=None,
+        nan0=None,
+        # plot options
+        vmin=None,
+        vmax=None,
+        cmap=None,
+        dax=None,
+        dmargin=None,
+        fs=None,
+        dcolorbar=None,
+        dleg=None,
+        # interactivity
+        dinc=None,
+        connect=None,
+    ):
+
+        return _plot_as_profile2d.plot_as_profile2d(
+            coll=self,
+            key=key,
+            # parameters
+            dres=dres,
+            dunique_mesh_2d=dunique_mesh_2d,
+            # levels
+            dlevels=dlevels,
+            ref_com=ref_com,
+            # details
+            plot_details=plot_details,
+            # ref vectors
+            dref_vectorZ=dref_vectorZ,
+            dref_vectorU=dref_vectorU,
+            # interpolation
+            val_out=val_out,
+            nan0=nan0,
+            # plot options
+            vmin=vmin,
+            vmax=vmax,
+            cmap=cmap,
+            dax=dax,
+            dmargin=dmargin,
+            fs=fs,
+            dcolorbar=dcolorbar,
+            dleg=dleg,
+            # interactivity
+            dinc=dinc,
+            connect=connect,
+        )
+
+    def plot_as_profile2d_compare(
+        self,
+        keys=None,
+        # parameters
+        dres=None,
+        # levels
+        dlevels=None,
+        ref_com=None,
+        # details
+        plot_details=None,
+        # ref vectors
+        dref_vectorZ=None,
+        dref_vectorU=None,
+        # interpolation
+        val_out=None,
+        nan0=None,
+        # plot options
+        vmin=None,
+        vmax=None,
+        cmap=None,
+        dax=None,
+        dmargin=None,
+        fs=None,
+        dcolorbar=None,
+        dleg=None,
+        # interactivity
+        dinc=None,
+        connect=None,
+    ):
+
+        return _plot_as_profile2d_compare.plot_as_profile2d_compare(
+            coll=self,
+            keys=keys,
+            # parameters
+            dres=dres,
+            # levels
+            dlevels=dlevels,
+            ref_com=ref_com,
+            # details
+            plot_details=plot_details,
+            # ref vectors
+            dref_vectorZ=dref_vectorZ,
+            dref_vectorU=dref_vectorU,
+            # interpolation
+            val_out=val_out,
+            nan0=nan0,
+            # plot options
+            vmin=vmin,
+            vmax=vmax,
+            cmap=cmap,
+            dax=dax,
+            dmargin=dmargin,
+            fs=fs,
+            dcolorbar=dcolorbar,
+            dleg=dleg,
+            # interactivity
+            dinc=dinc,
+            connect=connect,
+        )
+
+
     # def plot_bsplines(
         # self,
         # key=None,
@@ -844,45 +1082,4 @@ class BSplines2D(Previous):
             # dmargin=dmargin,
             # fs=fs,
             # dleg=dleg,
-        # )
-
-    # def plot_profile2d(
-        # self,
-        # # inputs
-        # key=None,
-        # coefs=None,
-        # indt=None,
-        # res=None,
-        # # plot options
-        # vmin=None,
-        # vmax=None,
-        # cmap=None,
-        # dax=None,
-        # dmargin=None,
-        # fs=None,
-        # dcolorbar=None,
-        # dleg=None,
-        # # interactivity
-        # dinc=None,
-        # connect=None,
-    # ):
-        # return _plot.plot_profile2d(
-            # coll=self,
-            # # inputs
-            # key=key,
-            # coefs=coefs,
-            # indt=indt,
-            # res=res,
-            # # plot options
-            # vmin=vmin,
-            # vmax=vmax,
-            # cmap=cmap,
-            # dax=dax,
-            # dmargin=dmargin,
-            # fs=fs,
-            # dcolorbar=dcolorbar,
-            # dleg=dleg,
-            # # interactivity
-            # dinc=dinc,
-            # connect=connect,
         # )

@@ -39,7 +39,6 @@ def teardown_module():
 
 
 """
-
 class Test01_BSplines():
 
     @classmethod
@@ -88,80 +87,6 @@ class Test01_BSplines():
     def teardown_class(cls):
         pass
 
-    def test01_show(self):
-        self.obj.show()
-
-    def test02_select_ind(self):
-
-        # Rect mesh
-        nn = 4
-        lelements = ['knots', None, 'cents', None]
-        lind = [None, ([0, 2], [0, 3]), [0, 5, 8], ([0, 5, 6], [0, 2, 3])]
-        lcrop = [True, False, True, False]
-
-        # select fom mesh
-        for ii, k0 in enumerate(self.lm):
-
-            ind = ii % nn
-
-            if len(self.obj.dobj['mesh'][k0]['shape-c']) == 2:
-                indt = self.obj.select_ind(
-                    key=k0,
-                    ind=lind[ind],
-                    elements=lelements[ind],
-                    returnas=tuple,
-                    crop=lcrop[ind],
-                )
-                indf = self.obj.select_ind(
-                    key=k0,
-                    ind=indt,
-                    elements=lelements[ind],
-                    returnas=np.ndarray,
-                    crop=lcrop[ind],
-                )
-                indt2 = self.obj.select_ind(
-                    key=k0,
-                    ind=indf,
-                    elements=lelements[ind],
-                    returnas=tuple,
-                    crop=lcrop[ind],
-                )
-                assert all([np.allclose(indt[jj], indt2[jj]) for jj in [0, 1]])
-
-            elif ind not in [1, 3]:
-                indt = self.obj.select_ind(
-                    key=k0,
-                    ind=lind[ind],
-                    elements=lelements[ind],
-                    returnas=int,
-                )
-
-    def test03_select_mesh(self):
-
-        lind0 = [None, ([0, 2], [0, 4]), [0, 2, 4], ([0, 2, 4], [0, 2, 3])]
-        lind1 = [None, [1], 1, [0, 1]]
-        lelem = [None, 'cents', 'knots']
-        for ii, k0 in enumerate(self.lm):
-
-            if len(self.obj.dobj['mesh'][k0]['shape-c']) == 2:
-                lind = lind0
-            else:
-                lind = lind1
-
-            if self.obj.dobj['mesh'][k0]['type'] == 'polar':
-                return_neighbours = False
-            else:
-                return_neighbours = None if ii == 0 else bool(ii%2)
-
-            out = self.obj.select_mesh_elements(
-                key=k0,
-                ind=lind[ii%len(lind)],
-                elements=lelem[ii%3],
-                returnas='ind' if ii%2 == 0 else 'data',
-                return_neighbours=return_neighbours,
-                crop=ii%3 == 1,
-            )
-
     def test04_select_bsplines(self):
 
         lind0 = [None, ([0, 2], [0, 4]), [0, 2, 4], ([0, 2, 4], [0, 2, 3])]
@@ -188,111 +113,6 @@ class Test01_BSplines():
                 return_cents=return_cents,
                 return_knots=return_knots,
             )
-
-    def test05_sample_mesh(self):
-
-        lres = [None, 0.1, [0.1, 0.05]]
-        lmode = [None, 'rel', 'abs']
-        lgrid = [None, True, False]
-        for ii, k0 in enumerate(self.lm):
-
-            res = lres[ii%len(lres)]
-            mode = lmode[ii%len(lmode)]
-            if self.obj.dobj['mesh'][k0]['type'] == 'tri':
-                if mode == 'rel':
-                    if res == 0.1:
-                        res = 0.5
-                    elif res == [0.1, 0.05]:
-                        res = [0.5, 0.4]
-
-            out = self.obj.get_sample_mesh(
-                key=k0,
-                res=res,
-                mode=mode,
-                grid=lgrid[ii%len(lgrid)],
-            )
-
-    def test06_sample_bspline(self):
-        lres = [None, 0.1, 0.01, [0.1, 0.05]]
-        lmode = [None, 'rel', 'abs', 'abs']
-        lgrid = [None, True, False, False]
-        for ii, (k0, v0) in enumerate(self.dobj.items()):
-            out = v0.get_sample_bspline(
-                res=lres[ii], grid=lgrid[ii], mode=lmode[ii],
-            )
-
-    def test07_interpolate_profile2d_sum(self):
-        x = np.linspace(2.2, 2.8, 5)
-        y = np.linspace(-0.5, 0.5, 5)
-        x = np.tile(x, (y.size, 1))
-        y = np.tile(y, (x.shape[1], 1)).T
-
-        dfail = {}
-        for ii, k0 in enumerate(self.lbs):
-
-            # try:
-            val = self.obj.interpolate_profile2d(
-                key=k0,
-                R=x,
-                Z=y,
-                coefs=None,
-                indbs=None,
-                indt=None,
-                grid=False,
-                details=False,
-                reshape=True,
-                res=None,
-                crop=None,
-                nan0=ii % 2 == 0,
-                imshow=False,
-            )
-
-            # add fix data
-            kdata = _add_data_fix(self.obj, k0)
-            val = self.obj.interpolate_profile2d(
-                key=kdata,
-                R=x,
-                Z=y,
-                coefs=None,
-                indbs=None,
-                indt=None,
-                grid=False,
-                details=False,
-                reshape=True,
-                res=None,
-                crop=None,
-                nan0=ii % 2 == 0,
-                imshow=False,
-            )
-
-            # add time-dependent data
-            kdata = _add_data_var(self.obj, k0)
-            val = self.obj.interpolate_profile2d(
-                key=kdata,
-                R=x,
-                Z=y,
-                coefs=None,
-                indbs=None,
-                indt=None,
-                grid=False,
-                details=False,
-                reshape=True,
-                res=None,
-                crop=None,
-                nan0=ii % 2 == 0,
-                imshow=False,
-            )
-            # except Exception as err:
-                # dfail[k0] = str(err)
-
-        # raise error if any fail
-        if len(dfail) > 0:
-            lstr = [f"\t- {k0}: {v0}" for k0, v0 in dfail.items()]
-            msg = (
-                "The following bsplines could not be interpolated:\n"
-                + "\n".join(lstr)
-            )
-            raise Exception(msg)
 
     def test08_interpolate_profile2d_details_vs_sum(self):
 
@@ -377,30 +197,6 @@ class Test01_BSplines():
                 )
             # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    def test09_plot_mesh(self):
-        lik0 = [None, ([0, 2], [0, 3]), [2, 3], None]
-        lic0 = [None, ([0, 2], [0, 3]), None, [2, 3]]
-        lik1 = [None, [0, 2], [2, 3], None]
-        lic1 = [None, [0, 2], None, [2, 3]]
-        for ii, k0 in enumerate(self.lm):
-
-            if self.obj.dobj['mesh'][k0]['type'] == 'rect':
-                lik = lik0
-                lic = lic0
-            elif self.obj.dobj['mesh'][k0]['type'] == 'tri':
-                lik = lik1
-                lic = lic1
-            else:
-                lik = None
-                lic = None
-
-            dax = self.obj.plot_mesh(
-                key=k0,
-                ind_knot=lik[ii%len(lik)] if lik is not None else None,
-                ind_cent=lic[ii%len(lic)] if lic is not None else None,
-            )
-        plt.close('all')
-
     def test10_plot_bsplines(self):
 
         li0 = [None, ([1, 2], [2, 1]), (1, 1), [1, 2, 4]]
@@ -426,21 +222,6 @@ class Test01_BSplines():
                 res=0.05,
                 plot_mesh=plot_mesh,
             )
-            plt.close('all')
-
-    def test11_plot_profile2d(self):
-
-        # plotting
-        for k0 in self.lbs:
-
-            # fix
-            k1 = _add_data_fix(self.obj, k0)
-            dax = self.obj.plot_profile2d(key=k1, res=0.05)
-
-            # time-variable
-            k1 = _add_data_var(self.obj, k0)
-            dax = self.obj.plot_profile2d(key=k1, res=0.05)
-
             plt.close('all')
 
     def test12_add_bsplines_operator(self):
@@ -492,59 +273,4 @@ class Test01_BSplines():
                 + "\n".join(lstr)
             )
             raise Exception(msg)
-
 """
-
-    # TBF for triangular
-    # def test13_compute_plot_geometry_matrix(self, kind=None):
-
-        # # get config and cam
-        # conf = tf.load_config('WEST-V0')
-        # cam = tf.geom.utils.create_CamLOS1D(
-            # pinhole=[3., 1., 0.],
-            # orientation=[np.pi, 0., 0],
-            # focal=0.1,
-            # sensor_nb=50,
-            # sensor_size=0.15,
-            # config=conf,
-            # Diag='SXR',
-            # Exp='WEST',
-            # Name='cam1',
-        # )
-
-        # lbs = list(self.lbs)
-        # if kind is not None:
-            # lbs = [
-                # kbs for kbs in lbs
-                # if self.obj.dobj['mesh'][
-                    # self.obj.dobj['bsplines'][kbs]['mesh']
-                # ]['type'] == kind
-            # ]
-
-        # # compute geometry matrices
-        # for ii, k0 in enumerate(lbs):
-            # self.obj.add_geometry_matrix(
-                # key=k0,
-                # cam=cam,
-                # res=0.01,
-                # crop=None,
-                # store=True,
-            # )
-
-        # # plot geometry matrices
-        # imax = 3
-        # for ii, k0 in enumerate(self.obj.dobj['matrix']):
-
-            # if '-' in k0 and int(k0[k0.index('-')+1:]) > 0:
-                # continue
-
-            # dax = self.obj.plot_geometry_matrix(
-                # key=k0,
-                # cam=cam,
-                # indchan=40,
-                # indbf=5,
-                # res=0.05,
-            # )
-            # if ii % imax == 0:
-                # plt.close('all')
-        # plt.close('all')

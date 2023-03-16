@@ -21,7 +21,6 @@ def check(
     key=None,
     # knots
     knots=None,
-    knots_name=None,
     uniform=None,
     # defined from pre-existing bsplines
     subkey=None,
@@ -43,8 +42,8 @@ def check(
     # knots vector
 
     knots, res = _check_knots(
+        key=key,
         knots=knots,
-        knots_name=knots_name,
         uniform=uniform,
     )
 
@@ -75,7 +74,6 @@ def check(
         coll=coll,
         key=key,
         knots=knots,
-        knots_name=knots_name,
         cents=cents,
         res=res,
         # sub quantity
@@ -96,8 +94,8 @@ def check(
 
 
 def _check_knots(
+    key=None,
     knots=None,
-    knots_name=None,
     uniform=None,
 ):
 
@@ -131,7 +129,7 @@ def _check_knots(
 
     elif uniform is True:
         msg = (
-            f"Non-uniform resolution for user-provided mesh {knots_name}\n"
+            f"Non-uniform resolution for user-provided mesh '{key}'\n"
             f"\t- unique res: {np.unique(res)}\n"
             f"\t- diff res: {np.diff(np.unique(res))}\n"
             f"\t- res: {res}\n"
@@ -244,7 +242,6 @@ def _to_dict(
     coll=None,
     key=None,
     knots=None,
-    knots_name=None,
     cents=None,
     res=None,
     # submesh
@@ -256,23 +253,11 @@ def _to_dict(
 ):
 
     # ---------
-    # check
-
-    knots_name = ds._generic_check._check_var(
-        knots_name, 'knots_name',
-        types=str,
-        default='x',
-    )
-
-    # ---------
     # prepare
 
     # keys
     # keys of knots and cents
-    kkr, kcr, kk, kc = _generic_mesh.names_knots_cents(
-        key=key,
-        knots_name=knots_name,
-    )
+    kkr, kcr, kk, kc = _generic_mesh.names_knots_cents(key=key)
 
     # variable
     variable = not np.isscalar(res)
@@ -308,7 +293,7 @@ def _to_dict(
             # 'source': None,
             'dim': dim,
             'quant': quant,
-            'name': knots_name,
+            'name': name,
             'ref': kkr,
         },
         kc: {

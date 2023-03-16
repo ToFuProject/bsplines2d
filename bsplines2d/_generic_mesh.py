@@ -20,16 +20,41 @@ _ELEMENTS = 'knots'
 # #############################################################################
 
 
-def names_knots_cents(key=None, knots_name=None):
-    kkr, kcr = f'{key}-{knots_name}-nk', f'{key}-{knots_name}-nc'
-    kk, kc = f'{key}-k-{knots_name}', f'{key}-c-{knots_name}'
+def names_knots_cents(key=None, knots_name=''):
+
+    kkr, kcr = f'{key}_nk{knots_name}', f'{key}_nc{knots_name}'
+    kk, kc = f'{key}_k{knots_name}', f'{key}_c{knots_name}'
+
     return kkr, kcr, kk, kc
 
 
-# #############################################################################
-# #############################################################################
+def _get_kwdargs_2d(kwdargs, latt=None):
+
+    for k0 in latt:
+
+        if kwdargs.get(k0) is None:
+            kwdargs[k0] = [None, None]
+
+        elif isinstance(kwdargs.get(k0), str):
+            kwdargs[k0] = [kwdargs[k0], kwdargs[k0]]
+
+        elif not (isinstance(kwdargs[k0], list) and len(kwdargs[k0]) == 2):
+            msg = (
+                f"Wrong attributes for 2d rect mesh '{k0}':\n"
+                "Please provide units, dim, quant, name as list of len() = 2"
+                f"Provided:\n{kwdargs}"
+            )
+            raise Exception(msg)
+
+    dim, quant, name, units = [kwdargs[ss] for ss in latt]
+
+    return dim, quant, name, units
+
+
+# ###############################################################
+# ###############################################################
 #               mesh vs bsplines
-# #############################################################################
+# ###############################################################
 
 
 def _get_key_mesh_vs_bplines(
@@ -37,41 +62,43 @@ def _get_key_mesh_vs_bplines(
     key=None,
     which=None,
 ):
-    
-    if which in [None, coll._which_mesh]:
-        lk1 = list(coll.dobj.get(coll._which_mesh, {}).keys())
+
+    wm = coll._which_mesh
+    wbs = coll._which_bsplines
+    if which in [None, wm]:
+        lk1 = list(coll.dobj.get(wm, {}).keys())
     else:
         lk1 = []
-    
-    if which in [None, coll._which_bsplines]:
-        lk2 = list(coll.dobj.get(coll._which_bsplines, {}).keys())
+
+    if which in [None, wbs]:
+        lk2 = list(coll.dobj.get(wbs, {}).keys())
     else:
         lk2 = []
-        
+
     # key
     key = ds._generic_check._check_var(
         key, 'key',
         allowed=lk1 + lk2,
         types=str,
     )
-    
+
     # which
     if key in lk1:
-        cat = coll._which_mesh
+        cat = wm
     else:
-        cat = coll._which_bsplines
+        cat = wbs
     assert which in [cat, None], (cat, which)
 
     # keys
-    if cat == coll._which_bsplines:
-        keym = coll.dobj[coll._which_bsplines][key][coll._which_mesh]
+    if cat == wbs:
+        keym = coll.dobj[wbs][key][wm]
         keybs = key
     else:
         keym = key
         keybs = None
-        
+
     return keym, keybs, cat
-    
+
 
 # #############################################################################
 # #############################################################################
@@ -314,3 +341,69 @@ def _mesh_bsplines(key=None, lkeys=None, deg=None):
     keybs = f'{key}-bs{deg}'
 
     return key, keybs, deg
+
+
+# ###############################################################
+# ###############################################################
+#                       Remove bsplines
+# ###############################################################
+
+
+def remove_mesh(coll=None, key=None, propagate=None):
+
+    # ----------
+    # check
+
+    # key
+    wm = coll._which_mesh
+    wbs = coll._which_bsplines
+
+    if wm not in coll.dobj.keys():
+        return
+
+    if isinstance(key, str):
+        key = [key]
+    key = ds._generic_check._check_var_iter(
+        key, 'key',
+        types=(list, tuple),
+        types_iter=str,
+        allowed=coll.dobj.get(wm, {}).keys(),
+    )
+
+    # propagate
+    propagate = ds._generic_check._check_var(
+        propagate, 'propagate',
+        types=bool,
+        default=True,
+    )
+
+    # ---------
+    # remove
+
+    for k0 in key:
+
+        # remove bsplines
+        if wbs in coll.dobj.keys():
+            lbs = [k1 for k1, v1 in coll.dobj[wbs].items() if v1[wm] == k0]
+            coll.remove_bsplines(key=lbs, propagate=propagate)
+
+        # specific data
+        ldata = list(
+            coll.dobj[wm][k0]['knots']
+            + coll.dobj[wm][k0]['cents']
+        )
+        lref = [coll.ddata[kk]['ref'] for kk in ldata]
+        crop = coll.dobj[wm][k0]['crop']
+        if crop is not None and crop is not False:
+            ldata.append(crop)
+
+        for dd in ldata:
+            coll.remove_data(dd, propagate=propagate)
+
+        # specific ref
+        for rr in lref:
+            if rr in coll.dref.keys():
+                coll.remove_ref(rr, propagate=propagate)
+
+        # obj
+        coll.remove_obj(which=wm, key=k0, propagate=propagate)
