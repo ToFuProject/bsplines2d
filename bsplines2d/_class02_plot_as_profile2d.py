@@ -32,6 +32,9 @@ def plot_as_profile2d(
     # ref vectors
     dref_vectorZ=None,
     dref_vectorU=None,
+    # interpolation
+    val_out=None,
+    nan0=None,
     # figure
     vmin=None,
     vmax=None,
@@ -85,6 +88,9 @@ def plot_as_profile2d(
         dkeys=dkeys,
         dres=dres,
         dunique_mesh_2d=dunique_mesh_2d,
+        # interpolation
+        val_out=val_out,
+        nan0=nan0,
         # levels
         dlevels=dlevels,
         ref_com=ref_com,
@@ -400,6 +406,9 @@ def _prepare(
     # levels
     dlevels=None,
     ref_com=None,
+    # interpolation
+    val_out=None,
+    nan0=None,
     # ref vectors
     dref_vectorZ=None,
     dref_vectorU=None,
@@ -422,6 +431,9 @@ def _prepare(
         dres=dres,
         dunique_mesh_2d=dunique_mesh_2d,
         submesh=True,
+        # interpolation
+        val_out=val_out,
+        nan0=nan0,
     )
     lbs2d = [k0 for k0, v0 in dbs.items() if len(v0['ref']) == 2]
 

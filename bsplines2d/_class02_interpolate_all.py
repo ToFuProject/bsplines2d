@@ -25,6 +25,9 @@ def interpolate_all_bsplines(
     dres=None,
     submesh=None,
     dunique_mesh_2d=None,
+    # parameters
+    val_out=None,
+    nan0=None,
 ):
 
     # ----------
@@ -120,6 +123,9 @@ def interpolate_all_bsplines(
                     ref_com=ref_com,
                     grid=True,
                     details=False,
+                    # parameters
+                    val_out=val_out,
+                    nan0=nan0,
                     # return vs store
                     returnas=object,
                     return_params=False,

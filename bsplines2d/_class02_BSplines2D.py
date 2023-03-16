@@ -428,9 +428,13 @@ class BSplines2D(Previous):
     def interpolate_all_bsplines(
         self,
         keys=None,
+        # sampling
         dres=None,
         dunique_mesh_2d=None,
         submesh=None,
+        # parameters
+        val_out=None,
+        nan0=None,
     ):
         """ Return a new instance with fully interpolated data
 
@@ -439,9 +443,13 @@ class BSplines2D(Previous):
         return _interpolate_all.interpolate_all_bsplines(
             coll=self,
             keys=keys,
+            # sampling
             dres=dres,
             dunique_mesh_2d=dunique_mesh_2d,
             submesh=submesh,
+            # parameters
+            val_out=val_out,
+            nan0=nan0,
         )
 
     """
@@ -931,6 +939,9 @@ class BSplines2D(Previous):
         # ref vectors
         dref_vectorZ=None,
         dref_vectorU=None,
+        # interpolation
+        val_out=None,
+        nan0=None,
         # plot options
         vmin=None,
         vmax=None,
@@ -959,6 +970,9 @@ class BSplines2D(Previous):
             # ref vectors
             dref_vectorZ=dref_vectorZ,
             dref_vectorU=dref_vectorU,
+            # interpolation
+            val_out=val_out,
+            nan0=nan0,
             # plot options
             vmin=vmin,
             vmax=vmax,
@@ -986,6 +1000,9 @@ class BSplines2D(Previous):
         # ref vectors
         dref_vectorZ=None,
         dref_vectorU=None,
+        # interpolation
+        val_out=None,
+        nan0=None,
         # plot options
         vmin=None,
         vmax=None,
@@ -1013,6 +1030,9 @@ class BSplines2D(Previous):
             # ref vectors
             dref_vectorZ=dref_vectorZ,
             dref_vectorU=dref_vectorU,
+            # interpolation
+            val_out=val_out,
+            nan0=nan0,
             # plot options
             vmin=vmin,
             vmax=vmax,
