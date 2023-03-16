@@ -856,6 +856,8 @@ def _plot_as_profile2d(bs,  nd=None, kind=None):
 
         if bs.ddata[k0]['data'].ndim > 4:
             continue
+        if k0 in bs.dobj[wbs][v0['bs'][0]]['apex']:
+            continue
         if ii%2 == 0:
             continue
 

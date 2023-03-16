@@ -449,7 +449,6 @@ def _get_overlap(
 def get_bs_class(
     deg=None,
     knots=None,
-    coll=None,
 ):
 
     # ----------------
