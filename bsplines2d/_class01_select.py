@@ -256,7 +256,6 @@ def _select_mesh(
     # check inputs
 
     wm = coll._which_mesh
-    nd = coll.dobj[wm][key]['nd']
     mtype = coll.dobj[wm][key]['type']
 
     (
@@ -276,8 +275,6 @@ def _select_mesh(
         kR, kZ = coll.dobj[wm][key][elements]
         R = coll.ddata[kR]['data']
         Z = coll.ddata[kZ]['data']
-        nR = R.size
-        nZ = Z.size
     else:
         kr = coll.dobj[wm][key][elements][0]
         rad = coll.ddata[kr]['data']
