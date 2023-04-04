@@ -1,33 +1,20 @@
 # -*- coding: utf-8 -*-
 
 
-# Built-in
-import copy
-import warnings
-
-
 # Common
 import numpy as np
-from scipy.spatial import ConvexHull
-from matplotlib.path import Path
-from contourpy import contour_generator
 import datastock as ds
+from matplotlib import path
 
 
 # tofu
 from . import _generic_mesh
-from . import _utils_bsplines
-# from . import _class02_checks as _checks
-from . import _class02_bsplines_rect
-from . import _class02_bsplines_tri
-from . import _class02_bsplines_polar
-from . import _class02_bsplines_1d
 
 
-# #############################################################################
-# #############################################################################
-#                           main
-# #############################################################################
+# ##############################################################
+# ##############################################################
+#                       Main
+# ##############################################################
 
 
 def sample_mesh(
@@ -37,10 +24,15 @@ def sample_mesh(
     mode=None,
     x0=None,
     x1=None,
+    grid=None,
+    # options
     Dx0=None,
     Dx1=None,
-    grid=None,
+    submesh=None,
+    # output for 2d
     imshow=None,
+    return_ind=None,
+    in_mesh=None,
     # store
     store=None,
     kx0=None,
@@ -50,31 +42,22 @@ def sample_mesh(
     # -------------
     # check inputs
 
-    # key
-    key, _, cat = _generic_mesh._get_key_mesh_vs_bplines(
+    (
+        key, nd, mtype,
+        mode, res, submesh,
+        grid, imshow, store,
+    ) = _check(
         coll=coll,
         key=key,
-        which=coll._which_mesh,
+        mode=mode,
+        res=res,
+        submesh=submesh,
+        grid=grid,
+        imshow=imshow,
+        store=store,
+        x0=x0,
+        x1=x1,
     )
-
-    nd = coll.dobj[cat][key]['nd']
-    mtype = coll.dobj[cat][key]['type']
-
-    # mode
-    mode = ds._generic_check._check_var(
-        mode, 'mode',
-        types=str,
-        default='abs',
-    )
-
-    # res
-    if res is None:
-        res = _get_sample_mesh_res(
-            coll=coll,
-            keym=key,
-            nd=nd,
-            mtype=mtype,
-        )
 
     # ------------
     # sample
@@ -82,23 +65,25 @@ def sample_mesh(
     if nd == '1d':
 
         # check
-        key, mode, Dx, knots, store = _sample_mesh_check_1d(
+        knots, Dx = _check_1d(
             coll=coll,
             key=key,
-            res=res,
-            mode=mode,
             Dx=Dx0,
-            store=store,
         )
 
-        # compute
-        dref, ddata = sample_mesh_1d(
-            coll=coll,
-            key=key,
+        # sample
+        x0 = _sample_1d(
             res=res,
             mode=mode,
-            Dx=Dx,
             knots=knots,
+            Dx=Dx,
+        )
+
+        # prepare storing
+        dref, ddata = _store_1d(
+            coll=coll,
+            key=key,
+            x0=x0,
             # store
             store=store,
             kx0=kx0,
@@ -107,37 +92,42 @@ def sample_mesh(
     else:
 
         # check
-        (
-            key, res, mode, grid, imshow,
-            x0, x1, Dx0, Dx1, x0k, x1k,
-            store,
-        ) = _sample_mesh_check_2d(
+        knots0, knots1, x0, x1, Dx0, Dx1 = _check_2d(
             coll=coll,
             key=key,
-            res=res,
-            mode=mode,
-            grid=grid,
-            imshow=imshow,
-            R=x0,
-            Z=x1,
-            DR=Dx0,
-            DZ=Dx1,
-            store=store,
-        )
-
-        dref, ddata = sample_mesh_2d(
-            coll=coll,
-            key=key,
-            res=res,
-            mode=mode,
             x0=x0,
             x1=x1,
             Dx0=Dx0,
             Dx1=Dx1,
-            x0k=x0k,
-            x1k=x1k,
+            mode=mode,
+            mtype=mtype,
+        )
+
+        # sample
+        x0, x1, ind = _sample_2d(
+            coll=coll,
+            key=key,
+            res=res,
+            mode=mode,
+            knots0=knots0,
+            knots1=knots1,
+            x0=x0,
+            x1=x1,
+            Dx0=Dx0,
+            Dx1=Dx1,
+            # options
             grid=grid,
             imshow=imshow,
+            in_mesh=in_mesh,
+        )
+
+        # prepare storing
+        dref, ddata = _store_2d(
+            coll=coll,
+            key=key,
+            x0=x0,
+            x1=x1,
+            ind=ind,
             # store
             store=store,
             kx0=kx0,
@@ -160,187 +150,100 @@ def sample_mesh(
     return ddata
 
 
-# ###################################################################
-# ###################################################################
+# ##################################################################
+# ##################################################################
 #                       checks
-# ###################################################################
+# ##################################################################
 
 
-def _sample_mesh_check_1d(
+def _check(
     coll=None,
     key=None,
-    res=None,
     mode=None,
-    Dx=None,
-    mtype=None,
-    store=None,
-):
-
-    # -----------
-    # Parameters
-
-    # for polar mesh => sample underlying mesh
-    if len(coll.dobj[coll._which_mesh][key]['shape-c']) > 1:
-        msg = "Wrong mesh dimension!"
-        raise Exception(msg)
-
-    if not (np.isscalar(res) and res > 0.):
-        msg = f"Arg res must be a positive float!\nProvided: {res}"
-        raise Exception(msg)
-
-    # -------------
-    # knots
-
-    kknots = coll.dobj[coll._which_mesh][key]['knots'][0]
-    knots = coll.ddata[kknots]['data']
-
-    # custom DR or DZ for mode='abs' only
-    if Dx is not None:
-        if mode != 'abs':
-            msg = "Custom Dx can only be provided with mode = 'abs'!"
-            raise Exception(msg)
-
-            c0 = (
-                hasattr(Dx, '__iter__')
-                and len(Dx) == 2
-                and all([
-                    rr is None or (np.isscalar(rr) and np.isfinite(rr))
-                    for rr in Dx
-                ])
-            )
-            if not c0:
-                msg = 'Arg Dx must be an iterable of 2 scalars!'
-                raise Exception(msg)
-
-    if Dx is None:
-        Dx = [knots.min(), knots.max()]
-
-    # ------
-    # store
-
-    store = ds._generic_check._check_var(
-        store, 'store',
-        types=bool,
-        default=False,
-    )
-
-    return key, mode, Dx, knots, store
-
-
-def _sample_mesh_check_2d(
-    coll=None,
-    key=None,
-    mtype=None,
     res=None,
-    mode=None,
+    submesh=None,
     grid=None,
     imshow=None,
-    R=None,
-    Z=None,
-    DR=None,
-    DZ=None,
     store=None,
+    x0=None,
+    x1=None,
 ):
 
-    # -----------
-    # Parameters
+    # ---------
+    # mesh
 
-    # for polar mesh => sample underlying mesh
-    if mtype == 'polar':
-        key = coll.dobj[coll._which_mesh][key]['submesh']
-        mtype = coll.dobj[coll._which_mesh][key]['type']
-
-    if np.isscalar(res):
-        res = [res, res]
-    c0 = (
-        isinstance(res, list)
-        and len(res) == 2
-        and all([np.isscalar(rr) and rr > 0 for rr in res])
-    )
-    if not c0:
-        msg = f"Arg res must be a list of 2 positive floats!\nProvided: {res}"
-        raise Exception(msg)
-
-    # grid
-    grid = ds._generic_check._check_var(
-        grid, 'grid',
+    # submesh
+    submesh = ds._generic_check._check_var(
+        submesh, 'submesh',
         types=bool,
         default=False,
     )
 
-    # imshow
-    imshow = ds._generic_check._check_var(
-        imshow, 'imshow',
-        types=bool,
-        default=False,
+    # key
+    wm = coll._which_mesh
+    key, _, cat = _generic_mesh._get_key_mesh_vs_bplines(
+        coll=coll,
+        key=key,
+        which=wm,
     )
 
-    # R, Z
-    if R is None and Z is None:
-        pass
-    elif R is None and np.isscalar(Z):
-        pass
-    elif Z is None and np.isscalar(R):
-        pass
+    nd = coll.dobj[cat][key]['nd']
+    mtype = coll.dobj[cat][key]['type']
+
+    if nd == '1d' and submesh is True:
+        if coll.dobj[wm][key]['submesh'] is not None:
+            key = coll.dobj[wm][key]['submesh']
+            nd = coll.dobj[cat][key]['nd']
+            mtype = coll.dobj[cat][key]['type']
+
+    # ----------
+    # resolution
+
+    # mode
+    mode = ds._generic_check._check_var(
+        mode, 'mode',
+        types=str,
+        default='abs',
+    )
+
+    # res
+    res = _get_res(
+        coll=coll,
+        key=key,
+        res=res,
+        nd=nd,
+        mtype=mtype,
+    )
+
+    # ---------
+    # parameters
+
+    if nd == '1d':
+        lok = None
+
     else:
-        msg = (
-            "For mesh discretisation, (R, Z) can be either:\n"
-            "\t- (None, None): will be created\n"
-            "\t- (scalar, None): A vertical line will be created\n"
-            "\t- (None, scalar): A horizontal line will be created\n"
+
+        # grid
+        grid = ds._generic_check._check_var(
+            grid, 'grid',
+            types=bool,
+            default=False,
         )
-        raise Exception(msg)
 
-    # -------------
-    # R, Z
+        # imshow
+        imshow = ds._generic_check._check_var(
+            imshow, 'imshow',
+            types=bool,
+            default=False,
+        )
 
-    if mtype == 'rect':
-        kR, kZ = coll.dobj[coll._which_mesh][key]['knots']
-        Rk = coll.ddata[kR]['data']
-        Zk = coll.ddata[kZ]['data']
+        lok = [False]
+        if grid is False and imshow is False:
+            if x0 is None and x1 is None:
+                lok.append(True)
 
-        # custom R xor Z for vertical / horizontal lines only
-        if R is None and Z is not None:
-            R = Rk
-        if Z is None and R is not None:
-            Z = Zk
-    else:
-        kknots = coll.dobj[coll._which_mesh][key]['knots']
-        Rk = coll.ddata[kknots[0]]['data']
-        Zk = coll.ddata[kknots[1]]['data']
-
-    # custom DR or DZ for mode='abs' only
-    if DR is not None or DZ is not None:
-        if mode != 'abs':
-            msg = "Custom DR or DZ can only be provided with mode = 'abs'!"
-            raise Exception(msg)
-
-        for DD, DN in [(DR, 'DR'), (DZ, 'DZ')]:
-            if DD is not None:
-                c0 = (
-                    hasattr(DD, '__iter__')
-                    and len(DD) == 2
-                    and all([
-                        rr is None or (np.isscalar(rr) and np.isfinite(rr))
-                        for rr in DD
-                    ])
-                )
-                if not c0:
-                    msg = f'Arg {DN} must be an iterable of 2 scalars!'
-                    raise Exception(msg)
-
-    if DR is None:
-        DR = [Rk.min(), Rk.max()]
-    if DZ is None:
-        DZ = [Zk.min(), Zk.max()]
-
-    # ------
+    # --------
     # store
-
-    lok = [False]
-    if grid is False and imshow is False:
-        if R is None and Z is None:
-            lok.append(True)
 
     store = ds._generic_check._check_var(
         store, 'store',
@@ -349,76 +252,386 @@ def _sample_mesh_check_2d(
         allowed=lok,
     )
 
-    return key, res, mode, grid, imshow, R, Z, DR, DZ, Rk, Zk, store
+    return (
+        key, nd, mtype,
+        mode, res, submesh,
+        grid, imshow, store,
+    )
 
 
-# ###################################################################
-# ###################################################################
-#                       utility
-# ###################################################################
-
-
-def _get_sample_mesh_res(
+def _check_1d(
     coll=None,
-    keym=None,
+    key=None,
+    Dx=None,
+):
+
+    wm = coll._which_mesh
+
+    # -------------
+    # knots
+
+    kknots = coll.dobj[wm][key]['knots'][0]
+    knots = coll.ddata[kknots]['data']
+
+    xlim = [knots.min(), knots.max()]
+
+    # custom DR or DZ for mode='abs' only
+    Dx = _Dx(Dx)
+
+    if Dx is not None and mode != 'abs':
+        msg = "Custom Dx can only be provided with mode = 'abs'!"
+        raise Exception(msg)
+
+    return knots, Dx
+
+
+def _check_2d(
+    coll=None,
+    key=None,
+    x0=None,
+    x1=None,
+    Dx0=None,
+    Dx1=None,
+    mode=None,
+    mtype=None,
+):
+
+    wm = coll._which_mesh
+
+    # -----------
+    # Parameters
+
+    # R, Z
+    if x0 is None and x1 is None:
+        pass
+    elif x0 is None and np.isscalar(x1):
+        pass
+    elif x1 is None and np.isscalar(x0):
+        pass
+    else:
+        msg = (
+            "For mesh discretisation, (x0, x1) can be either:\n"
+            "\t- (None, None): will be created\n"
+            "\t- (scalar, None): A vertical line will be created\n"
+            "\t- (None, scalar): A horizontal line will be created\n"
+        )
+        raise Exception(msg)
+
+    # -------------
+    # x0, x1
+
+    k0, k1 = coll.dobj[wm][key]['knots']
+    if mtype == 'rect':
+        knots0 = coll.ddata[k0]['data']
+        knots1 = coll.ddata[k1]['data']
+
+        # custom R xor Z for vertical / horizontal lines only
+        if x0 is None and x1 is not None:
+            x0 = knots0
+        if x1 is None and x0 is not None:
+            x1 = knots1
+
+    else:
+        knots0 = coll.ddata[k0]['data']
+        knots1 = coll.ddata[k1]['data']
+
+    # custom DR or DZ for mode='abs' only
+    Dx0 = _DRZ(Dx=Dx0, size=None, Dx_name='Dx0')
+    Dx1 = _DRZ(
+        Dx=Dx1,
+        size=len(Dx0) if Dx0 is not None else None,
+        Dx_name='Dx1',
+    )
+
+    if (Dx0 is not None or Dx1 is not None) and mode != 'abs':
+        msg = (
+            "Custom Dx0 or Dx1 can only be provided with mode = 'abs'!\n"
+            f"\t- mode: {mode}\n"
+            f"\t- Dx0: {Dx0}\n"
+            f"\t- Dx1: {Dx1}\n"
+        )
+        raise Exception(msg)
+
+    return knots0, knots1, x0, x1, Dx0, Dx1
+
+
+# #############
+# check Dx
+# #############
+
+
+def _Dx(Dx=None):
+
+    if Dx is None:
+        return None
+
+    c0 = (
+        hasattr(Dx, '__iter__')
+        and len(Dx) == 2
+        and all([
+            rr is None or (np.isscalar(rr) and not np.isnan(rr))
+            for rr in Dx
+        ])
+    )
+    if not c0:
+        msg = 'Arg Dx must be an iterable of 2 scalars!'
+        raise Exception(msg)
+
+    for ii in range(2):
+        if Dx[ii] is None:
+            Dx[ii] = -np.inf if ii == 00 else np.inf
+
+    return Dx
+
+
+def _DRZ(Dx=None, size=None, Dx_name=None):
+
+    if Dx is None:
+        return None
+
+    if None not in Dx and np.all(np.isfinite(Dx)) and np.size(Dx) > 2:
+        Dx = np.atleast_1d(Dx).ravel()
+        if size is not None and Dx.size != size:
+            msg = (
+                f"Arg {Dx_name} has wrong size!\n"
+                f"\t- expected: {size}\n"
+                f"\t- Provided: {Dx.size}"
+            )
+            raise Exception(msg)
+
+    else:
+        Dx = _Dx(Dx)
+
+    return Dx
+
+
+# ################################################################
+# ################################################################
+#                       utility
+# ################################################################
+
+
+def _get_res(
+    coll=None,
+    key=None,
+    res=None,
     nd=None,
     mtype=None,
 ):
 
     wm = coll._which_mesh
     if nd == '1d':
-        kknots = coll.dobj[wm][keym]['knots'][0]
-        res = np.min(np.diff(coll.ddata[kknots]['data']))
 
-    elif mtype == 'rect':
-        kR, kZ = coll.dobj[wm][keym]['knots']
-        res = min(
-            np.min(np.diff(coll.ddata[kR]['data'])),
-            np.min(np.diff(coll.ddata[kZ]['data'])),
-        )
-    elif mtype == 'tri':
-        res = 0.02
+        if res is None:
+            kknots = coll.dobj[wm][key]['knots'][0]
+            res = np.min(np.diff(coll.ddata[kknots]['data']))
 
-    elif mtype == 'polar':
-        keyr2d = coll.dobj[wm][keym]['radius2d']
-        keybs0 = coll.ddata[keyr2d]['bsplines']
-        keym0 = coll.dobj['bsplines'][keybs0]['mesh']
-        mtype0 = coll.dobj[wm][keym0]['type']
-        res = _get_sample_mesh_res(coll=coll, keym=keym0, mtype=mtype0)
+        if not (np.isscalar(res) and res > 0.):
+            msg = (
+                f"Arg res must be a positive float!\n"
+                "Provided: {res}"
+            )
+            raise Exception(msg)
 
     else:
-        raise Exception(f"Wrong mtype for sampling: {mtype}")
+
+        if res is None:
+            if mtype == 'rect':
+                kR, kZ = coll.dobj[wm][key]['knots']
+                res = min(
+                    np.min(np.diff(coll.ddata[kR]['data'])),
+                    np.min(np.diff(coll.ddata[kZ]['data'])),
+                )
+
+            elif mtype == 'tri':
+                res = 0.02
+
+        # check len() = 2
+        if np.isscalar(res):
+            res = [res, res]
+
+        c0 = (
+            isinstance(res, list)
+            and len(res) == 2
+            and all([np.isscalar(rr) and rr > 0 for rr in res])
+        )
+        if not c0:
+            msg = (
+                f"Arg res must be a list of 2 positive floats!\n"
+                "Provided: {res}"
+            )
+            raise Exception(msg)
 
     return res
 
 
-# ###################################################################
-# ###################################################################
+# ##################################################################
+# ##################################################################
 #                       sample 1d
-# ###################################################################
+# ##################################################################
 
 
-def sample_mesh_1d(
+def _sample_1d(
+    res=None,
+    mode=None,
+    knots=None,
+    Dx=None,
+):
+
+    kmin, kmax = knots.min(), knots.max()
+
+    if mode == 'abs':
+        nx = int(np.ceil((kmax - kmin) / res))
+        xx = np.linspace(kmin, kmax, nx)
+
+    else:
+        nx = int(np.ceil(1./res))
+        kx = np.linspace(0, 1, nx, endpoint=False)[None, :]
+        xx = np.concatenate((
+            (knots[:-1, None] + kx*np.diff(knots)[:, None]).ravel(),
+            knots[-1:],
+        ))
+
+    # Dx
+    if Dx is not None:
+        ind = (xx >= Dx[0]) & (xx < Dx[1])
+        xx = xx[ind]
+
+    return xx
+
+
+# ##################################################################
+# ##################################################################
+#                       sample 2d
+# ##################################################################
+
+
+def _sample_2d(
     coll=None,
     key=None,
     res=None,
     mode=None,
-    Dx=None,
-    knots=None,
+    knots0=None,
+    knots1=None,
+    x0=None,
+    x1=None,
+    Dx0=None,
+    Dx1=None,
+    # options
+    grid=None,
+    imshow=None,
+    in_mesh=None,
+):
+
+    # --------
+    # compute
+
+    min0, max0 = knots0.min(), knots0.max()
+    min1, max1 = knots1.min(), knots1.max()
+
+    if mode == 'abs':
+        if x0 is None:
+            n0 = int(np.ceil((max0 - min0) / res[0]))
+            x0 = np.linspace(min0, max0, n0)
+        if x1 is None:
+            n1 = int(np.ceil((max1 - min1) / res[1]))
+            x1 = np.linspace(min1, max1, n1)
+    else:
+        if x0 is None:
+            n0 = int(np.ceil(1./res[0]))
+            kx0 = np.linspace(0, 1, n0, endpoint=False)[None, :]
+            x0 = np.concatenate((
+                (knots0[:-1, None] + kx0*np.diff(knots0)[:, None]).ravel(),
+                knots0[-1:],
+            ))
+        if x1 is None:
+            n1 = int(np.ceil(1./res[1]))
+            kx1 = np.linspace(0, 1, n1, endpoint=False)[None, :]
+            x1 = np.concatenate((
+                (knots1[:-1, None] + kx1*np.diff(knots1)[:, None]).ravel(),
+                knots1[-1:],
+            ))
+
+    if np.isscalar(x0):
+        x0 = np.full(x1.shape, x0)
+    if np.isscalar(x1):
+        x1 = np.full(x0.shape, x1)
+
+    # -----------
+    # prepare ind
+
+    # x0, x1
+    if grid or in_mesh or Dx0 is not None:
+        x02 = np.repeat(x0[:, None], x1.size, axis=1)
+        x12 = np.repeat(x1[None, :], x0.size, axis=0)
+
+        if in_mesh or Dx0 is not None:
+            x0f = x02.ravel()
+            x1f = x12.ravel()
+            sh = x02.shape
+
+    # ind
+    if Dx0 is not None or in_mesh is True:
+        ind = np.ones((x0.size, x1.size), dtype=bool)
+    else:
+        ind = None
+
+    # ---------
+    # Dx0, Dx1
+
+    if Dx0 is not None and len(Dx0) == 2:
+        ind = ind & (
+            (x02 >= Dx0[0]) & (x02 < Dx0[1])
+            & (x12 >= Dx1[0]) & (x12 < Dx1[1])
+        )
+
+    # -----------
+    # indices
+
+    # mesh outline
+    if in_mesh is True:
+        dout = coll.get_mesh_outline(key=key)
+        pa = path.Path(np.array([dout['x0']['data'], dout['x1']['data']]).T)
+        ind = ind & pa.contains_points(np.array([x0f, x1f]).T).reshape(sh)
+
+    # Dx0, Dx1
+    if Dx0 is not None and len(Dx0) > 2:
+        pa = path.Path(np.array([Dx0, Dx1]).T)
+        ind = ind & pa.contains_points(np.array([x0f, x1f]).T).reshape(sh)
+
+    # ------------
+    # grid
+
+    if grid is True:
+        x0, x1 = x02, x12
+
+    # ----------
+    # imshow
+
+    if imshow is True:
+        if ind is not None:
+            ind = ind.T
+        if grid is True:
+            x0 = x0.T
+            x1 = x1.T
+
+    return x0, x1, ind
+
+
+# ##################################################################
+# ##################################################################
+#                       store
+# ##################################################################
+
+
+def _store_1d(
+    coll=None,
+    key=None,
+    x0=None,
     # store
     store=None,
     kx0=None,
 ):
-
-    # --------
-    # sample
-
-    x0 = _sample_mesh_1d(
-        res=res,
-        mode=mode,
-        Dx=Dx,
-        knots=knots,
-    )
 
     # -----------
     # check key
@@ -463,68 +676,18 @@ def sample_mesh_1d(
     return dref, ddata
 
 
-def _sample_mesh_1d(
-    res=None,
-    mode=None,
-    Dx=None,
-    knots=None,
-):
-
-    if mode == 'abs':
-        nx = int(np.ceil((Dx[1] - Dx[0]) / res))
-        xx = np.linspace(Dx[0], Dx[1], nx)
-
-    else:
-        nx = int(np.ceil(1./res))
-        kx = np.linspace(0, 1, nx, endpoint=False)[None, :]
-        xx = np.concatenate((
-            (knots[:-1, None] + kx*np.diff(knots)[:, None]).ravel(),
-            knots[-1:],
-        ))
-
-    return xx
-
-
-# ###################################################################
-# ###################################################################
-#                       sample 2d
-# ###################################################################
-
-
-def sample_mesh_2d(
+def _store_2d(
     coll=None,
     key=None,
-    res=None,
-    mode=None,
     x0=None,
     x1=None,
-    Dx0=None,
-    Dx1=None,
-    x0k=None,
-    x1k=None,
-    grid=None,
-    imshow=None,
+    ind=None,
     # store
     store=None,
     kx0=None,
     kx1=None,
 ):
 
-    # --------
-    # sample
-
-    x0, x1 = _sample_mesh_2d(
-        res=res,
-        mode=mode,
-        x0=x0,
-        x1=x1,
-        Dx0=Dx0,
-        Dx1=Dx1,
-        x0k=x0k,
-        x1k=x1k,
-        grid=grid,
-        imshow=imshow,
-    )
 
     # -----------
     # check key
@@ -581,75 +744,19 @@ def sample_mesh_2d(
         },
     }
 
+    if ind is not None:
+        ddata['ind'] = {
+            'key': f'{key}_ind_temp',
+            'data': ind,
+        }
+
     if store is True:
         ddata['x0']['ref'] = k0r
         ddata['x1']['ref'] = k1r
+        if ind is not None:
+            ddata['ind']['ref'] = (k0r, k1r)
 
     return dref, ddata
-
-
-def _sample_mesh_2d(
-    res=None,
-    mode=None,
-    x0=None,
-    x1=None,
-    Dx0=None,
-    Dx1=None,
-    x0k=None,
-    x1k=None,
-    grid=None,
-    imshow=None,
-):
-
-    # compute
-    if mode == 'abs':
-        if x0 is None:
-            n0 = int(np.ceil((Dx0[1] - Dx0[0]) / res[0]))
-            x0 = np.linspace(Dx0[0], Dx0[1], n0)
-        if x1 is None:
-            n1 = int(np.ceil((Dx1[1] - Dx1[0]) / res[1]))
-            x1 = np.linspace(Dx1[0], Dx1[1], n1)
-    else:
-        if x0 is None:
-            n0 = int(np.ceil(1./res[0]))
-            kx0 = np.linspace(0, 1, n0, endpoint=False)[None, :]
-            x0 = np.concatenate((
-                (x0k[:-1, None] + kx0*np.diff(x0k)[:, None]).ravel(),
-                x0k[-1:],
-            ))
-        if x1 is None:
-            n1 = int(np.ceil(1./res[1]))
-            kx1 = np.linspace(0, 1, n1, endpoint=False)[None, :]
-            x1 = np.concatenate((
-                (x1k[:-1, None] + kx1*np.diff(x1k)[:, None]).ravel(),
-                x1k[-1:],
-            ))
-
-    if np.isscalar(x0):
-        x0 = np.full(x1.shape, x0)
-    if np.isscalar(x1):
-        x1 = np.full(x0.shape, x1)
-
-    # ------------
-    # grid
-
-    if grid is True:
-        n1 = x1.size
-        n0 = x0.size
-        if imshow is True:
-            x0 = np.tile(x0, (n1, 1))
-            x1 = np.repeat(x1[:, None], n0, axis=1)
-        else:
-            x0 = np.repeat(x0[:, None], n1, axis=1)
-            x1 = np.tile(x1, (n0, 1))
-
-    return x0, x1
-
-
-# ###################################################################
-# ###################################################################
-#                       store
-# ###################################################################
 
 
 def _store(coll=None, dref=None, ddata=None):
