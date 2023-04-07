@@ -8,8 +8,6 @@ import warnings
 
 # Common
 import numpy as np
-from scipy.spatial import ConvexHull
-from matplotlib.path import Path
 from contourpy import contour_generator
 import datastock as ds
 
@@ -71,21 +69,21 @@ def get_contours(
         grid=True,
         store=False,
     )
-    
-    # temporary addition of sample 
+
+    # temporary addition of sample
     if ref_com is not None:
-        
+
         # ref
         lkr_temp = []
         for ii, ss in enumerate(dsamp['x0']['data'].shape):
             kri = f'{key}_refsamptemp{ii}'
             lkr_temp.append(kri)
             coll.add_ref(key=kri, size=ss)
-            
+
         # data
         lkd_temp = [f'{key}_samptemp0', f'{key}_samptemp1']
         coll.add_data(key=lkd_temp[0], data=dsamp['x0']['data'], ref=lkr_temp)
-        coll.add_data(key=lkd_temp[1], data=dsamp['x1']['data'], ref=lkr_temp)    
+        coll.add_data(key=lkd_temp[1], data=dsamp['x1']['data'], ref=lkr_temp)
         x0, x1 = lkd_temp
     else:
         x0 = dsamp['x0']['data']
@@ -109,12 +107,12 @@ def get_contours(
         coll.remove_data(x1, propagate=False)
         for rr in lkr_temp:
             coll.remove_ref(rr, propagate=False)
-            
+
         axis = [
-            dinterp['ref'].index(lkr_temp[0]), 
+            dinterp['ref'].index(lkr_temp[0]),
             dinterp['ref'].index(lkr_temp[1]),
         ]
-        
+
     else:
         # axis
         axis = [
@@ -384,54 +382,12 @@ def _get_contours(
         # loop on levels
         for jj in range(len(levels)):
 
-            # compute concatenated contour
-            no_cont = False
-            cj = contgen.lines(levels[jj])
-
-            c0 = (
-                isinstance(cj, list)
-                and all([
-                    isinstance(cjj, np.ndarray)
-                    and cjj.ndim == 2
-                    and cjj.shape[1] == 2
-                    for cjj in cj
-                ])
+            # get contour
+            no_cont, cj = _get_contours_lvls(
+                contgen=contgen,
+                level=levels[jj],
+                largest=largest,
             )
-            if not c0:
-                msg = f"Wrong output from contourpy!\n{cj}"
-                raise Exception(msg)
-
-            # if one or several contours exist
-            if len(cj) > 0:
-                cj = [
-                    cc[np.all(np.isfinite(cc), axis=1), :]
-                    for cc in cj
-                    if np.sum(np.all(np.isfinite(cc), axis=1)) >= 3
-                ]
-
-                if len(cj) == 0:
-                    no_cont = True
-                elif len(cj) == 1:
-                    cj = cj[0]
-                elif len(cj) > 1:
-                    if largest:
-                        nj = [
-                            0.5*np.abs(np.sum(
-                                (cc[1:, 0] + cc[:-1, 0])
-                                *(cc[1:, 1] - cc[:-1, 1])
-                            ))
-                            for cc in cj
-                        ]
-                        cj = cj[np.argmax(nj)]
-                    else:
-                        ij = np.cumsum([cc.shape[0] for cc in cj])
-                        cj = np.concatenate(cj, axis=0)
-                        cj = np.insert(cj, ij, np.nan, axis=0)
-
-                elif np.sum(np.all(~np.isnan(cj), axis=1)) < 3:
-                    no_cont = True
-            else:
-                no_cont = True
 
             # if contour was found
             if no_cont is False:
@@ -466,6 +422,63 @@ def _get_contours(
         print(msg)
 
     return cont0, cont1
+
+
+def _get_contours_lvls(
+    contgen=None,
+    level=None,
+    largest=None,
+):
+    # compute concatenated contour
+    no_cont = False
+    cj = contgen.lines(level)
+
+    c0 = (
+        isinstance(cj, list)
+        and all([
+            isinstance(cjj, np.ndarray)
+            and cjj.ndim == 2
+            and cjj.shape[1] == 2
+            for cjj in cj
+        ])
+    )
+    if not c0:
+        msg = f"Wrong output from contourpy!\n{cj}"
+        raise Exception(msg)
+
+    # if one or several contours exist
+    if len(cj) > 0:
+        cj = [
+            cc[np.all(np.isfinite(cc), axis=1), :]
+            for cc in cj
+            if np.sum(np.all(np.isfinite(cc), axis=1)) >= 3
+        ]
+
+        if len(cj) == 0:
+            no_cont = True
+        elif len(cj) == 1:
+            cj = cj[0]
+        elif len(cj) > 1:
+            if largest:
+                nj = [
+                    0.5*np.abs(np.sum(
+                        (cc[1:, 0] + cc[:-1, 0])
+                        *(cc[1:, 1] - cc[:-1, 1])
+                    ))
+                    for cc in cj
+                ]
+                cj = cj[np.argmax(nj)]
+            else:
+                ij = np.cumsum([cc.shape[0] for cc in cj])
+                cj = np.concatenate(cj, axis=0)
+                cj = np.insert(cj, ij, np.nan, axis=0)
+
+        elif np.sum(np.all(~np.isnan(cj), axis=1)) < 3:
+            no_cont = True
+    else:
+        no_cont = True
+
+    return no_cont, cj
 
 
 def _compute_check(
