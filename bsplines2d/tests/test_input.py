@@ -400,17 +400,33 @@ def _sample_mesh(bsplines, nd=None, kind=None):
 
     lres = [0.1, 0.3]
     lmode = ['abs', 'rel']
+    lin_mesh = [False, True]
     limshow = [False, True]
 
+    Dx0, Dx1 = None, None
     for km in lkm:
+        for ii, comb in enumerate(itt.product(lres, lmode, lin_mesh, limshow)):
 
-        for comb in itt.product(lres, lmode, limshow):
+            if nd == '2d':
+                if comb[1] == 'abs' and ii % 3 == 0:
+                    Dx0 = np.r_[2., 3., 2.5]
+                    Dx1 = np.r_[-1, -1, 1]
+                elif comb[1] == 'abs' and ii % 3 == 1:
+                    Dx0 = [None, 2.5]
+                    Dx1 = [-0.5, None]
+                else:
+                    Dx0 = None
+                    Dx1 = None
+
             out = bsplines.get_sample_mesh(
                 key=km,
                 res=comb[0],
                 mode=comb[1],
                 grid=None,
-                imshow=comb[2]
+                Dx0=Dx0,
+                Dx1=Dx1,
+                in_mesh=comb[2] and kind != 'tri',
+                imshow=comb[3]
             )
 
 
