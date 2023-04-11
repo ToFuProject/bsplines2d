@@ -69,6 +69,7 @@ def sample_mesh(
             coll=coll,
             key=key,
             Dx=Dx0,
+            mode=mode,
         )
 
         # sample
@@ -263,6 +264,7 @@ def _check_1d(
     coll=None,
     key=None,
     Dx=None,
+    mode=None,
 ):
 
     wm = coll._which_mesh
@@ -272,8 +274,6 @@ def _check_1d(
 
     kknots = coll.dobj[wm][key]['knots'][0]
     knots = coll.ddata[kknots]['data']
-
-    xlim = [knots.min(), knots.max()]
 
     # custom DR or DZ for mode='abs' only
     Dx = _Dx(Dx)
