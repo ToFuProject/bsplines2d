@@ -1,12 +1,7 @@
 # -*- coding: utf-8 -*-
 
 
-# Built-in
-import copy
-
-
 # Common
-import numpy as np
 import datastock as ds
 
 
@@ -15,11 +10,13 @@ from . import _generic_mesh
 from . import _class01_checks_1d as _checks_1d
 from . import _class01_checks_2d_rect as _checks_2d_rect
 from . import _class01_checks_2d_tri as _checks_2d_tri
-from . import _class01_checks_2d_polar as _checks_2d_polar
+# from . import _class01_checks_2d_polar as _checks_2d_polar
+
 
 from . import _class01_rect_cropping as _cropping
 from . import _class01_select as _select
 from . import _class01_sample as _sample
+from . import _class01_outline as _outline
 from . import _class01_plot as _plot
 
 
@@ -461,6 +458,7 @@ class Mesh2D(ds.DataStock):
         Dx0=None,
         Dx1=None,
         imshow=None,
+        in_mesh=None,
         # store
         store=None,
         kx0=None,
@@ -478,10 +476,27 @@ class Mesh2D(ds.DataStock):
             Dx0=Dx0,
             Dx1=Dx1,
             imshow=imshow,
+            in_mesh=in_mesh,
             # store
             store=store,
             kx0=kx0,
             kx1=kx1,
+        )
+
+    # -----------------
+    # outline
+    # ------------------
+
+    def get_mesh_outline(
+        self,
+        key=None,
+        closed=None,
+    ):
+        """ Get outline of 2d mesh """
+        return _outline._get_outline(
+            coll=self,
+            key=key,
+            closed=closed,
         )
 
     # -----------------
