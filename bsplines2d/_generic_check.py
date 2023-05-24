@@ -53,7 +53,7 @@ def _check_dax(dax=None, main=None):
                 or (
                     isinstance(v0, dict)
                     and issubclass(v0.get('handle').__class__, plt.Axes)
-                    and v0.get('type') in _LALLOWED_AXESTYPES
+                    # and v0.get('type') in _LALLOWED_AXESTYPES
                 )
             )
             for k0, v0 in dax.items()
@@ -61,6 +61,8 @@ def _check_dax(dax=None, main=None):
     )
     if not c0:
         msg = (
+            "Arg dax is not conform:\n"
+            + str(dax)
         )
         import pdb; pdb.set_trace()     # DB
         raise Exception(msg)
