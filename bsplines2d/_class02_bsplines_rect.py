@@ -252,6 +252,11 @@ class BivariateSplineRect(scpinterp.BivariateSpline):
             i0 = indbs_tf[0][ind0]
             for ii, ii0 in enumerate(i0):
 
+                msg = (
+                    f'\t bspline {indtot[ind0][ii]} / {nbs}   ({x0.size} pts)'
+                )
+                print(msg, end='\r', flush=True)
+
                 if ii > 0:
                     indok0[...] = indok1
 
