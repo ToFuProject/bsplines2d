@@ -805,7 +805,16 @@ def _plot_submesh(
         plot_details=plot_details,
     )
 
-    assert (reft is not None) == ('Z' in dgroup.keys())
+    if (reft is not None) != ('Z' in dgroup.keys()):
+        msg = (
+            "(reft is not None) != ('Z' in dgroup.keys()):\n"
+            f"reft = {reft}\n"
+            f"dgroup.keys() = {dgroup.keys()}\n"
+            f"dref_vector = {dref_vector}"
+        )
+        raise Exception(msg)
+    
+    
     if reft is not None and reft not in dgroup['Z']['ref']:
         dgroup['Z']['ref'].append(reft)
         dgroup['Z']['data'].append('index')
