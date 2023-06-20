@@ -366,6 +366,7 @@ class BSplines2D(Previous):
         domain=None,
         # common ref
         ref_com=None,
+        ref_vector_strategy=None,
         # bsplines-specific
         details=None,
         indbs_tf=None,
@@ -406,6 +407,7 @@ class BSplines2D(Previous):
             domain=domain,
             # common ref
             ref_com=ref_com,
+            ref_vector_strategy=ref_vector_strategy,
             # bsplines-specific
             details=details,
             indbs_tf=indbs_tf,

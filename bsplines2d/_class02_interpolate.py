@@ -37,6 +37,7 @@ def interpolate(
     domain=None,
     # common ref
     ref_com=None,
+    ref_vector_strategy=None,
     # bsplines-specific
     details=None,
     indbs_tf=None,
@@ -92,6 +93,7 @@ def interpolate(
         ref_key=ref_key,
         only1d=False,
         details=details,
+        ref_vector_strategy=ref_vector_strategy,
     )
 
     # -----------
@@ -402,6 +404,7 @@ def _check_keys(
     ref_key=None,
     only1d=None,
     details=None,
+    ref_vector_strategy=None,
 ):
 
     # -------------
@@ -614,6 +617,7 @@ def _check_keys(
     else:
         if ref_key is None:
             hasref, ref, ref_key, val, dkeys = coll.get_ref_vector_common(
+                strategy=ref_vector_strategy,
                 keys=keys,
             )
             if ref_key is None:
