@@ -32,6 +32,7 @@ def plot_as_profile2d(
     # ref vectors
     dref_vectorZ=None,
     dref_vectorU=None,
+    ref_vector_strategy=None,
     # interpolation
     val_out=None,
     nan0=None,
@@ -137,6 +138,7 @@ def plot_as_profile2d(
                 keybs=v0['keybs'],
                 # ref vector
                 dref_vector=dref_vectorZ,
+                ref_vector_strategy=ref_vector_strategy,
                 # details
                 plot_details=plot_details,
                 # plotting
@@ -739,6 +741,7 @@ def _plot_submesh(
     keybs=None,
     # ref vetcor
     dref_vector=None,
+    ref_vector_strategy=None,
     # plot_details
     plot_details=None,
     # figure
@@ -802,6 +805,7 @@ def _plot_submesh(
         keybs=keybs,
         collax=collax,
         dref_vector=dref_vector,
+        ref_vector_strategy=ref_vector_strategy,
         plot_details=plot_details,
     )
 
@@ -813,7 +817,6 @@ def _plot_submesh(
             f"dref_vector = {dref_vector}"
         )
         raise Exception(msg)
-    
     
     if reft is not None and reft not in dgroup['Z']['ref']:
         dgroup['Z']['ref'].append(reft)
@@ -906,6 +909,7 @@ def _plot_profile2d_polar_add_radial(
     collax=None,
     # ref_vector
     dref_vector=None,
+    ref_vector_strategy=None,
     # details
     plot_details=None,
 ):
@@ -967,6 +971,7 @@ def _plot_profile2d_polar_add_radial(
     reft, keyt, _, dind = coll.get_ref_vector_common(
         keys=[key, kr2d],
         ref=refc,
+        strategy=ref_vector_strategy,
         **dref_vector,
     )[1:]
 
