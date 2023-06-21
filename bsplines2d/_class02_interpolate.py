@@ -37,6 +37,7 @@ def interpolate(
     domain=None,
     # common ref
     ref_com=None,
+    ref_vector_strategy=None,
     # bsplines-specific
     details=None,
     indbs_tf=None,
@@ -256,6 +257,7 @@ def interpolate(
         domain=domain,
         # common ref
         ref_com=ref_com,
+        # ref_vector_strategy=ref_vector_strategy,
         # parameters
         grid=grid,
         deg=None,

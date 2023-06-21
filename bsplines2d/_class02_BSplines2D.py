@@ -366,6 +366,7 @@ class BSplines2D(Previous):
         domain=None,
         # common ref
         ref_com=None,
+        ref_vector_strategy=None,
         # bsplines-specific
         details=None,
         indbs_tf=None,
@@ -406,6 +407,7 @@ class BSplines2D(Previous):
             domain=domain,
             # common ref
             ref_com=ref_com,
+            ref_vector_strategy=ref_vector_strategy,
             # bsplines-specific
             details=details,
             indbs_tf=indbs_tf,
@@ -939,6 +941,7 @@ class BSplines2D(Previous):
         # ref vectors
         dref_vectorZ=None,
         dref_vectorU=None,
+        ref_vector_strategy=None,
         # interpolation
         val_out=None,
         nan0=None,
@@ -970,6 +973,7 @@ class BSplines2D(Previous):
             # ref vectors
             dref_vectorZ=dref_vectorZ,
             dref_vectorU=dref_vectorU,
+            ref_vector_strategy=ref_vector_strategy,
             # interpolation
             val_out=val_out,
             nan0=nan0,
