@@ -75,6 +75,18 @@ class Bins(Previous):
 
         self.update(dobj=dobj, ddata=ddata, dref=dref)
 
+    def remove_bins(
+        self,
+        key=None,
+        propagate=None,
+    ):
+
+        _checks.remove_bins(
+            coll=self,
+            key=key,
+            propagate=propagate,
+        )
+
     # -----------------
     # binning tools
     # ------------------
