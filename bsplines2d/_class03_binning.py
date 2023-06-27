@@ -66,15 +66,7 @@ def binning(
     # ----------
     # trivial
 
-    if not isbs:
-        dout = ds._class1_binning.binning(
-            coll=coll,
-            keys=keys,
-            ref_key=ref_key[0],
-            bins=bins,
-        )
-
-    else:
+    if isbs:
         dout = _binning(
             coll=coll,
             keys=keys,
@@ -83,6 +75,14 @@ def binning(
             dunits=dunits,
             units_ref=units_ref,
             daxis=daxis,
+        )
+
+    else:
+        dout = ds._class1_binning.binning(
+            coll=coll,
+            keys=keys,
+            ref_key=ref_key[0],
+            bins=bins,
         )
 
     # ------------
@@ -224,8 +224,10 @@ def _binning(
 
     # sample mesh, update dv
     xx = coll.get_sample_mesh(keym, res=res0 / npts, mode='abs')['x0']['data']
-    dv = np.abs(np.diff(xx))
+    xx = xx[(xx >= bins[0]) & (xx <= bins[-1])]
 
+    # dv
+    dv = np.abs(np.diff(xx))
     dv = np.append(dv, dv[-1])
 
     # units
