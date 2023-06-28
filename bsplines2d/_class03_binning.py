@@ -6,6 +6,9 @@ Created on Thu Jan  5 20:14:40 2023
 """
 
 
+import warnings
+
+
 import numpy as np
 import datastock as ds
 
@@ -223,12 +226,26 @@ def _binning(
     )
 
     # sample mesh, update dv
-    xx = coll.get_sample_mesh(keym, res=res0 / npts, mode='abs')['x0']['data']
-    xx = xx[(xx >= bins[0]) & (xx <= bins[-1])]
-
-    # dv
-    dv = np.abs(np.diff(xx))
-    dv = np.append(dv, dv[-1])
+    xx = coll.get_sample_mesh(
+        keym,
+        res=res0 / npts,
+        mode='abs',
+        Dx0=[bins[0], bins[-1]],
+    )['x0']['data']
+    
+    # safety check
+    if len(xx) == 0:
+        msg = (
+            f"\nBinning domain seem out of mesh '{keym}' domain!\n"
+            f"\t- bins in : [{bins[0]}; {bins[-1]}]\n"
+            f"\t- mesh edges: [{vect[0]}, {vect[-1]}]\n"
+        )
+        warnings.warn(msg)
+        
+    else:
+        # dv
+        dv = np.abs(np.diff(xx))
+        dv = np.append(dv, dv[-1])
 
     # units
     dout = ds._class1_binning._units(
@@ -242,22 +259,29 @@ def _binning(
 
     for k0, v0 in dout.items():
 
-        # interpolate
-        val = coll.interpolate(
-            keys=k0,
-            ref_key=ref_key,
-            x0=xx,
-            val_out=0.,
-        )[k0]['data']
-
-        # bin
-        dout[k0]['data'] = ds._class1_binning._bin(
-            bins=bins,
-            dv=dv,
-            vect=xx,
-            data=val,
-            axis=daxis[k0][0],
-        )
+        if xx.size == 0:
+            # shape
+            shape = list(coll.ddata[k0]['data'].shape)
+            shape[daxis[k0][0]] = int(bins.size - 1)
+            dout[k0]['data'] = np.zeros(tuple(shape), dtype=float)
+            
+        else:
+            # interpolate
+            val = coll.interpolate(
+                keys=k0,
+                ref_key=ref_key,
+                x0=xx,
+                val_out=0.,
+            )[k0]['data']
+    
+            # bin
+            dout[k0]['data'] = ds._class1_binning._bin(
+                bins=bins,
+                dv=dv,
+                vect=xx,
+                data=val,
+                axis=daxis[k0][0],
+            )
 
     return dout
 
