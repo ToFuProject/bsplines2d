@@ -53,6 +53,7 @@ def interpolate(
     returnas=None,
     return_params=None,
     store=None,
+    store_keys=None,
     inplace=None,
     # debug or unit tests
     debug=None,
@@ -346,6 +347,7 @@ def interpolate(
             coll=coll,
             dout=dout,
             inplace=inplace,
+            store_keys=store_keys,
         )
 
     # -------

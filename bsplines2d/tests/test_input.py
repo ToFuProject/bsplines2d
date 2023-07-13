@@ -786,8 +786,6 @@ def _interpolate(bs, nd=None, kind=None, details=None, submesh=None):
 
 def _bin_bs(bs, nd=None, kind=None):
     dkd = _get_data(bs, nd=nd, kind=kind, maxref=3)
-
-
     wbs = bs._which_bsplines
     for ii, (kd, vd) in enumerate(dkd.items()):
 
@@ -817,21 +815,22 @@ def _bin_bs(bs, nd=None, kind=None):
         bins = np.linspace(vect[0] - 0.1*DD, vect[0]+0.5*DD, nbins)
 
         dout = bs.binning(
-            keys=kd,
-            ref_key=ref_key,
-            bins=bins,
+            data=kd,
+            bin_data0=ref_key,
+            bins0=bins,
             # store vs return
             store=False,
             returnas=True,
         )
+        kd = list(dout.keys())[0]
 
         shape = list(bs.ddata[kd]['shape'])
-        shape[ax] = nbins - 1
+        shape[ax] = nbins
         shape = tuple(shape)
         if dout[kd]['data'].shape != shape:
             shd = bs.ddata[kd]['data'].shape
             msg = (
-                "Binnign of data '{kd}' along ref 'ref_key' has wrong shape:\n"
+                "Binning of data '{kd}' along ref 'ref_key' has wrong shape:\n"
                 f"\t- ddata['{kd}']['data'].shape = {shd}\n"
                 f"\t- dout['{kd}']['data'].shape = {dout[kd]['data'].shape}\n"
                 f"\t- expected shape = {shape}\n"
