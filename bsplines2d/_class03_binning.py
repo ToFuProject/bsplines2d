@@ -66,7 +66,7 @@ def binning(
     if isbs:
         
         # add ref and data
-        kr, kd, ddatan = _interpolate(
+        kr, kd, ddatan, nobin = _interpolate(
             coll=coll,
             data=data,
             data_units=data_units,
@@ -77,56 +77,66 @@ def binning(
             dref_vector=dref_vector,
             verb=verb,
             store=store,
+            store_keys=store_keys,
         )
         
-        lk = list(ddatan.keys())
-        data = [ddatan[k0]['data'] for k0 in lk]
-        bin_data0 = [ddatan[k0]['bin_data'] for k0 in lk]
+        # safety check
+        if nobin is False:
+            lk = list(ddatan.keys())
+            data = [ddatan[k0]['data'] for k0 in lk]
+            bin_data0 = [ddatan[k0]['bin_data'] for k0 in lk]
         
-    dout = ds._class1_binning.binning(
-        coll=coll,
-        data=data,
-        data_units=data_units,
-        axis=axis,
-        # binning
-        bins0=bins0,
-        bins1=bins1,
-        bin_data0=bin_data0,
-        bin_data1=bin_data1,
-        bin_units0=bin_units0,
-        # kind of binning
-        integrate=integrate,
-        statistic=statistic,
-        # options
-        safety_ratio=safety_ratio,
-        dref_vector=dref_vector,
-        ref_vector_strategy=ref_vector_strategy,
-        verb=verb,
-        returnas=returnas,
-        # storing
-        store=store,
-        store_keys=store_keys,
-    )
+    # --------------------
+    # do the actua binning
+    
+    if nobin is False:
+        dout = ds._class1_binning.binning(
+            coll=coll,
+            data=data,
+            data_units=data_units,
+            axis=axis,
+            # binning
+            bins0=bins0,
+            bins1=bins1,
+            bin_data0=bin_data0,
+            bin_data1=bin_data1,
+            bin_units0=bin_units0,
+            # kind of binning
+            integrate=integrate,
+            statistic=statistic,
+            # options
+            safety_ratio=safety_ratio,
+            dref_vector=dref_vector,
+            ref_vector_strategy=ref_vector_strategy,
+            verb=verb,
+            returnas=True,
+            # storing
+            store=store,
+            store_keys=store_keys,
+        )
 
-    # --------------------------------
-    # remove intermediate ref and data
-
-    if isbs is True:
-        for dd in data + bin_data0 + [kd]:
-            if dd in coll.ddata.keys():
-                coll.remove_data(dd)
-        if kr in coll.dref.keys():
-            coll.remove_ref(kr)
-            
-        for k0 in data:
-            k1 = [k1 for k1, v1 in ddatan.items() if v1['data'] == k0][0]
-            dout[k1] = dict(dout[k0])
-            del dout[k0]
+        # --------------------------------
+        # remove intermediate ref and data
+    
+        if isbs is True:
+            for dd in data + bin_data0 + [kd]:
+                if dd in coll.ddata.keys():
+                    coll.remove_data(dd)
+            if kr in coll.dref.keys():
+                coll.remove_ref(kr)
+                
+            for k0 in data:
+                k1 = [k1 for k1, v1 in ddatan.items() if v1['data'] == k0][0]
+                dout[k1] = dict(dout[k0])
+                del dout[k0]
+    else:
+        dout = nobin
 
     # ----------
     # return
 
-    return dout
+    if returnas is True:
+        return dout
 
 
 # ######################################################
@@ -183,6 +193,7 @@ def _interpolate(
     dref_vector=None,
     verb=None,
     store=None,
+    store_keys=None,
 ):
 
     # ---------
@@ -230,12 +241,24 @@ def _interpolate(
     npts = (coll.dobj[wbs][key_bs]['deg'] + 3) * max(1, dvmean / db)
 
     # sample mesh, update dv
+    Dx0 = [dbins0[lkdata[0]]['edges'][0], dbins0[lkdata[0]]['edges'][-1]]
     xx = coll.get_sample_mesh(
         keym,
         res=res0 / npts,
         mode='abs',
-        Dx0=[bins0[0], bins0[-1]],
+        Dx0=Dx0,
     )['x0']['data']
+
+    if xx.size == 0:
+        nobins = _get_nobins(
+            coll=coll,
+            key_bs=key_bs,
+            ddata=ddata,
+            dbins0=dbins0,
+            store=store,
+            store_keys=store_keys,
+        )
+        return None, None, None, nobins
 
     # -------------------
     #  add ref
@@ -276,4 +299,44 @@ def _interpolate(
         )
         ddata_new[k0] = {'bin_data': kbdn, 'data': kdn}
 
-    return kr, kd, ddata_new
+    return kr, kd, ddata_new, False
+
+
+def _get_nobins(
+    coll=None,
+    key_bs=None,
+    ddata=None,
+    dbins0=None,
+    store=None,
+    store_keys=None,
+):
+    
+    lk = list(ddata.keys())
+    wbs = coll._which_bsplines
+    
+    if isinstance(store_keys, str):
+        store_keys = [store_keys]
+    
+    dout = {}
+    for ii, k0 in enumerate(lk):
+        
+        axis = ddata[k0]['ref'].index(coll.dobj[wbs][key_bs]['ref'][0])
+        
+        shape = list(ddata[k0]['data'].shape)
+        nb = dbins0[k0]['edges'].size - 1
+        shape[axis] = nb
+        
+        ref = list(ddata[k0]['ref'])
+        ref[axis] = dbins0[k0]['bin_ref'][0]
+        
+        dout[store_keys[ii]] = {
+            'data': np.zeros(shape, dtype=float),
+            'ref': tuple(ref),
+            'units': ddata[k0]['units'],
+        }
+        
+    if store is True:
+        for k0, v0 in dout.items():
+            coll.add_data(key=k0, **v0)
+        
+    return dout
