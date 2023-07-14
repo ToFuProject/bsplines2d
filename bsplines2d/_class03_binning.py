@@ -41,7 +41,7 @@ def binning(
     returnas=None,
     # storing
     store=None,
-    keys_store=None,
+    store_keys=None,
 ):
     """ Return the spectrally interpolated coefs
 
@@ -105,7 +105,7 @@ def binning(
         returnas=returnas,
         # storing
         store=store,
-        keys_store=keys_store,
+        store_keys=store_keys,
     )
 
     # --------------------------------

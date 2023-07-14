@@ -112,7 +112,7 @@ class Bins(Previous):
         returnas=None,
         # storing
         store=None,
-        keys_store=None,
+        store_keys=None,
     ):
         """ Bin data along ref_key
 
@@ -147,5 +147,5 @@ class Bins(Previous):
             returnas=returnas,
             # storing
             store=store,
-            keys_store=keys_store,
+            store_keys=store_keys,
         )
