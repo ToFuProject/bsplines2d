@@ -63,6 +63,7 @@ def binning(
     # ----------
     # trivial
 
+    nobin = False
     if isbs:
         
         # add ref and data
