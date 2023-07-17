@@ -337,8 +337,21 @@ def interpolate(
     # adjust data and ref if xunique
 
     if xunique:
+        # try:
         ds._class1_interpolate._xunique(dout)
-
+        # except Exception as err:
+        #     msg = (
+        #         err.args[0]
+        #         + "\n\n"
+        #         f"keys = {keys}\n"
+        #         f"ref_key = {ref_key}\n"
+        #         f"x0 = {x0}\n"
+        #         f"x1 = {x1}\n"
+        #     )
+        #     err.args = (msg,)
+        #     raise err
+            
+            
     # ----------
     # store
 

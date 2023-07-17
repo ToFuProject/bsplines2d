@@ -239,7 +239,7 @@ def _interpolate(
     dv = np.abs(np.diff(vect))
     dvmean = np.mean(dv) + np.std(dv)
     db = np.mean(np.diff(dbins0[lkdata[0]]['edges']))
-    npts = (coll.dobj[wbs][key_bs]['deg'] + 3) * max(1, dvmean / db)
+    npts = (coll.dobj[wbs][key_bs]['deg'] + 3) * max(1, dvmean / db) + 3
 
     # sample mesh, update dv
     Dx0 = [dbins0[lkdata[0]]['edges'][0], dbins0[lkdata[0]]['edges'][-1]]
@@ -275,6 +275,7 @@ def _interpolate(
 
         # interpolate bin_data
         kbdn = f"kbdn{ii}_temp"
+        # try:
         coll.interpolate(
             keys=bin_data0,
             ref_key=key_bs,
@@ -285,6 +286,21 @@ def _interpolate(
             inplace=True,
             store_keys=kbdn,
         )
+
+        # except Exception as err:
+        #     msg = (
+        #         err.args[0]
+        #         + "\n\n"
+        #         f"\t- k0 = {k0}\n"
+        #         f"\t- ii = {ii}\n"
+        #         f"\t- bin_data0 = {bin_data0}\n"
+        #         f"\t- key_bs = {key_bs}\n"
+        #         f"\t- kd = {kd}\n"
+        #         f"\t- xx.size: {xx.size}\n"
+        #         f"\t- kbdn = {kbdn}\n"
+        #     )
+        #     err.args = (msg,)
+        #     raise err
         
         # interpolate_data
         kdn = f"kbd{ii}_temp"
