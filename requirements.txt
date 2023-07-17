@@ -2,4 +2,4 @@
 numpy
 scipy
 matplotlib
-datastock>=0.0.26
+datastock>=0.0.30

@@ -382,6 +382,7 @@ class BSplines2D(Previous):
         returnas=None,
         return_params=None,
         store=None,
+        store_keys=None,
         inplace=None,
         # debug
         debug=None,
@@ -422,6 +423,7 @@ class BSplines2D(Previous):
             returnas=returnas,
             return_params=return_params,
             store=store,
+            store_keys=store_keys,
             inplace=inplace,
             # debug
             debug=debug,

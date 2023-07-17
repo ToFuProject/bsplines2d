@@ -8,7 +8,7 @@ import datastock as ds
 
 # #############################################################################
 # #############################################################################
-#                           mesh generic check
+#                          bins generic check
 # #############################################################################
 
 
@@ -96,10 +96,10 @@ def check(
     return key, dref, ddata, dobj
 
 
-# #############################################################################
-# #############################################################################
+# ##############################################################
+# ###############################################################
 #                           to_dict
-# #############################################################################
+# ###############################################################
 
 
 def _to_dict(
@@ -167,3 +167,54 @@ def _to_dict(
             dobj[coll._which_bins][key][k0] = v0
 
     return dref, ddata, dobj
+
+
+# ##############################################################
+# ###############################################################
+#                   remove bins
+# ###############################################################
+
+
+def remove_bins(coll=None, key=None, propagate=None):
+
+    # ----------
+    # check
+
+    # key
+    wbins = coll._which_bins
+    if wbins not in coll.dobj.keys():
+        return
+
+    if isinstance(key, str):
+        key = [key]
+    key = ds._generic_check._check_var_iter(
+        key, 'key',
+        types=(list, tuple),
+        types_iter=str,
+        allowed=coll.dobj.get(wbins, {}).keys(),
+    )
+
+    # propagate
+    propagate = ds._generic_check._check_var(
+        propagate, 'propagate',
+        types=bool,
+        default=True,
+    )
+
+    # ---------
+    # remove
+
+    for k0 in key:
+
+        # specific data
+        kdata = list(coll.dobj[wbins][k0]['cents'])
+        coll.remove_data(kdata, propagate=propagate)
+
+        # specific ref
+        lref = list(coll.dobj[wbins][k0]['ref'])
+        for rr in lref:
+            if rr in coll.dref.keys():
+                coll.remove_ref(rr, propagate=propagate)
+
+        # obj
+        coll.remove_obj(which=wbins, key=k0, propagate=propagate)
