@@ -7,6 +7,7 @@ import warnings
 
 # Common
 import numpy as np
+from matplotlib.path import Path
 import datastock as ds
 
 
@@ -100,6 +101,7 @@ def interpolate(
     # isbs
 
     x0_str = None
+    crop_path = None
     if isbs:
 
         # -----------------
@@ -135,6 +137,12 @@ def interpolate(
 
         if details is True:
             ref_com, domain = None, None
+
+        if mtype == 'rect' and crop is not None:
+            doutline = coll.get_mesh_outline(keym)
+            crop_path = Path(
+                np.array([doutline['x0']['data'], doutline['x1']['data']]).T
+            )
 
         # ---------------
         # no x0 => mesh
@@ -279,17 +287,24 @@ def interpolate(
     if isbs:
 
         _interp(
+            # resources
             coll=coll,
             keybs=keybs,
             keys=keys,
+            # interpolation points
             x0=x0,
             x1=x1,
+            # options
             val_out=val_out,
             deriv=deriv,
             indbs_tf=indbs_tf,
+            # cropping
             crop=crop,
             cropbs=cropbs,
+            crop_path=crop_path,
+            # details
             details=details,
+            # others
             dout=dout,
             mtype=mtype,
             ddata=ddata,
@@ -350,8 +365,8 @@ def interpolate(
         #     )
         #     err.args = (msg,)
         #     raise err
-            
-            
+
+
     # ----------
     # store
 
@@ -930,6 +945,7 @@ def _interp(
     indbs_tf=None,
     crop=None,
     cropbs=None,
+    crop_path=None,
     details=None,
     dout=None,
     mtype=None,
@@ -1026,6 +1042,7 @@ def _interp(
                     # rect-specific
                     crop=crop,
                     cropbs=cropbs,
+                    crop_path=crop_path,
                     # slicing
                     sli_c=sli_c,
                     sli_x=sli_x,

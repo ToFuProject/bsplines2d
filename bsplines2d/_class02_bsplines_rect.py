@@ -132,6 +132,7 @@ class BivariateSplineRect(scpinterp.BivariateSpline):
         # crop
         crop=None,
         cropbs=None,
+        crop_path=None,
         # options
         val_out=None,
         # slicing
@@ -187,10 +188,21 @@ class BivariateSplineRect(scpinterp.BivariateSpline):
 
         # clean out-of-mesh
         if dref_com['ix'] is None and val_out is not False:
-            indout = (
-                (x0 < self.tck[0][0]) | (x0 > self.tck[0][-1])
-                | (x1 < self.tck[1][0]) | (x1 > self.tck[1][-1])
-            )
+
+            # out of cropped mesh
+            if crop_path is not None:
+                if x0.ndim == 1:
+                    indout = ~crop_path.contains_points(np.array([x0, x1]).T)
+                else:
+                    indout = ~crop_path.contains_points(
+                        np.array([x0.ravel(), x1.ravel()]).T
+                    ).reshape(x0.shape)
+            else:
+                indout = (
+                    (x0 < self.tck[0][0]) | (x0 > self.tck[0][-1])
+                    | (x1 < self.tck[1][0]) | (x1 > self.tck[1][-1])
+                )
+
             slio = sli_o(indout)
             val[slio] = val_out
 
