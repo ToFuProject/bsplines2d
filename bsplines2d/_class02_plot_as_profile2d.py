@@ -817,7 +817,7 @@ def _plot_submesh(
             f"dref_vector = {dref_vector}"
         )
         raise Exception(msg)
-    
+
     if reft is not None and reft not in dgroup['Z']['ref']:
         dgroup['Z']['ref'].append(reft)
         dgroup['Z']['data'].append('index')
@@ -1008,6 +1008,7 @@ def _plot_profile2d_polar_add_radial(
         if reft is None:
             radial_details = radial_details * coll.ddata[key]['data'][None, :]
             refdet = (refr,)
+
         else:
             refdet = (reft, refr)
             if reft == coll.get_time(key)[2]:
@@ -1015,11 +1016,21 @@ def _plot_profile2d_polar_add_radial(
                     radial_details[None, :, :]
                     * coll.ddata[key]['data'][:, None, :]
                 )
+
             elif key in dind.keys():
-                radial_details = (
-                    radial_details[None, :, :]
-                    * coll.ddata[key]['data'][dind[key]['ind'], None, :]
-                )
+
+                if dind[key].get('ind') is None:
+                    radial_details = (
+                        radial_details[None, :, :]
+                        * coll.ddata[key]['data'][:, None, :]
+                    )
+
+                else:
+                    radial_details = (
+                        radial_details[None, :, :]
+                        * coll.ddata[key]['data'][dind[key]['ind'], None, :]
+                    )
+
 
         nbs = radial_details.shape[-1]
 
