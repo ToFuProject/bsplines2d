@@ -444,48 +444,16 @@ def _prepare(
 
     for k0, v0 in dkeys.items():
 
-        # deg and interp
-        wbs = coll._which_bsplines
-        deg = coll.dobj[wbs][v0['subbs']]['deg']
-        if deg == 0:
-            interp = 'nearest'
-        elif deg == 1:
-            interp = 'bilinear'
-        elif deg >= 2:
-            interp = 'bicubic'
-
-        dkeys[k0]['deg'] = deg
-        dkeys[k0]['interp'] = interp
-
-        # key X, Y, Z, U
-        bs2d = [k1 for k1 in lbs2d if k1 in coll.ddata[k0][wbs]][0]
-        rX, rY = dbs[bs2d]['ref']
-        lr1d = [k0 for k0 in coll2.ddata[k0]['ref'] if k0 not in [rX, rY]]
-        ndim = coll2.ddata[k0]['data'].ndim
-
-        dkeys[k0].update({
-            'key': k0,
-            'keyX': coll2.get_ref_vector(ref=rX)[3],
-            'keyY': coll2.get_ref_vector(ref=rY)[3],
-            'keyZ': None,
-            'keyU': None,
-        })
-
-        if ndim >= 3:
-            dkeys[k0]['keyZ'] = coll2.get_ref_vector(
-                ref=lr1d[0],
-                **dref_vectorZ,
-            )[3]
-            # uniform = ds._plot_as_array._check_uniform_lin(
-                # k0=keyZ, ddata=coll2.ddata,
-            # )
-            # if not uniform:
-                # keyZ = None
-            if ndim == 4:
-                dkeys[k0]['keyU'] = coll2.get_ref_vector(
-                    ref=lr1d[1],
-                    **dref_vectorU,
-                )[3]
+        dkeys[k0].update(_get_dkey(
+            coll=coll,
+            subbs=v0['subbs'],
+            kdata=k0,
+            lbs2d=lbs2d,
+            dbs=dbs,
+            coll2=coll2,
+            dref_vectorZ=dref_vectorZ,
+            dref_vectorU=dref_vectorU,
+        ))
 
     # -----------------
     # optional contours
@@ -544,6 +512,62 @@ def _prepare(
         coll2, dkeys,
         dlevels, lcol,
     )
+
+
+def _get_dkey(
+    coll=None,
+    subbs=None,
+    kdata=None,
+    lbs2d=None,
+    dbs=None,
+    coll2=None,
+    dref_vectorZ=None,
+    dref_vectorU=None,
+):
+
+    # deg and interp
+    wbs = coll._which_bsplines
+    deg = coll.dobj[wbs][subbs]['deg']
+    if deg == 0:
+        interp = 'nearest'
+    elif deg == 1:
+        interp = 'bilinear'
+    elif deg >= 2:
+        interp = 'bicubic'
+
+    # key X, Y, Z, U
+    bs2d = [k1 for k1 in lbs2d if k1 in coll.ddata[kdata][wbs]][0]
+    rX, rY = dbs[bs2d]['ref']
+    lr1d = [k1 for k1 in coll2.ddata[kdata]['ref'] if k1 not in [rX, rY]]
+    ndim = coll2.ddata[kdata]['data'].ndim
+
+    # higher dimensions
+    keyZ, keyU = None, None
+    if ndim >= 3:
+        keyZ = coll2.get_ref_vector(
+            ref=lr1d[0],
+            **dref_vectorZ,
+        )[3]
+        # uniform = ds._plot_as_array._check_uniform_lin(
+            # k0=keyZ, ddata=coll2.ddata,
+        # )
+        # if not uniform:
+            # keyZ = None
+        if ndim == 4:
+            keyU = coll2.get_ref_vector(
+                ref=lr1d[1],
+                **dref_vectorU,
+            )[3]
+
+    return {
+        'deg': deg,
+        'interp': interp,
+        'key': kdata,
+        'keyX': coll2.get_ref_vector(ref=rX)[3],
+        'keyY': coll2.get_ref_vector(ref=rY)[3],
+        'keyZ': keyZ,
+        'keyU': keyU,
+    }
 
 
 # #############################################################################

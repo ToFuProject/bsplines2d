@@ -33,6 +33,7 @@ def plot_as_profile2d_compare(
     # ref vectors
     dref_vectorZ=None,
     dref_vectorU=None,
+    ref_vector_strategy=None,
     # interpolation
     val_out=None,
     nan0=None,
@@ -146,6 +147,7 @@ def plot_as_profile2d_compare(
         # ref vectors
         dref_vectorZ=dref_vectorZ,
         dref_vectorU=dref_vectorU,
+        ref_vector_strategy=ref_vector_strategy,
         # interpolation
         val_out=val_out,
         nan0=nan0,
@@ -161,7 +163,51 @@ def plot_as_profile2d_compare(
     )
 
     # ----------
-    # plot error
+    # get error
+    # ----------
+
+    # data and vmin, vmax
+    err = collax.ddata[keys[0]]['data'] - collax.ddata[keys[1]]['data']
+    vmax = np.nanmax(np.abs(err))
+
+    # deg and interp
+    k0 = f"{keys[0]}_im"
+    interp = collax.dobj['mobile'][k0]['handle'].get_interpolation()
+    keyX = collax.dobj['axes']['prof0']['datax'][0]
+    keyY = collax.dobj['axes']['prof0']['datay'][0]
+
+    # add to collax
+    collax.add_data(
+        key='err',
+        data=err,
+        ref=collax.ddata[keys[0]]['ref'],
+        units=collax.ddata[keys[0]]['units'],
+    )
+
+    # dax
+    laxerr = ['err', 'vert_err', 'hor_err']
+
+    # plot
+    collax, dgroup2 = collax.plot_as_array(
+        # keys
+        key='err',
+        keyX=keyX,
+        keyY=keyY,
+        # options
+        vmin=-vmax,
+        vmax=vmax,
+        cmap=plt.cm.seismic,
+        dax={kax: dax[kax] for kax in laxerr},
+        dmargin=dmargin,
+        fs=fs,
+        dcolorbar=dcolorbar,
+        dleg=dleg,
+        interp=interp,
+        color_dict=None,
+        # nmax=nmax,
+        connect=False,
+        inplace=True,
+    )
 
     # -----------
     # connect
@@ -287,6 +333,7 @@ def _create_axes(
             dgs[kax],
             sharex=dax['prof0']['handle'],
         )
+        ax.axhline(0., c='k', lw=1., ls='--')
         dax[kax] = {'handle': ax, 'type': 'horizontal'}
 
     kax = 'vert'
@@ -303,6 +350,7 @@ def _create_axes(
             dgs[kax],
             sharey=dax['prof0']['handle'],
         )
+        ax.axvline(0., c='k', lw=1., ls='--')
         dax[kax] = {'handle': ax, 'type': 'vertical'}
 
     # --------------------
