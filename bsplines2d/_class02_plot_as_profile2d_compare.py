@@ -33,6 +33,7 @@ def plot_as_profile2d_compare(
     # ref vectors
     dref_vectorZ=None,
     dref_vectorU=None,
+    ref_vector_strategy=None,
     # interpolation
     val_out=None,
     nan0=None,
@@ -146,6 +147,7 @@ def plot_as_profile2d_compare(
         # ref vectors
         dref_vectorZ=dref_vectorZ,
         dref_vectorU=dref_vectorU,
+        ref_vector_strategy=ref_vector_strategy,
         # interpolation
         val_out=val_out,
         nan0=nan0,
