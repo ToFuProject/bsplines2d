@@ -183,6 +183,15 @@ def _rect_outline(coll=None, key=None):
             # ------ DEBUG --------
             if pp is None:
                 import matplotlib.pyplot as plt
+                msg = (
+                    f"\n\t- i0: {i0}\n"
+                    f"\t- i1: {i1}\n"
+                    f"\t- ii0: {ii0}\n"
+                    f"\t- old: {old}\n"
+                    f"\t- pp: {pp}\n"
+                    f"\t- pall: {pall}\n"
+                )
+                print(msg)
                 dax = coll.plot_mesh(key)
                 plt.gca().plot(
                     knots0[np.array(lp)[:, 0]],
@@ -197,7 +206,14 @@ def _rect_outline(coll=None, key=None):
                     ls='None',
                     marker='x',
                 )
-                import pdb; pdb.set_trace()     # DB
+                plt.gca().plot(
+                    knots0[np.array(pall)[:, 0]],
+                    knots1[np.array(pall)[:, 1]],
+                    ls='None',
+                    marker='s',
+                )
+
+                break
             # -----------------------
 
             lp.append(pp)
