@@ -144,6 +144,22 @@ def interpolate(
                 np.array([doutline['x0']['data'], doutline['x1']['data']]).T
             )
 
+        # no x0 + no res + deg = 1 bsplines => x0 = knots
+        wbs = coll._which_bsplines
+        deg = coll.dobj[wbs][keybs]['deg']
+        print(keys, keybs, keym, deg, x0)
+        if x0 is None and res is None and deg == 1:
+            print()
+            print(keys, keybs, keym)    # DB
+            kx = coll.dobj[wbs][keybs]['knots']
+            x0 = coll.ddata[kx[0]]['data']
+            if len(kx) == 2:
+                print('2d')
+                x1 = coll.ddata[kx[0]]['data']
+                x0 = np.repeat(x0[:, None], x1.size, axis=1)
+                x1 = np.repeat(x1[None, :], x0.shape[0], axis=0)
+                grid = False
+
         # ---------------
         # no x0 => mesh
 

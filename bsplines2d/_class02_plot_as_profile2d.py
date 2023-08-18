@@ -864,7 +864,8 @@ def _plot_submesh(
                     lw=2,
                     c=color_dict,
                 )
-            else:
+
+            elif collax.ddata[lkradial[ii]]['data'].ndim == 2:
                 l0, = ax.plot(
                     collax.ddata[kradius]['data'],
                     collax.ddata[lkradial[ii]]['data'][0, :],
@@ -883,6 +884,12 @@ def _plot_submesh(
                     axes=kax,
                     ind=0,
                 )
+            else:
+                msg = (
+                    "spectral, radial and time-dependent profile2d"
+                    " plotting not implemented yet!"
+                )
+                raise NotImplementedError(msg)
 
         if lkdet is not None:
             for ii in range(len(lkdet)):

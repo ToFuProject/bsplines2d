@@ -62,6 +62,7 @@ def interpolate_all_bsplines(
 
         # get 2d mesh
         if dunique_mesh_2d is None:
+
             if v0.get('x0') is None:
                 dout = coll2.get_sample_mesh(
                     key=k0,
@@ -73,19 +74,21 @@ def interpolate_all_bsplines(
                     kx0=None,
                     kx1=None,
                 )
+
             else:
                 x0str = f'{k0}_x0_temp'
                 dout = {'x0': {'key': x0str, 'ref': f'{x0str}_n'}}
                 if v0.get('x1') is not None:
                     x1str = f'{k0}_x1_temp'
                     dout['x1'] = {'key': x1str, 'ref': f'{x1str}_n'}
-                    for k1, v1 in dout.items():
-                        coll2.add_ref(key=v1['ref'], size=v0[k1].size)
-                        coll2.add_data(
-                            key=v1['key'],
-                            data=v0[k1],
-                            ref=v1['ref'],
-                        )
+
+                for k1, v1 in dout.items():
+                    coll2.add_ref(key=v1['ref'], size=v0[k1].size)
+                    coll2.add_data(
+                        key=v1['key'],
+                        data=v0[k1],
+                        ref=v1['ref'],
+                    )
 
         # compute
         for bs in v0[wbs]:
@@ -196,7 +199,7 @@ def _check(
         allowed=lok,
     )
 
-    lbs = list(itt.chain.from_iterable([coll.ddata[k0][wbs] for k0 in keys]))
+    lbs = list(set(itt.chain.from_iterable([coll.ddata[k0][wbs] for k0 in keys])))
 
     # --------------
     # rbs vs submesh
@@ -245,7 +248,7 @@ def _check(
     # loop
     for k0 in lm:
         if dres.get(k0) is None:
-            dres[k0] = {'res': None, 'mode': 'abs'}
+            dres[k0] = {'res': None, 'mode': 'abs', 'x0': None, 'x1': None}
         elif isinstance(dres[k0], dict):
             dres[k0] = {
                 'res': dres[k0].get('res'),
@@ -257,6 +260,8 @@ def _check(
             dres[k0] = {
                 'res': dres[k0],
                 'mode': 'abs',
+                'x0': None,
+                'x1': None,
             }
         else:
             msg = (
@@ -268,6 +273,15 @@ def _check(
 
         # add bsplines
         dres[k0][wbs] = [k1 for k1 in lbs if dbs[k1] == k0]
+
+        # particular case
+        if dres[k0]['x0'] is None and dres[k0]['res'] is None:
+            ldeg1 = [bs for bs in dres[k0][wbs] if coll.dobj[wbs][bs]['deg'] == 1]
+            if len(ldeg1) == 1:
+                kx = coll.dobj[wbs][ldeg1[0]]['apex']
+                dres[k0]['x0'] = coll.ddata[kx[0]]['data']
+                if len(kx) == 2:
+                    dres[k0]['x1'] = coll.ddata[kx[1]]['data']
 
     # ----------
     # coll2
