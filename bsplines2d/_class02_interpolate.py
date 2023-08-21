@@ -148,10 +148,7 @@ def interpolate(
         wm = coll._which_mesh
         wbs = coll._which_bsplines
         deg = coll.dobj[wbs][keybs]['deg']
-        print(keys, keybs, keym, deg, x0)
         if x0 is None and res is None and deg == 1:
-            print()
-            print(keys, keybs, keym)    # DB
             subbs = coll.dobj[wm][keym].get('subbs')
             if (
                 submesh is True
