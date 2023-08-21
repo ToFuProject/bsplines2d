@@ -32,6 +32,8 @@ def plot_as_profile2d(
     # ref vectors
     dref_vectorZ=None,
     dref_vectorU=None,
+    ref_vector_strategy=None,
+    uniform=None,
     # interpolation
     val_out=None,
     nan0=None,
@@ -137,6 +139,8 @@ def plot_as_profile2d(
                 keybs=v0['keybs'],
                 # ref vector
                 dref_vector=dref_vectorZ,
+                ref_vector_strategy=ref_vector_strategy,
+                uniform=uniform,
                 # details
                 plot_details=plot_details,
                 # plotting
@@ -442,48 +446,16 @@ def _prepare(
 
     for k0, v0 in dkeys.items():
 
-        # deg and interp
-        wbs = coll._which_bsplines
-        deg = coll.dobj[wbs][v0['subbs']]['deg']
-        if deg == 0:
-            interp = 'nearest'
-        elif deg == 1:
-            interp = 'bilinear'
-        elif deg >= 2:
-            interp = 'bicubic'
-
-        dkeys[k0]['deg'] = deg
-        dkeys[k0]['interp'] = interp
-
-        # key X, Y, Z, U
-        bs2d = [k1 for k1 in lbs2d if k1 in coll.ddata[k0][wbs]][0]
-        rX, rY = dbs[bs2d]['ref']
-        lr1d = [k0 for k0 in coll2.ddata[k0]['ref'] if k0 not in [rX, rY]]
-        ndim = coll2.ddata[k0]['data'].ndim
-
-        dkeys[k0].update({
-            'key': k0,
-            'keyX': coll2.get_ref_vector(ref=rX)[3],
-            'keyY': coll2.get_ref_vector(ref=rY)[3],
-            'keyZ': None,
-            'keyU': None,
-        })
-
-        if ndim >= 3:
-            dkeys[k0]['keyZ'] = coll2.get_ref_vector(
-                ref=lr1d[0],
-                **dref_vectorZ,
-            )[3]
-            # uniform = ds._plot_as_array._check_uniform_lin(
-                # k0=keyZ, ddata=coll2.ddata,
-            # )
-            # if not uniform:
-                # keyZ = None
-            if ndim == 4:
-                dkeys[k0]['keyU'] = coll2.get_ref_vector(
-                    ref=lr1d[1],
-                    **dref_vectorU,
-                )[3]
+        dkeys[k0].update(_get_dkey(
+            coll=coll,
+            subbs=v0['subbs'],
+            kdata=k0,
+            lbs2d=lbs2d,
+            dbs=dbs,
+            coll2=coll2,
+            dref_vectorZ=dref_vectorZ,
+            dref_vectorU=dref_vectorU,
+        ))
 
     # -----------------
     # optional contours
@@ -542,6 +514,62 @@ def _prepare(
         coll2, dkeys,
         dlevels, lcol,
     )
+
+
+def _get_dkey(
+    coll=None,
+    subbs=None,
+    kdata=None,
+    lbs2d=None,
+    dbs=None,
+    coll2=None,
+    dref_vectorZ=None,
+    dref_vectorU=None,
+):
+
+    # deg and interp
+    wbs = coll._which_bsplines
+    deg = coll.dobj[wbs][subbs]['deg']
+    if deg == 0:
+        interp = 'nearest'
+    elif deg == 1:
+        interp = 'bilinear'
+    elif deg >= 2:
+        interp = 'bicubic'
+
+    # key X, Y, Z, U
+    bs2d = [k1 for k1 in lbs2d if k1 in coll.ddata[kdata][wbs]][0]
+    rX, rY = dbs[bs2d]['ref']
+    lr1d = [k1 for k1 in coll2.ddata[kdata]['ref'] if k1 not in [rX, rY]]
+    ndim = coll2.ddata[kdata]['data'].ndim
+
+    # higher dimensions
+    keyZ, keyU = None, None
+    if ndim >= 3:
+        keyZ = coll2.get_ref_vector(
+            ref=lr1d[0],
+            **dref_vectorZ,
+        )[3]
+        # uniform = ds._plot_as_array._check_uniform_lin(
+            # k0=keyZ, ddata=coll2.ddata,
+        # )
+        # if not uniform:
+            # keyZ = None
+        if ndim == 4:
+            keyU = coll2.get_ref_vector(
+                ref=lr1d[1],
+                **dref_vectorU,
+            )[3]
+
+    return {
+        'deg': deg,
+        'interp': interp,
+        'key': kdata,
+        'keyX': coll2.get_ref_vector(ref=rX)[3],
+        'keyY': coll2.get_ref_vector(ref=rY)[3],
+        'keyZ': keyZ,
+        'keyU': keyU,
+    }
 
 
 # #############################################################################
@@ -739,6 +767,8 @@ def _plot_submesh(
     keybs=None,
     # ref vetcor
     dref_vector=None,
+    ref_vector_strategy=None,
+    uniform=None,
     # plot_details
     plot_details=None,
     # figure
@@ -789,6 +819,7 @@ def _plot_submesh(
         interp=interp,
         label=True,
         inplace=True,
+        uniform=uniform,
         **dkeys,
     )
 
@@ -802,10 +833,19 @@ def _plot_submesh(
         keybs=keybs,
         collax=collax,
         dref_vector=dref_vector,
+        ref_vector_strategy=ref_vector_strategy,
         plot_details=plot_details,
     )
 
-    assert (reft is not None) == ('Z' in dgroup.keys())
+    if (reft is not None) != ('Z' in dgroup.keys()):
+        msg = (
+            "(reft is not None) != ('Z' in dgroup.keys()):\n"
+            f"reft = {reft}\n"
+            f"dgroup.keys() = {dgroup.keys()}\n"
+            f"dref_vector = {dref_vector}"
+        )
+        raise Exception(msg)
+
     if reft is not None and reft not in dgroup['Z']['ref']:
         dgroup['Z']['ref'].append(reft)
         dgroup['Z']['data'].append('index')
@@ -828,7 +868,8 @@ def _plot_submesh(
                     lw=2,
                     c=color_dict,
                 )
-            else:
+
+            elif collax.ddata[lkradial[ii]]['data'].ndim == 2:
                 l0, = ax.plot(
                     collax.ddata[kradius]['data'],
                     collax.ddata[lkradial[ii]]['data'][0, :],
@@ -847,6 +888,12 @@ def _plot_submesh(
                     axes=kax,
                     ind=0,
                 )
+            else:
+                msg = (
+                    "spectral, radial and time-dependent profile2d"
+                    " plotting not implemented yet!"
+                )
+                raise NotImplementedError(msg)
 
         if lkdet is not None:
             for ii in range(len(lkdet)):
@@ -897,6 +944,7 @@ def _plot_profile2d_polar_add_radial(
     collax=None,
     # ref_vector
     dref_vector=None,
+    ref_vector_strategy=None,
     # details
     plot_details=None,
 ):
@@ -915,9 +963,15 @@ def _plot_profile2d_polar_add_radial(
 
     kr2d = coll.dobj[wm][keym]['subkey'][0]
     kr = coll.dobj[wm][keym]['knots'][0]
-    rr = coll.ddata[kr]['data']
-    rad = np.linspace(rr[0], rr[-1], 10*rr.size)
 
+    # special case of deg = 1 => use knots directly
+    rr = coll.ddata[kr]['data']
+    if coll.dobj[wbs][keybs]['deg'] == 1:
+        rad = rr
+    else:
+        rad = np.linspace(rr[0], rr[-1], 10*rr.size)
+
+    # temporary keys
     refr = f'{key}_nradius'
     kradius = f'{key}_radius'
 
@@ -958,6 +1012,7 @@ def _plot_profile2d_polar_add_radial(
     reft, keyt, _, dind = coll.get_ref_vector_common(
         keys=[key, kr2d],
         ref=refc,
+        strategy=ref_vector_strategy,
         **dref_vector,
     )[1:]
 
@@ -994,6 +1049,7 @@ def _plot_profile2d_polar_add_radial(
         if reft is None:
             radial_details = radial_details * coll.ddata[key]['data'][None, :]
             refdet = (refr,)
+
         else:
             refdet = (reft, refr)
             if reft == coll.get_time(key)[2]:
@@ -1001,11 +1057,21 @@ def _plot_profile2d_polar_add_radial(
                     radial_details[None, :, :]
                     * coll.ddata[key]['data'][:, None, :]
                 )
+
             elif key in dind.keys():
-                radial_details = (
-                    radial_details[None, :, :]
-                    * coll.ddata[key]['data'][dind[key]['ind'], None, :]
-                )
+
+                if dind[key].get('ind') is None:
+                    radial_details = (
+                        radial_details[None, :, :]
+                        * coll.ddata[key]['data'][:, None, :]
+                    )
+
+                else:
+                    radial_details = (
+                        radial_details[None, :, :]
+                        * coll.ddata[key]['data'][dind[key]['ind'], None, :]
+                    )
+
 
         nbs = radial_details.shape[-1]
 

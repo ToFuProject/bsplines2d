@@ -7,6 +7,7 @@ import warnings
 
 # Common
 import numpy as np
+from matplotlib.path import Path
 import datastock as ds
 
 
@@ -37,6 +38,7 @@ def interpolate(
     domain=None,
     # common ref
     ref_com=None,
+    ref_vector_strategy=None,
     # bsplines-specific
     details=None,
     indbs_tf=None,
@@ -52,6 +54,7 @@ def interpolate(
     returnas=None,
     return_params=None,
     store=None,
+    store_keys=None,
     inplace=None,
     # debug or unit tests
     debug=None,
@@ -98,6 +101,7 @@ def interpolate(
     # isbs
 
     x0_str = None
+    crop_path = None
     if isbs:
 
         # -----------------
@@ -134,10 +138,35 @@ def interpolate(
         if details is True:
             ref_com, domain = None, None
 
+        if mtype == 'rect' and crop is not None:
+            doutline = coll.get_mesh_outline(keym)
+            crop_path = Path(
+                np.array([doutline['x0']['data'], doutline['x1']['data']]).T
+            )
+
+        # # no x0 + no res + deg = 1 bsplines => x0 = knots
+        wm = coll._which_mesh
+        wbs = coll._which_bsplines
+        deg = coll.dobj[wbs][keybs]['deg']
+        if x0 is None and res is None and deg == 1:
+            subbs = coll.dobj[wm][keym].get('subbs')
+            if (
+                submesh is True
+                and subbs is not None
+                and coll.dobj[wbs][subbs]['deg'] == 1
+            ):
+                bsx0 = subbs
+            elif submesh is False or subbs is None:
+                bsx0 = keybs
+
+            kx01 = coll.dobj[bsx0]['apex']
+            x0 = coll.ddata[kx01[0]]['data']
+            if len(kx01) == 2:
+                x1 = coll.ddata[kx01[1]]['data']
+
         # ---------------
         # no x0 => mesh
 
-        wm = coll._which_mesh
         if x0 is None:
             if submesh is True:
                 km = coll.dobj[wm][keym]['submesh']
@@ -256,6 +285,7 @@ def interpolate(
         domain=domain,
         # common ref
         ref_com=ref_com,
+        # ref_vector_strategy=ref_vector_strategy,
         # parameters
         grid=grid,
         deg=None,
@@ -276,17 +306,24 @@ def interpolate(
     if isbs:
 
         _interp(
+            # resources
             coll=coll,
             keybs=keybs,
             keys=keys,
+            # interpolation points
             x0=x0,
             x1=x1,
+            # options
             val_out=val_out,
             deriv=deriv,
             indbs_tf=indbs_tf,
+            # cropping
             crop=crop,
             cropbs=cropbs,
+            crop_path=crop_path,
+            # details
             details=details,
+            # others
             dout=dout,
             mtype=mtype,
             ddata=ddata,
@@ -334,7 +371,20 @@ def interpolate(
     # adjust data and ref if xunique
 
     if xunique:
+        # try:
         ds._class1_interpolate._xunique(dout)
+        # except Exception as err:
+        #     msg = (
+        #         err.args[0]
+        #         + "\n\n"
+        #         f"keys = {keys}\n"
+        #         f"ref_key = {ref_key}\n"
+        #         f"x0 = {x0}\n"
+        #         f"x1 = {x1}\n"
+        #     )
+        #     err.args = (msg,)
+        #     raise err
+
 
     # ----------
     # store
@@ -344,6 +394,7 @@ def interpolate(
             coll=coll,
             dout=dout,
             inplace=inplace,
+            store_keys=store_keys,
         )
 
     # -------
@@ -913,6 +964,7 @@ def _interp(
     indbs_tf=None,
     crop=None,
     cropbs=None,
+    crop_path=None,
     details=None,
     dout=None,
     mtype=None,
@@ -1009,6 +1061,7 @@ def _interp(
                     # rect-specific
                     crop=crop,
                     cropbs=cropbs,
+                    crop_path=crop_path,
                     # slicing
                     sli_c=sli_c,
                     sli_x=sli_x,

@@ -6,12 +6,11 @@ Created on Thu Jan  5 20:14:40 2023
 """
 
 
+import warnings
+
+
 import numpy as np
 import datastock as ds
-
-
-# specific
-from . import _class02_interpolate as _interpolate
 
 
 # ############################################################
@@ -22,14 +21,27 @@ from . import _class02_interpolate as _interpolate
 
 def binning(
     coll=None,
-    keys=None,
-    ref_key=None,
-    bins=None,
-    # optional storing
+    data=None,
+    data_units=None,
+    axis=None,
+    # binning
+    bins0=None,
+    bins1=None,
+    bin_data0=None,
+    bin_data1=None,
+    bin_units0=None,
+    # kind of binning
+    integrate=None,
+    statistic=None,
+    # options
+    safety_ratio=None,
+    dref_vector=None,
+    ref_vector_strategy=None,
     verb=None,
     returnas=None,
+    # storing
     store=None,
-    key_store=None,
+    store_keys=None,
 ):
     """ Return the spectrally interpolated coefs
 
@@ -41,75 +53,85 @@ def binning(
     # ----------
     # checks
 
-    refb, bins, verb, store, returnas = _check(
-        coll=coll,
-        ref_key=ref_key,
-        bins=bins,
-        verb=verb,
-        store=store,
-        returnas=returnas,
-    )
-
     # keys
-    (
-        isbs, keys, ref_key,
-        daxis, dunits, units_ref,
-        _, _,
-    ) = _interpolate._check_keys(
-        coll=coll,
-        keys=keys,
-        ref_key=ref_key,
-        only1d=False,
-        details=False,
+    isbs, bin_data0 = _check_bs(
+        coll=coll, 
+        bin_data0=bin_data0,
+        bin_data1=bin_data1,
     )
 
     # ----------
     # trivial
 
-    if not isbs:
+    nobin = False
+    if isbs:
+        
+        # add ref and data
+        kr, kd, ddatan, nobin = _interpolate(
+            coll=coll,
+            data=data,
+            data_units=data_units,
+            # binning
+            bins0=bins0,
+            bin_data0=bin_data0,
+            # options
+            dref_vector=dref_vector,
+            verb=verb,
+            store=store,
+            store_keys=store_keys,
+        )
+        
+        # safety check
+        if nobin is False:
+            lk = list(ddatan.keys())
+            data = [ddatan[k0]['data'] for k0 in lk]
+            bin_data0 = [ddatan[k0]['bin_data'] for k0 in lk]
+        
+    # --------------------
+    # do the actua binning
+    
+    if nobin is False:
         dout = ds._class1_binning.binning(
             coll=coll,
-            keys=keys,
-            ref_key=ref_key[0],
-            bins=bins,
+            data=data,
+            data_units=data_units,
+            axis=axis,
+            # binning
+            bins0=bins0,
+            bins1=bins1,
+            bin_data0=bin_data0,
+            bin_data1=bin_data1,
+            bin_units0=bin_units0,
+            # kind of binning
+            integrate=integrate,
+            statistic=statistic,
+            # options
+            safety_ratio=safety_ratio,
+            dref_vector=dref_vector,
+            ref_vector_strategy=ref_vector_strategy,
+            verb=verb,
+            returnas=True,
+            # storing
+            store=store,
+            store_keys=store_keys,
         )
 
+        # --------------------------------
+        # remove intermediate ref and data
+    
+        if isbs is True:
+            for dd in data + bin_data0 + [kd]:
+                if dd in coll.ddata.keys():
+                    coll.remove_data(dd)
+            if kr in coll.dref.keys():
+                coll.remove_ref(kr)
+                
+            for k0 in data:
+                k1 = [k1 for k1, v1 in ddatan.items() if v1['data'] == k0][0]
+                dout[k1] = dict(dout[k0])
+                del dout[k0]
     else:
-        dout = _binning(
-            coll=coll,
-            keys=keys,
-            ref_key=ref_key,
-            bins=bins,
-            dunits=dunits,
-            units_ref=units_ref,
-            daxis=daxis,
-        )
-
-    # ------------
-    # adjust ref
-
-    if refb is not None:
-        for k0, v0 in dout.items():
-            ref = list(coll.ddata[k0]['ref'])
-            ref[daxis[k0][0]] = refb
-            dout[k0]['ref'] = tuple(ref)
-
-    # ----------------
-    # optional verb
-
-    if verb is True:
-        # TBD
-        pass
-
-    # ----------------
-    # optional storing
-
-    if store is True:
-        _store(
-            coll=coll,
-            dout=dout,
-            key_store=key_store,
-        )
+        dout = nobin
 
     # ----------
     # return
@@ -124,75 +146,55 @@ def binning(
 # ######################################################
 
 
-def _check(
+def _check_bs(
     coll=None,
-    keys=None,
-    bins=None,
-    ref_key=None,
-    verb=None,
-    returnas=None,
-    store=None,
+    bin_data0=None,
+    bin_data1=None,
 ):
-
-    # catch bin as str
-    wb = coll._which_bins
-    refb = None
-    if isinstance(bins, str):
-        lok = list(coll.dobj.get(wb, {}).keys())
-        if bins in lok:
-            refb = coll.dobj[wb][bins]['ref'][0]
-            bins = coll.dobj[wb][bins]['edges']
-        else:
-            msg = (
-                "Arg bins refers to an unknown bins vector!\n"
-                f"\t- Provided: '{bins}'\n"
-                f"\t- Available: {lok}"
-            )
-            raise Exception(msg)
-
-    # verb
-    verb = ds._generic_check._check_var(
-        verb, 'verb',
-        types=bool,
-        default=True,
+    
+    wbs = coll._which_bsplines
+    lok_bs = [
+        k0 for k0, v0 in coll.dobj.get(wbs, {}).items()
+        if len(v0['ref']) == 1
+    ]
+    lok_dbs = [
+        k0 for k0, v0 in coll.ddata.items()
+        if v0.get(wbs) is not None
+        and len(v0[wbs]) == 1
+        and v0[wbs][0] in coll.dobj.get(wbs, {}).keys()
+        and len(coll.dobj[wbs][v0[wbs][0]]['ref']) == 1
+    ]
+        
+    c0 = (
+        isinstance(bin_data0, str)
+        and bin_data1 is None
+        and bin_data0 in lok_dbs + lok_bs
     )
-
-    # store
-    lok = [False]
-    if refb is not None:
-        lok.append(True)
-    store = ds._generic_check._check_var(
-        store, 'store',
-        types=bool,
-        allowed=lok,
-        default=False,
-    )
-
-    # returnas
-    lok = [False, dict]
-    returnas = ds._generic_check._check_var(
-        returnas, 'returnas',
-        types=bool,
-        default=store is False,
-    )
-
-    return refb, bins, verb, store, returnas
-
+    
+    if bin_data0 in lok_bs:
+        bin_data0 = coll.dobj[wbs][bin_data0]['apex'][0]
+    
+    return c0, bin_data0
+        
 
 # ######################################################
 # ######################################################
-#                   binning
+#                   interpolate
 # ######################################################
 
 
-def _binning(
+def _interpolate(
     coll=None,
-    keys=None,
-    ref_key=None,
-    bins=None,
-    dunits=None,
-    units_ref=None,
-    daxis=None,
+    data=None,
+    data_units=None,
+    # binning
+    bins0=None,
+    bin_data0=None,
+    # options
+    dref_vector=None,
+    verb=None,
+    store=None,
+    store_keys=None,
 ):
 
     # ---------
@@ -201,106 +203,157 @@ def _binning(
     # mesh knots
     wm = coll._which_mesh
     wbs = coll._which_bsplines
-    keym = coll.dobj[wbs][ref_key][wm]
+    key_bs = coll.ddata[bin_data0][wbs][0]
+    keym = coll.dobj[wbs][key_bs][wm]
     kknots = coll.dobj[wm][keym]['knots'][0]
 
     # resolution
     vect = coll.ddata[kknots]['data']
     res0 = np.abs(np.min(np.diff(vect)))
 
-    # ----------
+    # ---------
+    # sampling
+    
+    ddata = ds._class1_binning._check_data(
+        coll=coll,
+        data=data,
+        data_units=data_units,
+        store=True,
+    )
+    lkdata = list(ddata.keys())
+    
+    # --------------------
     # bins
 
-    # bins
-    bins, units_bins, _, npts = ds._class1_binning._check_bins(
+    dbins0 = ds._class1_binning._check_bins(
         coll=coll,
-        keys=keys,
-        ref_key=ref_key,
-        bins=bins,
-        vect=vect,
-        strict=False,
-        deg=coll.dobj[wbs][ref_key]['deg'],
+        lkdata=lkdata,
+        bins=bins0,
+        dref_vector=dref_vector,
+        store=store,
     )
+
+    # ----------------------
+    # npts for interpolation
+    
+    dv = np.abs(np.diff(vect))
+    dvmean = np.mean(dv) + np.std(dv)
+    db = np.mean(np.diff(dbins0[lkdata[0]]['edges']))
+    npts = (coll.dobj[wbs][key_bs]['deg'] + 3) * max(1, dvmean / db) + 3
 
     # sample mesh, update dv
-    xx = coll.get_sample_mesh(keym, res=res0 / npts, mode='abs')['x0']['data']
-    dv = np.abs(np.diff(xx))
+    Dx0 = [dbins0[lkdata[0]]['edges'][0], dbins0[lkdata[0]]['edges'][-1]]
+    xx = coll.get_sample_mesh(
+        keym,
+        res=res0 / npts,
+        mode='abs',
+        Dx0=Dx0,
+    )['x0']['data']
 
-    dv = np.append(dv, dv[-1])
+    if xx.size == 0:
+        nobins = _get_nobins(
+            coll=coll,
+            key_bs=key_bs,
+            ddata=ddata,
+            dbins0=dbins0,
+            store=store,
+            store_keys=store_keys,
+        )
+        return None, None, None, nobins
 
-    # units
-    dout = ds._class1_binning._units(
-        dunits=dunits,
-        units_ref=units_ref,
-        units_bins=units_bins,
-    )
+    # -------------------
+    #  add ref
+    
+    kr = "ntemp"
+    kd = "xxtemp"
+    
+    coll.add_ref(kr, size=xx.size)
+    coll.add_data(kd, data=xx, ref=kr, units=coll.ddata[kknots]['units'])
 
-    # --------------
-    # actual binning
+    ddata_new = {}
+    for ii, (k0, v0) in enumerate(ddata.items()):
 
-    for k0, v0 in dout.items():
-
-        # interpolate
-        val = coll.interpolate(
-            keys=k0,
-            ref_key=ref_key,
-            x0=xx,
+        # interpolate bin_data
+        kbdn = f"kbdn{ii}_temp"
+        # try:
+        coll.interpolate(
+            keys=bin_data0,
+            ref_key=key_bs,
+            x0=kd,
             val_out=0.,
-        )[k0]['data']
-
-        # bin
-        dout[k0]['data'] = ds._class1_binning._bin(
-            bins=bins,
-            dv=dv,
-            vect=xx,
-            data=val,
-            axis=daxis[k0][0],
+            returnas=False,
+            store=True,
+            inplace=True,
+            store_keys=kbdn,
         )
 
-    return dout
+        # except Exception as err:
+        #     msg = (
+        #         err.args[0]
+        #         + "\n\n"
+        #         f"\t- k0 = {k0}\n"
+        #         f"\t- ii = {ii}\n"
+        #         f"\t- bin_data0 = {bin_data0}\n"
+        #         f"\t- key_bs = {key_bs}\n"
+        #         f"\t- kd = {kd}\n"
+        #         f"\t- xx.size: {xx.size}\n"
+        #         f"\t- kbdn = {kbdn}\n"
+        #     )
+        #     err.args = (msg,)
+        #     raise err
+        
+        # interpolate_data
+        kdn = f"kbd{ii}_temp"
+        coll.interpolate(
+            keys=k0,
+            ref_key=key_bs,
+            x0=kd,
+            val_out=0.,
+            returnas=False,
+            store=True,
+            inplace=True,
+            store_keys=kdn,
+        )
+        ddata_new[k0] = {'bin_data': kbdn, 'data': kdn}
+
+    return kr, kd, ddata_new, False
 
 
-# ######################################################
-# ######################################################
-#                   storing
-# ######################################################
-
-
-def _store(
+def _get_nobins(
     coll=None,
-    dout=None,
-    key_store=None,
+    key_bs=None,
+    ddata=None,
+    dbins0=None,
+    store=None,
+    store_keys=None,
 ):
-
-    # ---------
-    # key_store
-
-    if key_store is None:
-        key_store = [f'{key}_bin' for key in dout.keys()]
-    if isinstance(key_store, str):
-        key_store = [key_store]
-
-    lout = list(coll.ddata.keys())
-    key_store = ds._generic_check._check_var_iter(
-        key_store, 'key_store',
-        types=(list, tuple),
-        types_iter=str,
-        excluded=lout,
-    )
-
-    if len(key_store) != len(dout):
-        msg = (
-            "Arg key_store must be of same length as keys!\n"
-            f"\t- keys: {list(dout.keys())}\n"
-            f"\t- key_store: {key_store}\n"
-        )
-        raise Exception(msg)
-
-    # --------
-    # store
-
-    for ii, (k0, v0) in enumerate(dout.items()):
-        coll.add_data(
-            key=key_store[ii],
-            **v0,
-        )
+    
+    lk = list(ddata.keys())
+    wbs = coll._which_bsplines
+    
+    if isinstance(store_keys, str):
+        store_keys = [store_keys]
+    
+    dout = {}
+    for ii, k0 in enumerate(lk):
+        
+        axis = ddata[k0]['ref'].index(coll.dobj[wbs][key_bs]['ref'][0])
+        
+        shape = list(ddata[k0]['data'].shape)
+        nb = dbins0[k0]['edges'].size - 1
+        shape[axis] = nb
+        
+        ref = list(ddata[k0]['ref'])
+        ref[axis] = dbins0[k0]['bin_ref'][0]
+        
+        dout[store_keys[ii]] = {
+            'data': np.zeros(shape, dtype=float),
+            'ref': tuple(ref),
+            'units': ddata[k0]['units'],
+        }
+        
+    if store is True:
+        for k0, v0 in dout.items():
+            coll.add_data(key=k0, **v0)
+        
+    return dout

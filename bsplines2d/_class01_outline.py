@@ -115,8 +115,6 @@ def _rect_outline(coll=None, key=None):
 
     else:
         crop = coll.ddata[crop]['data']
-        crop0, crop1 = (~crop).nonzero()
-        crop = np.array([crop0, crop1]).T.tolist()
 
         # indices of knots
         (i0, i1), (ic0, ic1) = coll.select_mesh_elements(
@@ -131,10 +129,14 @@ def _rect_outline(coll=None, key=None):
         i0min, i1min = i0.min(), i1.min()
         i0max, i1max = i0.max(), i1.max()
 
+        # get indices of edge knots
+        iok = (ic0 >= 0) & (ic1 >= 0)
         ind0 = np.array([
-            np.any([[ic0[ii, jj], ic1[ii, jj]] in crop for jj in [0, 1, 2, 3]])
+            np.any(~crop[ic0[ii, iok[ii, :]], ic1[ii, iok[ii, :]]])
             for ii in range(i0.size)
         ])
+
+        # get subest of extreme coordinates
         ind = (
             ind0
             | (i0 == i0min) | (i0 == i0max)
@@ -144,18 +146,76 @@ def _rect_outline(coll=None, key=None):
             import pdb; pdb.set_trace()     # DB
             pass
 
-        i00 = np.min(i0[ind])
-        p0 = [i00, np.min(i1[ind][i0[ind] == i00])]
-        pall = np.array([i0[ind], i1[ind]]).T.tolist()
+        # keep only limits
+        i0 = i0[ind]
+        i1 = i1[ind]
+        ic0 = ic0[ind, :]
+        ic1 = ic1[ind, :]
+
+        # get starting point
+        i0_min = np.min(i0)
+        i1_min = np.min(i1[i0 == i0_min])
+        ii0 = ((i0 == i0_min) & (i1 == i1_min)).nonzero()[0][0]
+
+        # pall = list(range(0, i0.size))
+
+        p0 = [i0[ii0], i1[ii0]]
+        pall = np.array([i0, i1]).T.tolist()
+
         lp = [p0]
+        pall.remove(p0)
 
         old = None
-        while len(lp) == 1 or lp[-1] != p0:
-            pp, old = _next_pp(
+        # while len(lp) == 1 or lp[-1] != p0:
+        while len(pall) > 0:
+            pp, old, ii0 = _next_pp(
                 p0=lp[-1],
+                ii0=ii0,
                 pall=pall,
+                i0=i0,
+                i1=i1,
+                ic0=ic0,
+                ic1=ic1,
+                crop=crop,
                 old=old,
             )
+
+            # ------ DEBUG --------
+            if pp is None:
+                import matplotlib.pyplot as plt
+                msg = (
+                    f"\n\t- i0: {i0}\n"
+                    f"\t- i1: {i1}\n"
+                    f"\t- ii0: {ii0}\n"
+                    f"\t- old: {old}\n"
+                    f"\t- pp: {pp}\n"
+                    f"\t- pall: {pall}\n"
+                )
+                print(msg)
+                dax = coll.plot_mesh(key)
+                plt.gca().plot(
+                    knots0[np.array(lp)[:, 0]],
+                    knots1[np.array(lp)[:, 1]],
+                    ls='-',
+                    marker='o',
+                    lw=2,
+                )
+                plt.gca().plot(
+                    knots0[i0],
+                    knots1[i1],
+                    ls='None',
+                    marker='x',
+                )
+                plt.gca().plot(
+                    knots0[np.array(pall)[:, 0]],
+                    knots1[np.array(pall)[:, 1]],
+                    ls='None',
+                    marker='s',
+                )
+
+                break
+            # -----------------------
+
             lp.append(pp)
 
         i0, i1 = np.array(lp).T
@@ -165,36 +225,84 @@ def _rect_outline(coll=None, key=None):
     return x0, x1
 
 
-def _next_pp(p0=None, pall=None, old=None):
+def _next_pp(
+    p0=None,
+    ii0=None,
+    pall=None,
+    i0=None,
+    i1=None,
+    ic0=None,
+    ic1=None,
+    crop=None,
+    old=None,
+):
 
     # inc0, inc1
-
     p1 = np.copy(p0)
     found = False
     ldir = [(1, 0), (0, 1), (-1, 0), (0, -1)]
     if old is not None:
         ldir = [pp for pp in ldir if pp != old]
 
-    for (ic0, ic1) in ldir:
+    for (ip0, ip1) in ldir:
 
         stop = False
         while stop is False:
 
-            p2 = [p1[0] + ic0, p1[1] + ic1]
+            p2 = [p1[0] + ip0, p1[1] + ip1]
+
             if p2 in pall:
-                p1 = p2
-                found = True
+
+                ii2 = ((i0 == p2[0]) & (i1 == p2[1])).nonzero()[0][0]
+                icc0 = np.intersect1d(
+                    ic0[ii0, :],
+                    ic0[ii2, :],
+                    assume_unique=False,
+                    return_indices=False,
+                )
+                icc1 = np.intersect1d(
+                    ic1[ii0, :],
+                    ic1[ii2, :],
+                    assume_unique=False,
+                    return_indices=False,
+                )
+
+                i00 = np.array([
+                    (ic0[ii0, :] == cc0).nonzero()[0] for cc0 in icc0
+                ]).ravel()
+                i11 = np.array([
+                    (ic1[ii0, :] == cc1).nonzero()[0] for cc1 in icc1
+                ]).ravel()
+
+                ic = np.intersect1d(
+                    i00,
+                    i11,
+                    assume_unique=False,
+                    return_indices=False,
+                )
+
+                c0 = np.any(crop[ic0[ii0, ic], ic1[ii0, ic]])
+
+                if c0:
+                    p1 = p2
+                    ii0 = ii2
+                    found = True
+                    pall.remove(p2)
+
+                else:
+                    stop = True
+
             else:
                 stop = True
 
         if found is True:
-            new = (-ic0, -ic1)
+            new = (-ip0, -ip1)
             break
 
     if found is False:
-        raise Exception("Next point not found!")
+        return None, None, None
 
-    return p1, new
+    return p1, new, ii0
 
 
 # ###############################################################

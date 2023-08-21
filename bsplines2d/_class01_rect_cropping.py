@@ -91,15 +91,29 @@ def crop(
         if remove_isolated is True:
             # All pixels should have at least one neighbour in R and one in Z
             # This constraint is useful for discrete gradient evaluation (D1N2)
-            neighR = np.copy(crop)
-            neighR[0, :] &= neighR[1, :]
-            neighR[-1, :] &= neighR[-2, :]
-            neighR[1:-1, :] &= (neighR[:-2, :] | neighR[2:, :])
-            neighZ = np.copy(crop)
-            neighZ[:, 0] &= neighZ[:, 1]
-            neighZ[:, -1] &= neighZ[:, -2]
-            neighZ[:, 1:-1] &= (neighZ[:, :-2] | neighZ[:, 2:])
-            crop = neighR & neighZ
+            crop0 = crop
+            while True:
+
+                # neighR
+                neighR = np.copy(crop0)
+                neighR[0, :] &= neighR[1, :]
+                neighR[-1, :] &= neighR[-2, :]
+                neighR[1:-1, :] &= (neighR[:-2, :] | neighR[2:, :])
+
+                # neighZ
+                neighZ = np.copy(crop0)
+                neighZ[:, 0] &= neighZ[:, 1]
+                neighZ[:, -1] &= neighZ[:, -2]
+                neighZ[:, 1:-1] &= (neighZ[:, :-2] | neighZ[:, 2:])
+
+                # overall
+                crop = neighR & neighZ
+
+                # stop or continue
+                if np.all(crop[crop0]):
+                    break
+                else:
+                    crop0 = crop
 
     return crop, key, thresh_in
 
@@ -173,7 +187,7 @@ def _crop_check(
     c0 = isinstance(thresh_in, (int, np.integer)) and (1 <= thresh_in <= maxth)
     if not c0:
         msg = (
-            f"Arg thresh_in must be a int in {1} <= thresh_in <= {maxth}\n"
+            f"Arg thresh_in must be a int in 1 <= thresh_in <= {maxth}\n"
             f"Provided: {thresh_in}"
         )
         raise Exception(msg)
