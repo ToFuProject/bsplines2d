@@ -33,6 +33,7 @@ def plot_as_profile2d(
     dref_vectorZ=None,
     dref_vectorU=None,
     ref_vector_strategy=None,
+    uniform=None,
     # interpolation
     val_out=None,
     nan0=None,
@@ -139,6 +140,7 @@ def plot_as_profile2d(
                 # ref vector
                 dref_vector=dref_vectorZ,
                 ref_vector_strategy=ref_vector_strategy,
+                uniform=uniform,
                 # details
                 plot_details=plot_details,
                 # plotting
@@ -766,6 +768,7 @@ def _plot_submesh(
     # ref vetcor
     dref_vector=None,
     ref_vector_strategy=None,
+    uniform=None,
     # plot_details
     plot_details=None,
     # figure
@@ -816,6 +819,7 @@ def _plot_submesh(
         interp=interp,
         label=True,
         inplace=True,
+        uniform=uniform,
         **dkeys,
     )
 
@@ -864,7 +868,8 @@ def _plot_submesh(
                     lw=2,
                     c=color_dict,
                 )
-            else:
+
+            elif collax.ddata[lkradial[ii]]['data'].ndim == 2:
                 l0, = ax.plot(
                     collax.ddata[kradius]['data'],
                     collax.ddata[lkradial[ii]]['data'][0, :],
@@ -883,6 +888,12 @@ def _plot_submesh(
                     axes=kax,
                     ind=0,
                 )
+            else:
+                msg = (
+                    "spectral, radial and time-dependent profile2d"
+                    " plotting not implemented yet!"
+                )
+                raise NotImplementedError(msg)
 
         if lkdet is not None:
             for ii in range(len(lkdet)):
@@ -952,9 +963,15 @@ def _plot_profile2d_polar_add_radial(
 
     kr2d = coll.dobj[wm][keym]['subkey'][0]
     kr = coll.dobj[wm][keym]['knots'][0]
-    rr = coll.ddata[kr]['data']
-    rad = np.linspace(rr[0], rr[-1], 10*rr.size)
 
+    # special case of deg = 1 => use knots directly
+    rr = coll.ddata[kr]['data']
+    if coll.dobj[wbs][keybs]['deg'] == 1:
+        rad = rr
+    else:
+        rad = np.linspace(rr[0], rr[-1], 10*rr.size)
+
+    # temporary keys
     refr = f'{key}_nradius'
     kradius = f'{key}_radius'
 
