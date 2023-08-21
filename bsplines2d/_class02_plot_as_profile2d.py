@@ -33,6 +33,7 @@ def plot_as_profile2d(
     dref_vectorZ=None,
     dref_vectorU=None,
     ref_vector_strategy=None,
+    uniform=None,
     # interpolation
     val_out=None,
     nan0=None,
@@ -139,6 +140,7 @@ def plot_as_profile2d(
                 # ref vector
                 dref_vector=dref_vectorZ,
                 ref_vector_strategy=ref_vector_strategy,
+                uniform=uniform,
                 # details
                 plot_details=plot_details,
                 # plotting
@@ -766,6 +768,7 @@ def _plot_submesh(
     # ref vetcor
     dref_vector=None,
     ref_vector_strategy=None,
+    uniform=None,
     # plot_details
     plot_details=None,
     # figure
@@ -816,6 +819,7 @@ def _plot_submesh(
         interp=interp,
         label=True,
         inplace=True,
+        uniform=uniform,
         **dkeys,
     )
 
