@@ -213,7 +213,7 @@ def _check(
     dbs = {}
     for ii, bs in enumerate(lbs):
         km = coll.dobj[wbs][bs][wm]
-        if submesh and coll.dobj[wm][km]['submesh'] is not None:
+        if submesh is True and coll.dobj[wm][km]['submesh'] is not None:
             km = coll.dobj[wm][km]['submesh']
         dbs[bs] = km
 
@@ -278,10 +278,23 @@ def _check(
         if dres[k0]['x0'] is None and dres[k0]['res'] is None:
             ldeg1 = [bs for bs in dres[k0][wbs] if coll.dobj[wbs][bs]['deg'] == 1]
             if len(ldeg1) == 1:
-                kx = coll.dobj[wbs][ldeg1[0]]['apex']
-                dres[k0]['x0'] = coll.ddata[kx[0]]['data']
-                if len(kx) == 2:
-                    dres[k0]['x1'] = coll.ddata[kx[1]]['data']
+                km = coll.dobj[wbs][ldeg1[0]][wm]
+                if submesh and coll.dobj[wm][km]['submesh'] is not None:
+                    subkey = coll.dobj[wm][km]['subkey'][0]
+                    if len(coll.ddata[subkey][wbs]) == 1:
+                        subbs = coll.ddata[subkey][wbs][0]
+                        if coll.dobj[wbs][subbs]['deg'] == 1:
+                            ldeg1[0] = subbs
+                        else:
+                            ldeg1 = None
+                    else:
+                        ldeg1 = None
+
+                if ldeg1 is not None:
+                    kx = coll.dobj[wbs][ldeg1[0]]['apex']
+                    dres[k0]['x0'] = coll.ddata[kx[0]]['data']
+                    if len(kx) == 2:
+                        dres[k0]['x1'] = coll.ddata[kx[1]]['data']
 
     # ----------
     # coll2
