@@ -29,6 +29,9 @@ def interpolate_all_bsplines(
     val_out=None,
     nan0=None,
 ):
+    """ Interpolate along all bsplines for multiple keys
+
+    """
 
     # ----------
     # check
@@ -295,6 +298,15 @@ def _check(
                     dres[k0]['x0'] = coll.ddata[kx[0]]['data']
                     if len(kx) == 2:
                         dres[k0]['x1'] = coll.ddata[kx[1]]['data']
+
+    # -------- DEBUG ------
+    # lstr = [
+    #     f"\t- {k0}: {v0['x0'].size if v0['x0'] is not None else None} and "
+    #     f"{v0['x1'].size if v0['x1'] is not None else None}"
+    #     for k0, v0 in dres.items()
+    # ]
+    # print("\n".join(lstr))     # DB
+    # ----- DEBUG END ------
 
     # ----------
     # coll2
