@@ -280,19 +280,22 @@ def _check(
         # particular case
         if dres[k0]['x0'] is None and dres[k0]['res'] is None:
             ldeg1 = [bs for bs in dres[k0][wbs] if coll.dobj[wbs][bs]['deg'] == 1]
+
             if len(ldeg1) == 1:
                 km = coll.dobj[wbs][ldeg1[0]][wm]
-                if submesh and coll.dobj[wm][km]['submesh'] is not None:
-                    subkey = coll.dobj[wm][km]['subkey'][0]
-                    if len(coll.ddata[subkey][wbs]) == 1:
-                        subbs = coll.ddata[subkey][wbs][0]
-                        if coll.dobj[wbs][subbs]['deg'] == 1:
-                            ldeg1[0] = subbs
-                        else:
-                            ldeg1 = None
-                    else:
-                        ldeg1 = None
+                subbs = coll.dobj[wm][km].get('subbs')
+                if (
+                    submesh is True
+                    and subbs is not None
+                    and coll.dobj[wbs][subbs]['deg'] == 1
+                ):
+                    ldeg1[0] = subbs
+                elif submesh is False or subbs is None:
+                    pass
+                else:
+                    ldeg1 = None
 
+                # get default x0, x1
                 if ldeg1 is not None:
                     kx = coll.dobj[wbs][ldeg1[0]]['apex']
                     dres[k0]['x0'] = coll.ddata[kx[0]]['data']
@@ -300,12 +303,16 @@ def _check(
                         dres[k0]['x1'] = coll.ddata[kx[1]]['data']
 
     # -------- DEBUG ------
-    # lstr = [
-    #     f"\t- {k0}: {v0['x0'].size if v0['x0'] is not None else None} and "
-    #     f"{v0['x1'].size if v0['x1'] is not None else None}"
-    #     for k0, v0 in dres.items()
-    # ]
-    # print("\n".join(lstr))     # DB
+    lstr = [
+        f"\t- {k0}: {v0['x0'].size if v0['x0'] is not None else None} and "
+        f"{v0['x1'].size if v0['x1'] is not None else None}"
+        for k0, v0 in dres.items()
+    ]
+    msg = (
+        "The following resolutions x0 are identified:\n"
+        + "\n".join(lstr)
+    )
+    print(msg)    # DB
     # ----- DEBUG END ------
 
     # ----------

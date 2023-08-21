@@ -144,26 +144,32 @@ def interpolate(
                 np.array([doutline['x0']['data'], doutline['x1']['data']]).T
             )
 
-        # no x0 + no res + deg = 1 bsplines => x0 = knots
+        # # no x0 + no res + deg = 1 bsplines => x0 = knots
+        wm = coll._which_mesh
         wbs = coll._which_bsplines
         deg = coll.dobj[wbs][keybs]['deg']
         print(keys, keybs, keym, deg, x0)
         if x0 is None and res is None and deg == 1:
             print()
             print(keys, keybs, keym)    # DB
-            kx = coll.dobj[wbs][keybs]['knots']
-            x0 = coll.ddata[kx[0]]['data']
-            if len(kx) == 2:
-                print('2d')
-                x1 = coll.ddata[kx[0]]['data']
-                x0 = np.repeat(x0[:, None], x1.size, axis=1)
-                x1 = np.repeat(x1[None, :], x0.shape[0], axis=0)
-                grid = False
+            subbs = coll.dobj[wm][keym].get('subbs')
+            if (
+                submesh is True
+                and subbs is not None
+                and coll.dobj[wbs][subbs]['deg'] == 1
+            ):
+                bsx0 = subbs
+            elif submesh is False or subbs is None:
+                bsx0 = keybs
+
+            kx01 = coll.dobj[bsx0]['apex']
+            x0 = coll.ddata[kx01[0]]['data']
+            if len(kx01) == 2:
+                x1 = coll.ddata[kx01[1]]['data']
 
         # ---------------
         # no x0 => mesh
 
-        wm = coll._which_mesh
         if x0 is None:
             if submesh is True:
                 km = coll.dobj[wm][keym]['submesh']
