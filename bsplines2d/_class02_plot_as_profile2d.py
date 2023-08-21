@@ -959,9 +959,15 @@ def _plot_profile2d_polar_add_radial(
 
     kr2d = coll.dobj[wm][keym]['subkey'][0]
     kr = coll.dobj[wm][keym]['knots'][0]
-    rr = coll.ddata[kr]['data']
-    rad = np.linspace(rr[0], rr[-1], 10*rr.size)
 
+    # special case of deg = 1 => use knots directly
+    rr = coll.ddata[kr]['data']
+    if coll.dobj[wbs][keybs]['deg'] == 1:
+        rad = rr
+    else:
+        rad = np.linspace(rr[0], rr[-1], 10*rr.size)
+
+    # temporary keys
     refr = f'{key}_nradius'
     kradius = f'{key}_radius'
 
