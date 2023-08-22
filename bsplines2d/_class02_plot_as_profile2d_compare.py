@@ -34,6 +34,7 @@ def plot_as_profile2d_compare(
     dref_vectorZ=None,
     dref_vectorU=None,
     ref_vector_strategy=None,
+    uniform=None,
     # interpolation
     val_out=None,
     nan0=None,
@@ -53,6 +54,7 @@ def plot_as_profile2d_compare(
     # interactivity
     dinc=None,
     connect=None,
+    show_commands=None,
 ):
 
     # --------------
@@ -92,6 +94,15 @@ def plot_as_profile2d_compare(
             dmargin=dmargin,
         )
 
+    # safety check
+    if keys[0] == keys[1]:
+        msg = (
+            "Please provide 2 different data keys!\n"
+            f"Provided: {keys}"
+        )
+        raise Exception(msg)
+
+    # prepare dax2
     lk0 = ['prof0', 'vert', 'hor', 'traces', 'spectrum', 'radial']
     lk1 = ['prof1', 'vert', 'hor', 'traces', 'spectrum', 'radial']
     dax2 = {
@@ -127,10 +138,24 @@ def plot_as_profile2d_compare(
             kx1='unique_x1',
         )
     else:
-        raise NotImplementedError()
+        kx01 = coll.dobj[wm][lm[0]]['knots']
         dunique = {
-            'x0': {},
-            'x1': {},
+            'x0': {
+                'key': 'x0_temp',
+                'data':  dres[lm[0]]['x0'],
+                'units': coll.ddata[kx01[0]]['units'],
+                'name': coll.ddata[kx01[0]]['name'],
+                'quant': coll.ddata[kx01[0]]['quant'],
+                'dim': coll.ddata[kx01[0]]['dim'],
+            },
+            'x1': {
+                'key': 'x1_temp',
+                'data':  dres[lm[0]]['x1'],
+                'units': coll.ddata[kx01[1]]['units'],
+                'name': coll.ddata[kx01[1]]['name'],
+                'quant': coll.ddata[kx01[1]]['quant'],
+                'dim': coll.ddata[kx01[1]]['dim'],
+            },
         }
 
     # ---------------
@@ -148,6 +173,7 @@ def plot_as_profile2d_compare(
         dref_vectorZ=dref_vectorZ,
         dref_vectorU=dref_vectorU,
         ref_vector_strategy=ref_vector_strategy,
+        uniform=uniform,
         # interpolation
         val_out=val_out,
         nan0=nan0,
@@ -193,6 +219,7 @@ def plot_as_profile2d_compare(
         key='err',
         keyX=keyX,
         keyY=keyY,
+        uniform=uniform,
         # options
         vmin=-vmax,
         vmax=vmax,
@@ -217,7 +244,7 @@ def plot_as_profile2d_compare(
         collax.disconnect_old()
         collax.connect()
 
-        collax.show_commands()
+        collax.show_commands(verb=show_commands)
         return collax
     else:
         return collax, dgroup
