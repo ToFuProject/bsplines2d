@@ -960,6 +960,7 @@ class BSplines2D(Previous):
         # interactivity
         dinc=None,
         connect=None,
+        show_commands=None,
     ):
 
         return _plot_as_profile2d.plot_as_profile2d(
@@ -993,6 +994,7 @@ class BSplines2D(Previous):
             # interactivity
             dinc=dinc,
             connect=connect,
+            show_commands=show_commands,
         )
 
     def plot_as_profile2d_compare(
@@ -1009,6 +1011,7 @@ class BSplines2D(Previous):
         dref_vectorZ=None,
         dref_vectorU=None,
         ref_vector_strategy=None,
+        uniform=None,
         # interpolation
         val_out=None,
         nan0=None,
@@ -1024,6 +1027,7 @@ class BSplines2D(Previous):
         # interactivity
         dinc=None,
         connect=None,
+        show_commands=None,
     ):
 
         return _plot_as_profile2d_compare.plot_as_profile2d_compare(
@@ -1040,6 +1044,7 @@ class BSplines2D(Previous):
             dref_vectorZ=dref_vectorZ,
             dref_vectorU=dref_vectorU,
             ref_vector_strategy=ref_vector_strategy,
+            uniform=uniform,
             # interpolation
             val_out=val_out,
             nan0=nan0,
@@ -1055,6 +1060,7 @@ class BSplines2D(Previous):
             # interactivity
             dinc=dinc,
             connect=connect,
+            show_commands=show_commands,
         )
 
 

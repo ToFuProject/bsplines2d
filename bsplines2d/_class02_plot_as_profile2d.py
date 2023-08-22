@@ -49,6 +49,7 @@ def plot_as_profile2d(
     # interactivity
     dinc=None,
     connect=None,
+    show_commands=None,
 ):
 
     # --------------
@@ -172,6 +173,7 @@ def plot_as_profile2d(
                 fs=fs,
                 dcolorbar=dcolorbar,
                 dleg=dleg,
+                uniform=uniform,
                 interp=v0['interp'],
                 color_dict=color_dict[k0],
                 nmax=nmax,
@@ -198,7 +200,7 @@ def plot_as_profile2d(
         collax.disconnect_old()
         collax.connect()
 
-        collax.show_commands()
+        collax.show_commands(verb=show_commands)
         return collax
     else:
         return collax, dgroup
