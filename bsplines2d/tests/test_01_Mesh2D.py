@@ -325,26 +325,33 @@ class Test01_BSplines2D():
             kind=None,
         )
 
+    def test54_plot_as_profile2d_compare(self):
+        test_input._plot_as_profile2d_compare(
+            self.bs,
+            nd='2d',
+            kind=None,
+        )
+
     # ################################
     # operators
     # ################################
 
-    def test54_operators_1d(self):
+    def test55_operators_1d(self):
         test_input._get_operators(
             self.bs,
             nd='1d',
             kind=None,
         )
 
-    def test55_operators_2d_rect(self):
+    def test56_operators_2d_rect(self):
         test_input._get_operators(
             self.bs,
             nd='2d',
             kind='rect',
         )
 
-    def test56_operators_2d_tri(self):
+    def test57_operators_2d_tri(self):
         pass
 
-    def test57_operators_1d_subkey(self):
+    def test58_operators_1d_subkey(self):
         pass
