@@ -228,8 +228,8 @@ def _mesh2DRect_X_check(
         res = 10
 
     lc = [
-        isinstance(res, (int, np.int64, np.int32)) and len(x) == 2,
-        isinstance(res, (float, np.floating)) and len(x) == 2,
+        isinstance(res, (int, np.integer)) and len(x) == 2,
+        isinstance(res, float) and len(x) == 2,
         isinstance(res, (list, tuple, np.ndarray)) and len(x) == len(res),
     ]
     if not any(lc):

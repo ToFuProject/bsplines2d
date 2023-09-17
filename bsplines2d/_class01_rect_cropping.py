@@ -157,14 +157,11 @@ def _crop_check(
             (
                 crop.shape[0] == 2
                 and np.allclose(crop[:, 0], crop[:, -1])
-                and (
-                    np.issubdtype(crop.dtype, np.integer)
-                    or np.issubdtype(crop.dtype, np.floating)
-                )
+                and crop.dtype in [int, float]
             )
             or (
                 crop.shape == shape
-                and crop.dtype == np.bool_
+                and crop.dtype == bool
             )
         )
     )

@@ -864,7 +864,6 @@ def _add_data_var(bsplines, key):
 def _plot_as_profile2d(bs,  nd=None, kind=None):
     dkd = _get_data(bs, nd=nd, kind=kind, maxref=4)
 
-    wm = bs._which_mesh
     wbs = bs._which_bsplines
 
     for ii, (k0, v0) in enumerate(dkd.items()):
@@ -873,7 +872,7 @@ def _plot_as_profile2d(bs,  nd=None, kind=None):
             continue
         if k0 in bs.dobj[wbs][v0['bs'][0]]['apex']:
             continue
-        if ii%2 == 0:
+        if ii % 2 == 0:
             continue
 
         # knots
@@ -882,16 +881,57 @@ def _plot_as_profile2d(bs,  nd=None, kind=None):
         span = np.abs(knots[-1] - knots[0])
         res = span / 3.
 
-        dax = bs.plot_as_profile2d(
+        _ = bs.plot_as_profile2d(
             key=k0,
             dres=res,
+            show_commands=False,
+        )
+        plt.close('all')
+
+
+def _plot_as_profile2d_compare(bs,  nd=None, kind=None):
+    dkd = _get_data(bs, nd=nd, kind=kind, maxref=4)
+
+    wm = bs._which_mesh
+    wbs = bs._which_bsplines
+    lpassed = []
+    for ii, (k0, v0) in enumerate(dkd.items()):
+
+        if bs.ddata[k0]['data'].ndim > 4:
+            continue
+        if k0 in bs.dobj[wbs][v0['bs'][0]]['apex']:
+            continue
+
+        km = bs.dobj[wbs][v0['bs'][0]][wm]
+        mtype = bs.dobj[wm][km]['type']
+        if mtype == 'tri':
+            continue
+
+        # knots
+        if ii % 3 == 0:
+            knots = bs.dobj[wbs][v0['bs'][0]]['apex'][0]
+            knots = bs.ddata[knots]['data']
+            span = np.abs(knots[-1] - knots[0])
+            res = span / 3.
+        else:
+            res = None
+
+        lpassed.append(k0)
+        if len(lpassed) == 1:
+            continue
+
+        _ = bs.plot_as_profile2d_compare(
+            keys=[k0, lpassed[-2]],
+            dres=None,
+            uniform=False,
+            show_commands=False,
         )
         plt.close('all')
 
 
 #######################################################
 #
-#     Operators
+#       Operators
 #
 #######################################################
 

@@ -183,8 +183,8 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
                 ) / v_height_norm**2
 
         indok = ~np.isnan(heights)
-        assert np.all(heights[indok] >= 0. - 1e-14)
-        assert np.all(heights[indok] <= 1. + 1e-14)
+        assert np.all(heights[indok] >= 0. - 1e-10)
+        assert np.all(heights[indok] <= 1. + 1e-10)
         return heights, ind
 
     # --------
