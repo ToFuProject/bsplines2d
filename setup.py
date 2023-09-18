@@ -121,6 +121,8 @@ setup(
         "numpy",
         "scipy",
         "matplotlib",
+        "astropy",
+        "contourpy",
         "datastock>=0.0.32",
     ],
     python_requires=">=3.6",
