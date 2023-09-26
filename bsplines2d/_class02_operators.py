@@ -397,12 +397,12 @@ def _ref_units(
     # units
 
     apex = coll.dobj[wbs][key]['apex']
-    u0 = asunits.Unit(coll.ddata[apex[0]]['units'])
+    u0 = coll.ddata[apex[0]]['units']
     if nd == '1d':
         units = [_units(u0, operator, geometry)]
 
     else:
-        u1 = asunits.Unit(coll.ddata[apex[1]]['units'])
+        u1 = coll.ddata[apex[1]]['units']
         units0 = _units(u0, operator, geometry)
         units1 = _units(u1, operator, 'linear')
 
@@ -419,6 +419,11 @@ def _ref_units(
 
 
 def _units(u0=None, operator=None, geometry=None):
+
+    if str(u0) == '-':
+        u0 = asunits.Unit('')
+    elif isinstance(u0, str):
+        u0 = asunits.Unit(u0)
 
     if operator == 'D1':
         units = asunits.Unit(1/u0)
