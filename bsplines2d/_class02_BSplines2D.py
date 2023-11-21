@@ -291,19 +291,45 @@ class BSplines2D(Previous):
 
     def apply_bsplines_operator(
         self,
+        # inputs
         key=None,
+        keybs=None,
+        # operator
         operator=None,
+        geometry=None,
+        # store
         store=None,
+        key_store=None,
+        # returnas
         returnas=None,
     ):
-        """ Apply an operator to desired data """
+        """ Apply an operator on desired quantity
 
-        raise NotImplementedError("TBD")
+        key can be a list of data with the same bsplines
+
+        Notes:
+            * Only works for D0N1 so far
+            * Works with and w/o cropbs
+            * Does not work with subkey so far
+
+        Computes data, ref and units
+        Returns as dict
+        Optionally store result
+
+        """
+
         return _operators.apply_operator(
             coll=self,
+            # inputs
             key=key,
+            keybs=keybs,
+            # operator
             operator=operator,
+            geometry=geometry,
+            # store
             store=store,
+            key_store=key_store,
+            # returnas
             returnas=returnas,
         )
 

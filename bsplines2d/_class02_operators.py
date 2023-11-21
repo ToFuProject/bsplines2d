@@ -2,9 +2,11 @@
 
 
 # Built-in
+import itertools as itt
 
 
 # Common
+import numpy as np
 import astropy.units as asunits
 import datastock as ds
 
@@ -453,3 +455,331 @@ def _units(u0=None, operator=None, geometry=None):
             units = asunits.Unit(1/u0)**2
 
     return units
+
+
+# ###################################################
+# ###################################################
+#                   Apply
+# ###################################################
+
+
+def apply_operator(
+    coll=None,
+    # parameters
+    key=None,
+    keybs=None,
+    # operator
+    operator=None,
+    geometry=None,
+    # store
+    store=None,
+    key_store=None,
+    # return
+    returnas=None,
+):
+    """ Apply an operator on desired quantity
+
+    key can be a list of data with the same bsplines
+
+    Notes:
+        * Only works for D0N1 so far
+        * Works with and w/o cropbs
+        * Does not work with subkey so far
+
+    Computes data, ref and units
+    Returns as dict
+    Optionally store result
+
+    """
+
+    # -------------
+    # check inputs
+    # -------------
+
+    (
+        key, keybs,
+        operator,
+        store, key_store,
+        returnas,
+    ) = _apply_operator_check(**locals())
+
+    # -------------
+    # get operator
+    # -------------
+
+    integ_op = coll.add_bsplines_operator(
+        key=keybs,
+        operator=operator,
+        geometry=geometry,
+        store=False,
+        returnas=True,
+    )
+
+    # -----------------
+    # prepare output
+    # -----------------
+
+    ddata, daxis, cropbs = _apply_operator_prepare(
+        coll=coll,
+        key=key,
+        keybs=keybs,
+        # for units
+        operator=operator,
+    )
+
+    # -----------------
+    # apply
+    # -----------------
+
+    if operator == 'D0N1':
+        ind = [-1]
+        if cropbs is None:
+            for k0 in key:
+                ddata[k0]['data'][...] = np.tensordot(
+                    integ_op['M']['data'],
+                    coll.ddata[k0]['data'],
+                    (ind, daxis[k0]['axis']),
+                )
+        else:
+            for k0 in key:
+                ddata[k0]['data'][...] = np.tensordot(
+                    integ_op['M']['data'],
+                    coll.ddata[k0]['data'][daxis[k0]['slice']],
+                    (ind, daxis[k0]['axis']),
+                )
+    else:
+        raise NotImplementedError()
+
+    # -------------
+    # store
+    # -------------
+
+    if store is True:
+        for k0, v0 in ddata.items():
+            coll.add_data(**v0)
+
+    # -------------
+    # return
+    # -------------
+
+    if returnas is True:
+        return ddata
+
+
+def _apply_operator_check(
+    coll=None,
+    # parameters
+    key=None,
+    keybs=None,
+    # operator
+    operator=None,
+    # store
+    store=None,
+    key_store=None,
+    # return
+    returnas=None,
+    # unused
+    **kwdargs,
+):
+
+    # --------------
+    # keys
+    # --------------
+
+    # ------
+    # key
+
+    wbs = coll._which_bsplines
+    lok = [k0 for k0, v0 in coll.ddata.items() if v0.get(wbs) is not None]
+    if isinstance(key, str):
+        key = [key]
+    if key is None and len(lok) == 1:
+        key = lok
+    key = ds._generic_check._check_var_iter(
+        key, 'key',
+        types=list,
+        types_iter=str,
+        allowed=lok,
+    )
+
+    # -----------
+    # prepare check on keybs
+
+    lbs = set(itt.chain.from_iterable([coll.ddata[k0][wbs] for k0 in key]))
+
+    # check all have at least one in common
+    lbs_all = [
+        k0 for k0 in lbs
+        if all([k0 in coll.ddata[k1][wbs] for k1 in key])
+    ]
+    if len(lbs_all) == 0:
+        lstr = [
+            f"\t- coll.ddata['{k0}']['{wbs}'] = {coll.ddata[k0][wbs]}"
+            for k0 in key
+        ]
+        msg = (
+            "All provided keys must have at least one '{wbs}' in common!\n"
+            + "\n".join(lstr)
+        )
+        raise Exception(msg)
+
+    # ------------
+    # keybs
+
+    lok = lbs_all
+    keybs = ds._generic_check._check_var(
+        keybs, 'keybs',
+        types=str,
+        allowed=lok,
+    )
+
+    # -------------------
+    # operator
+    # --------------------
+
+    lok = ['D0N1']
+    operator = ds._generic_check._check_var(
+        operator, 'operator',
+        types=str,
+        allowed=lok,
+    )
+
+    # -------------------
+    # store vs return
+    # --------------------
+
+    # store
+    store = ds._generic_check._check_var(
+        store, 'store',
+        types=bool,
+        default=False,
+    )
+
+    # returnas
+    returnas = ds._generic_check._check_var(
+        returnas, 'returnas',
+        types=bool,
+        default=not store,
+    )
+
+    # -------------------
+    # key_store
+    # --------------------
+
+    # key_store
+    if store is True:
+
+        if key_store is None:
+            key_store = [f"{k0}_{operator}" for k0 in key]
+
+        if isinstance(key_store, str):
+            key_store = [key_store]
+
+        lout = list(coll.ddata.keys())
+        key_store = ds._generic_check._check_var_iter(
+            key_store, 'key_store',
+            types=list,
+            types_iter=str,
+            excluded=lout,
+        )
+
+    else:
+        key_store = None
+
+    return (
+        key, keybs,
+        operator,
+        store, key_store,
+        returnas,
+    )
+
+
+def _apply_operator_prepare(
+    coll=None,
+    key=None,
+    keybs=None,
+    operator=None,
+):
+
+    # ----------
+    # cropbs
+
+    wbs = coll._which_bsplines
+    cropbs = coll.dobj[wbs][keybs].get('crop')
+    if isinstance(cropbs, str) and (cropbs in coll.ddata.keys()):
+        cropbs = coll.ddata[cropbs]['data']
+    else:
+        cropbs = None
+
+    # ----------
+    # refbs
+
+    refbs = coll.dobj[wbs][keybs]['ref']
+
+    # ----------
+    # unitsbs
+
+    unitsbs = [
+        coll.ddata[k0]['units']
+        for k0 in coll.dobj[wbs][keybs]['apex']
+    ]
+
+    # --------------
+    # fill dict
+
+    ddata, daxis = {}, {}
+    for k0 in key:
+
+        # ref
+        ref0 = coll.ddata[k0]['ref']
+        ref = tuple([rr for rr in ref0 if rr not in refbs])
+
+        # axis
+        axisf = tuple([ii for ii, rr in enumerate(ref0) if rr in refbs])
+
+        # safety check
+        assert np.allclose(axisf, axisf[0] + np.arange(len(refbs)))
+
+        # cropbs => reduce to a single dimension
+        if len(axisf) > 1 and cropbs is not None:
+            axis = (axisf[0],)
+        else:
+            axis = axisf
+
+        # shape
+        shape0 = coll.ddata[k0]['data'].shape
+        shape = [ss for ii, ss in enumerate(shape0) if ref0[ii] not in refbs]
+
+        # units
+        units0 = asunits.Unit(coll.ddata[k0]['units'])
+        if operator == 'D0N1':
+            units = units0
+            for uu in unitsbs:
+                units = units * uu
+        else:
+            raise NotImplementedError()
+
+         # populate
+        ddata[k0] = {
+            'data': np.full(shape, np.nan),
+            'ref': ref,
+            'units': units,
+        }
+
+        # slicing
+        if cropbs is None:
+            sli = None
+        else:
+            sli = tuple([
+                cropbs if ii == axis[0]
+                else slice(None)
+                for ii in range(len(shape0))
+                if ii not in axisf[1:]
+            ])
+
+        daxis[k0] = {
+            'slice': sli,
+            'axis': axis,
+        }
+
+    return ddata, daxis, cropbs
