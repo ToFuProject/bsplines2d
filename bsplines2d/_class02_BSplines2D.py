@@ -21,6 +21,7 @@ from . import _class02_interpolate_all as _interpolate_all
 from . import _class02_operators as _operators
 from . import _class02_plot_as_profile2d as _plot_as_profile2d
 from . import _class02_plot_as_profile2d_compare as _plot_as_profile2d_compare
+from . import _saveload
 
 
 __all__ = ['BSplines2D']
@@ -1125,3 +1126,32 @@ class BSplines2D(Previous):
             # fs=fs,
             # dleg=dleg,
         # )
+
+    # -----------------
+    # save
+    # ------------------
+
+    def save(
+        self,
+        path=None,
+        name=None,
+        sep=None,
+        verb=True,
+        return_pfe=False,
+    ):
+
+        # ------------------------------
+        # bsplines-specific preparation
+
+        _saveload.prepare_bsplines(self)
+
+        # ---------------------
+        # call inherited method
+
+        super().save(
+            path=path,
+            name=name,
+            sep=sep,
+            verb=verb,
+            return_pfe=return_pfe,
+        )
