@@ -163,6 +163,29 @@ class BSplines2D(Previous):
                 _cropping.add_cropbs_from_crop(coll=self, keybs=k0, keym=key)
 
     # -----------------
+    # __eq__
+    # ------------------
+
+    def __eq__(self, obj, excluded=None, returnas=None, verb=None):
+
+        # exclude bsplines classes by default
+        wbs = self._which_bsplines
+        lbs = list(self.dobj.get(wbs, {}).keys())
+        exclude_class = tuple([('_dobj', wbs, kbs, 'class') for kbs in lbs])
+
+        # append to existing excluded
+        if excluded is None:
+            excluded = exclude_class
+        else:
+            excluded = list(excluded) + exclude_class
+
+        return super().__eq__(
+            obj,
+            excluded=excluded,
+            returnas=returnas,
+        )
+
+    # -----------------
     # get data subset
     # ------------------
 
