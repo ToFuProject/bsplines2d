@@ -1171,7 +1171,7 @@ class BSplines2D(Previous):
         # ---------------------
         # call inherited method
 
-        super().save(
+        return super().save(
             path=path,
             name=name,
             sep=sep,
