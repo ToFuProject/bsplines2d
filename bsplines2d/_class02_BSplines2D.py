@@ -21,6 +21,7 @@ from . import _class02_interpolate_all as _interpolate_all
 from . import _class02_operators as _operators
 from . import _class02_plot_as_profile2d as _plot_as_profile2d
 from . import _class02_plot_as_profile2d_compare as _plot_as_profile2d_compare
+from . import _saveload
 
 
 __all__ = ['BSplines2D']
@@ -160,6 +161,32 @@ class BSplines2D(Previous):
         for k0 in self.dobj.get(self._which_bsplines, {}).keys():
             if self.dobj[self._which_bsplines][k0][self._which_mesh] == key:
                 _cropping.add_cropbs_from_crop(coll=self, keybs=k0, keym=key)
+
+    # -----------------
+    # __eq__
+    # ------------------
+
+    def __eq__(self, obj, excluded=None, returnas=None, verb=None):
+
+        # exclude bsplines classes by default
+        wbs = self._which_bsplines
+        lbs = list(self._dobj.get(wbs, {}).keys())
+        exclude_class = tuple([('_dobj', wbs, kbs, 'class') for kbs in lbs])
+
+        # append to existing excluded
+        if excluded is None:
+            excluded = exclude_class
+        else:
+            excluded = list(excluded) + exclude_class
+
+        return super().__eq__(
+            obj,
+            excluded=excluded,
+            returnas=returnas,
+        )
+
+    def __hash__(self, *args, **kargs):
+        return super().__hash__(*args, **kargs)
 
     # -----------------
     # get data subset
@@ -1125,3 +1152,32 @@ class BSplines2D(Previous):
             # fs=fs,
             # dleg=dleg,
         # )
+
+    # -----------------
+    # save
+    # ------------------
+
+    def save(
+        self,
+        path=None,
+        name=None,
+        sep=None,
+        verb=True,
+        return_pfe=False,
+    ):
+
+        # ------------------------------
+        # bsplines-specific preparation
+
+        _saveload.prepare_bsplines(self)
+
+        # ---------------------
+        # call inherited method
+
+        return super().save(
+            path=path,
+            name=name,
+            sep=sep,
+            verb=verb,
+            return_pfe=return_pfe,
+        )
