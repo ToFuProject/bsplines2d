@@ -170,7 +170,7 @@ class BSplines2D(Previous):
 
         # exclude bsplines classes by default
         wbs = self._which_bsplines
-        lbs = list(self.dobj.get(wbs, {}).keys())
+        lbs = list(self._dobj.get(wbs, {}).keys())
         exclude_class = tuple([('_dobj', wbs, kbs, 'class') for kbs in lbs])
 
         # append to existing excluded
@@ -184,6 +184,9 @@ class BSplines2D(Previous):
             excluded=excluded,
             returnas=returnas,
         )
+
+    def __hash__(self, *args, **kargs):
+        return super().__hash__(*args, **kargs)
 
     # -----------------
     # get data subset
