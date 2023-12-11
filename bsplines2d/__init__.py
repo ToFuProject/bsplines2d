@@ -21,4 +21,5 @@ from .version import __version__
 
 
 from ._class03_Bins import Bins as BSplines2D
+from ._saveload import load
 from . import tests

@@ -3,6 +3,7 @@ This module contains tests for tofu.geom in its structured version
 """
 
 # Built-in
+import os
 import itertools as itt
 
 
@@ -14,6 +15,7 @@ import numpy as np
 from . import test_input
 from .. import _class01_checks_2d_rect as _checks
 from .._class03_Bins import Bins as BSplines2D
+from .. import _saveload
 
 
 #######################################################
@@ -355,3 +357,21 @@ class Test01_BSplines2D():
 
     def test58_operators_1d_subkey(self):
         pass
+
+    # ################################
+    # saving / loading
+    # ################################
+
+    def test59_saveload_equal(self):
+
+        # save
+        pfe = self.bs.save(return_pfe=True)
+
+        # load
+        out = _saveload.load(pfe)
+
+        # remove file
+        os.remove(pfe)
+
+        # equal
+        assert self.bs == out
