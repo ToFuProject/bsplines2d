@@ -493,12 +493,12 @@ def _plot_profiles2d_prepare(
     refmap = coll2.ddata[keymap]['ref']
     dkeys = {
         'key': keymap,
-        'keyX': coll2.get_ref_vector(key=keymap, ref=refmap[-2])[3],
-        'keyY': coll2.get_ref_vector(key=keymap, ref=refmap[-1])[3],
+        'keyX': coll2.get_ref_vector(key0=keymap, ref=refmap[-2])[3],
+        'keyY': coll2.get_ref_vector(key0=keymap, ref=refmap[-1])[3],
         'keyZ': None,
     }
     if ndim == 3:
-        keyZ = coll2.get_ref_vector(key=keymap, ref=refmap[0])[3]
+        keyZ = coll2.get_ref_vector(key0=keymap, ref=refmap[0])[3]
         import datastock as ds
         uniform = ds._plot_as_array._check_uniform_lin(
             k0=keyZ, ddata=coll2.ddata,
