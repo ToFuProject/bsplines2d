@@ -552,11 +552,15 @@ def _check_keys(
 
             # check vs valid vectors
             for ii, rr in enumerate(ref_key):
+
                 if rr in lref:
                     kwd = {'ref': rr}
                 else:
-                    kwd = {'key': rr}
-                hasref, hasvect, ref, ref_key[ii] = coll.get_ref_vector(**kwd)[:4]
+                    kwd = {'key0': rr}
+
+                hasref, hasvect, ref, ref_key[ii] = coll.get_ref_vector(
+                    **kwd
+                )[:4]
 
                 if not (hasref and hasvect):
                     msg = (
