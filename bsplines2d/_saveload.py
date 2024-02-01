@@ -45,12 +45,15 @@ def load(
     # --------------------
     # use datastock.load()
 
-    from ._class03_Bins import Bins
     from . import _class02_compute as _compute
+
+    if cls is None:
+        from ._class03_Bins import Bins
+        cls = Bins
 
     coll = ds.load(
         pfe=pfe,
-        cls=Bins,
+        cls=cls,
         allow_pickle=allow_pickle,
         sep=sep,
         verb=verb,
