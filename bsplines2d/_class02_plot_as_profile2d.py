@@ -277,7 +277,7 @@ def _check(
                 msg = (
                     "Provided keys must be profile2d with identical ref!"
                     " (apart from the actual profile2d bsplines)\n"
-                    f"\t- Provided:"
+                    "\t- Provided:"
                     + "\n".join(lstr)
                 )
                 raise Exception(msg)
@@ -332,6 +332,8 @@ def _check(
             # check fields
             dlevels[k0]['levels'] = np.atleast_1d(v0['levels']).ravel()
             dlevels[k0]['color'] = v0.get('color', 'k')
+            dlevels[k0]['ls'] = v0.get('ls', '-')
+            dlevels[k0]['lw'] = v0.get('lw', 1)
 
     # ----------
     # cmap
@@ -501,7 +503,7 @@ def _prepare(
             # populate
             for k1 in ['cont0', 'cont1']:
                 dlevels[k0][k1] = dout[k1]
-                dlevels[k0]['cont0']['key'] = f'{k0}_{k1}'
+                dlevels[k0][k1]['key'] = f'{k0}_{k1}'
 
             dlevels[k0]['refZ'] = refZ
             dlevels[k0]['refU'] = refU
@@ -647,9 +649,9 @@ def _add_levels_2d(
                 ax.plot(
                     v0['cont0']['data'],
                     v0['cont1']['data'],
-                    ls='-',
-                    lw=1.,
+                    lw=dlevels[k0]['lw'],
                     c=dlevels[k0]['color'],
+                    ls=dlevels[k0]['ls'],
                 )
 
         elif ndim == 3:
@@ -660,25 +662,25 @@ def _add_levels_2d(
                     ax.plot(
                         v0['cont0']['data'],
                         v0['cont1']['data'],
-                        ls='-',
-                        lw=1.,
+                        lw=dlevels[k0]['lw'],
                         c=dlevels[k0]['color'],
+                        ls=dlevels[k0]['ls'],
                     )
 
                 else:
                     # slice
-                    sli = [
+                    sli = tuple([
                         slice(None) if ii == v0['axis'][0] else 0
                         for ii in range(ndim-1)
-                    ]
+                    ])
 
                     # plot
                     l0, = ax.plot(
                         v0['cont0']['data'][sli],
                         v0['cont1']['data'][sli],
-                        ls='-',
-                        lw=1.,
+                        lw=dlevels[k0]['lw'],
                         c=dlevels[k0]['color'],
+                        ls=dlevels[k0]['ls'],
                     )
 
                     # store mobile
