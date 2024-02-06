@@ -293,6 +293,7 @@ class BSplines2D(Previous):
             return_keys=True,
         )
         return _compute.extract(
+            coll=self,
             keys=keys,
             # optional includes
             inc_monot=inc_monot,
@@ -302,6 +303,7 @@ class BSplines2D(Previous):
             coll2=coll2,
             return_keys=return_keys,
         )
+
 
     # -----------------
     # Integration operators
@@ -1037,8 +1039,9 @@ class BSplines2D(Previous):
         val_out=None,
         nan0=None,
         # plot options
-        vmin=None,
-        vmax=None,
+        dvminmax=None,
+        # vmin=None,
+        # vmax=None,
         cmap=None,
         dax=None,
         dmargin=None,
@@ -1071,8 +1074,9 @@ class BSplines2D(Previous):
             val_out=val_out,
             nan0=nan0,
             # plot options
-            vmin=vmin,
-            vmax=vmax,
+            dvminmax=dvminmax,
+            # vmin=vmin,
+            # vmax=vmax,
             cmap=cmap,
             dax=dax,
             dmargin=dmargin,

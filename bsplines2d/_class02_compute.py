@@ -334,6 +334,7 @@ def _get_profiles2d(coll=None):
 
 def extract(
     coll=None,
+    keys=None,
     # optional includes
     inc_monot=None,
     inc_vectors=None,
@@ -360,7 +361,7 @@ def extract(
     # ---------------
 
     if len(lmesh) == 0:
-        return coll2
+        return coll2, keys
 
     # ---------------
     # add mesh
@@ -431,7 +432,7 @@ def extract(
 
     return ds._class1_compute._extract_instance(
         coll=coll,
-        keys=list(set(kmesh + kbs + ldata)),
+        keys=list(set(kmesh + kbs + ldata)) + keys,
         # optional include
         inc_monot=inc_monot,
         inc_vectors=inc_vectors,
