@@ -1123,7 +1123,7 @@ def _interp(
         wbs = coll._which_bsplines
         for k0, v0 in dout.items():
             dout[k0]['ref'] = tuple(np.r_[
-                v0['ref'], coll.dobj[wbs][keybs]['ref-bs'],
+                v0['ref'], coll.dobj[wbs][keybs]['ref_bs'],
             ])
 
     return
@@ -1955,7 +1955,7 @@ def _interp(
                     # ref.append(None)
 
         # if details is True:
-            # refbs = coll.dobj['bsplines'][keybs]['ref-bs'][0]
+            # refbs = coll.dobj['bsplines'][keybs]['ref_bs'][0]
             # if crop is True:
                 # refbs = f"{refbs}-crop"
             # ref.append(refbs)
@@ -2097,7 +2097,7 @@ def get_bsplines_operator(
 
     # cropbs
     cropbs = coll.dobj['bsplines'][key]['crop']
-    keycropped = coll.dobj['bsplines'][key]['ref-bs'][0]
+    keycropped = coll.dobj['bsplines'][key]['ref_bs'][0]
     if cropbs not in [None, False] and crop is True:
         cropbs_flat = coll.ddata[cropbs]['data'].ravel(order='F')
         if coll.dobj['bsplines'][key]['deg'] == 0:
