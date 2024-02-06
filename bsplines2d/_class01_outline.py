@@ -12,7 +12,7 @@ import datastock as ds
 # ###############################################################
 
 
-def _get_outline(coll=None, key=None, closed=None):
+def _get_outline(coll=None, key=None, closed=None, plot_debug=None):
 
     # ------------
     # check inputs
@@ -38,6 +38,14 @@ def _get_outline(coll=None, key=None, closed=None):
         default=True,
     )
 
+    # plot_debug
+    plot_debug = ds._generic_check._check_var(
+        plot_debug, 'plot_debug',
+        types=bool,
+        default=False,
+    )
+
+
     # ------------
     # compute
 
@@ -45,12 +53,14 @@ def _get_outline(coll=None, key=None, closed=None):
         x0, x1 = _rect_outline(
             coll=coll,
             key=key,
+            plot_debug=plot_debug,
         )
 
     else:
         x0, x1 = _tri_outline(
             coll=coll,
             key=key,
+            plot_debug=plot_debug,
         )
 
     # close
@@ -89,7 +99,7 @@ def _get_outline(coll=None, key=None, closed=None):
 # ###############################################################
 
 
-def _rect_outline(coll=None, key=None):
+def _rect_outline(coll=None, key=None, plot_debug=None):
 
     # ----------
     # prepare
@@ -181,9 +191,10 @@ def _rect_outline(coll=None, key=None):
             )
 
             # ------ DEBUG --------
-            if pp is None:
+            if pp is None and plot_debug:
                 import matplotlib.pyplot as plt
                 msg = (
+                    f"Isolated points detected in mesh '{key}':\n"
                     f"\n\t- i0: {i0}\n"
                     f"\t- i1: {i1}\n"
                     f"\t- ii0: {ii0}\n"
@@ -191,29 +202,31 @@ def _rect_outline(coll=None, key=None):
                     f"\t- pp: {pp}\n"
                     f"\t- pall: {pall}\n"
                 )
-                print(msg)
-                dax = coll.plot_mesh(key)
+                _ = coll.plot_mesh(key)
                 plt.gca().plot(
                     knots0[np.array(lp)[:, 0]],
                     knots1[np.array(lp)[:, 1]],
                     ls='-',
                     marker='o',
                     lw=2,
+                    label='optimized outline',
                 )
                 plt.gca().plot(
                     knots0[i0],
                     knots1[i1],
                     ls='None',
                     marker='x',
+                    label='full outline',
                 )
                 plt.gca().plot(
                     knots0[np.array(pall)[:, 0]],
                     knots1[np.array(pall)[:, 1]],
                     ls='None',
                     marker='s',
+                    label='isolated',
                 )
-
-                break
+                plt.gca().legend(loc='center left', bbox_to_anchor=(1., 0.5))
+                raise Exception(msg)
             # -----------------------
 
             lp.append(pp)
@@ -311,7 +324,7 @@ def _next_pp(
 # ###############################################################
 
 
-def _tri_outline(coll=None, key=None):
+def _tri_outline(coll=None, key=None, plot_debug=None):
 
     msg = "outline not implemented yet for triangular meshes"
     raise NotImplementedError(msg)
