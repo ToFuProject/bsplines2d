@@ -332,13 +332,22 @@ def _get_profiles2d(coll=None):
 # ##################################################################
 
 
-def extract(coll=None, coll2=None, vectors=None):
+def extract(
+    coll=None,
+    # optional includes
+    inc_monot=None,
+    inc_vectors=None,
+    inc_allrefs=None,
+    # output
+    coll2=None
+):
 
     wm = coll._which_mesh
     wbs = coll._which_bsplines
 
-    # -------------
+    # ------------------------
     # find bsplines and meshes
+    # ------------------------
 
     lbs, lmesh, ldata = _extract_bsplines_mesh(
         coll=coll,
@@ -347,33 +356,14 @@ def extract(coll=None, coll2=None, vectors=None):
 
     # ---------------
     # trivial
+    # ---------------
 
     if len(lmesh) == 0:
         return coll2
 
     # ---------------
-    # extract data
-
-    dmesh = _extract_refdata_from_obj(coll=coll, which=wm, keys=lmesh)
-    dbs = _extract_refdata_from_obj(coll=coll, which=wbs, keys=lbs)
-
-    # get all keys for mesh and bsplines
-    kmesh = list(itt.chain.from_iterable([
-        v0['ref'] + v0['data'] for v0 in dmesh.values()
-    ]))
-    kbs = list(itt.chain.from_iterable([
-        v0['ref'] + v0['data'] for v0 in dbs.values()
-    ]))
-
-    # get all ref and data
-    lref2, ldata2 = ds._class1_compute._extract_dataref(
-        coll=coll,
-        keys=list(set(kmesh + kbs + ldata)),
-        vectors=vectors
-    )
-
-    # ---------------
     # add mesh
+    # ---------------
 
     coll2._dobj[wm] = {
         k0: copy.deepcopy(coll.dobj[wm][k0])
@@ -382,6 +372,7 @@ def extract(coll=None, coll2=None, vectors=None):
 
     # ----------------
     # add bsplines
+    # ----------------
 
     coll2._dobj[wbs] = {}
     for k0 in lbs:
@@ -418,14 +409,34 @@ def extract(coll=None, coll2=None, vectors=None):
 
         coll2._dobj[wbs][k0] = din
 
-    # --------------------
-    # extract
+    # ------------------------------------------------
+    # extract mesh and bsplines-related data and ref
+    # ------------------------------------------------
+
+    # ---------------
+    # identify data
+
+    dmesh = _extract_refdata_from_obj(coll=coll, which=wm, keys=lmesh)
+    dbs = _extract_refdata_from_obj(coll=coll, which=wbs, keys=lbs)
+
+    # get all keys for mesh and bsplines
+    kmesh = list(itt.chain.from_iterable([
+        v0['ref'] + v0['data'] for v0 in dmesh.values()
+    ]))
+    kbs = list(itt.chain.from_iterable([
+        v0['ref'] + v0['data'] for v0 in dbs.values()
+    ]))
 
     coll2 = ds._class1_compute._extract_instance(
         coll=coll,
-        lref=lref2,
-        ldata=ldata2,
+        keys=list(set(kmesh + kbs + ldata)),
+        # optional include
+        inc_monot=inc_monot,
+        inc_vectors=inc_vectors,
+        inc_allrefs=inc_allrefs,
+        # output
         coll2=coll2,
+        return_keys=False,
     )
 
     return coll2

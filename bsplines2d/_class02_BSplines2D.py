@@ -254,7 +254,17 @@ class BSplines2D(Previous):
 
         return _compute._get_profiles2d(self)
 
-    def extract(self, keys=None, vectors=None):
+    def extract(
+        self,
+        keys=None,
+        # optional includes
+        inc_monot=None,
+        inc_vectors=None,
+        inc_allrefs=None,
+        # output
+        coll2=None,
+        return_keys=None,
+    ):
         """ Extract some selected data and return as new instance
 
         Includes:
@@ -265,7 +275,16 @@ class BSplines2D(Previous):
 
         """
 
-        coll2 = super().extract(keys=keys, vectors=vectors)
+        coll2 = super().extract(
+            keys=keys,
+            # optional includes
+            inc_monot=inc_monot,
+            inc_vectors=inc_vectors,
+            inc_allrefs=inc_allrefs,
+            # output
+            coll2=coll2,
+            return_keys=None,
+        )
         return _compute.extract(self, coll2=coll2, vectors=vectors)
 
     # -----------------
