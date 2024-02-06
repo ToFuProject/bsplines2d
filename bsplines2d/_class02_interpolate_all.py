@@ -318,6 +318,11 @@ def _check(
     # ----------
     # coll2
 
-    coll2 = coll.extract(keys=keys, vectors=True)
+    coll2 = coll.extract(
+        keys=keys,
+        inc_vectors=True,
+        inc_allrefs=False,
+        return_keys=False,
+    )
 
     return keys, coll2, dres, submesh
