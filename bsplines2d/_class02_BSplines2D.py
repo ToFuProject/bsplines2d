@@ -267,15 +267,22 @@ class BSplines2D(Previous):
     ):
         """ Extract some selected data and return as new instance
 
-        Includes:
+        Automatically includes:
             - all desired data keys
             - all relevant ref
-            - all associated monotonous vectors (optional)
-            - all relevant bsplines and meshes
+
+        Optionally can also include:
+            - inc_monot: monotonous vectors matching any ref
+            - inc_vectors: all (1d) vectors matching any ref
+            - inc_allrefs: all (nd) array matching any full ref set
+
+        Optionally:
+            coll2: DataStock instance to be populated
+            return_keys: returns the value of keys
 
         """
 
-        coll2 = super().extract(
+        coll2, keys = super().extract(
             keys=keys,
             # optional includes
             inc_monot=inc_monot,
@@ -283,9 +290,18 @@ class BSplines2D(Previous):
             inc_allrefs=inc_allrefs,
             # output
             coll2=coll2,
-            return_keys=None,
+            return_keys=True,
         )
-        return _compute.extract(self, coll2=coll2, vectors=vectors)
+        return _compute.extract(
+            keys=keys,
+            # optional includes
+            inc_monot=inc_monot,
+            inc_vectors=inc_vectors,
+            inc_allrefs=inc_allrefs,
+            # output
+            coll2=coll2,
+            return_keys=return_keys,
+        )
 
     # -----------------
     # Integration operators
