@@ -67,7 +67,7 @@ def plot_as_profile2d_compare(
         dkeys,
         dlevels,
         cmap, cmap_err,
-        vmin, vmax,
+        dvminmax,
         dcolorbar, dleg,
         connect,
     ) = _plot_as_profile2d._check(
@@ -178,8 +178,7 @@ def plot_as_profile2d_compare(
         val_out=val_out,
         nan0=nan0,
         # plotting
-        vmin=vmin,
-        vmax=vmax,
+        dvminmax=dvminmax,
         cmap=cmap,
         # figure
         dax=dax2,
@@ -221,8 +220,9 @@ def plot_as_profile2d_compare(
         keyY=keyY,
         uniform=uniform,
         # options
-        vmin=-vmax,
-        vmax=vmax,
+        dvminmax={'data': {'min': -vmax, 'max': vmax}},
+        # vmin=-vmax,
+        # vmax=vmax,
         cmap=plt.cm.seismic,
         dax={kax: dax[kax] for kax in laxerr},
         dmargin=dmargin,
