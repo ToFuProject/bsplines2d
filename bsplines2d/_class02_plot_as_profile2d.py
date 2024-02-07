@@ -38,8 +38,9 @@ def plot_as_profile2d(
     val_out=None,
     nan0=None,
     # figure
-    vmin=None,
-    vmax=None,
+    dvminmax=None,
+    # vmin=None,
+    # vmax=None,
     cmap=None,
     dax=None,
     dmargin=None,
@@ -62,7 +63,7 @@ def plot_as_profile2d(
         dkeys,
         dlevels,
         cmap, _,
-        vmin, vmax,
+        dvminmax,
         dcolorbar, dleg,
         connect,
     ) = _check(
@@ -70,8 +71,9 @@ def plot_as_profile2d(
         keys=key,
         dlevels=dlevels,
         # plotting
-        vmin=vmin,
-        vmax=vmax,
+        dvminmax=dvminmax,
+        # vmin=vmin,
+        # vmax=vmax,
         cmap=cmap,
         # figure
         dcolorbar=dcolorbar,
@@ -145,8 +147,9 @@ def plot_as_profile2d(
                 # details
                 plot_details=plot_details,
                 # plotting
-                vmin=vmin,
-                vmax=vmax,
+                dvminmax=dvminmax,
+                # vmin=vmin,
+                # vmax=vmax,
                 cmap=cmap,
                 color_dict=color_dict[k0],
                 # figure
@@ -164,9 +167,11 @@ def plot_as_profile2d(
         # without submesh
 
         else:
+
             collax, dgroup = collax.plot_as_array(
-                vmin=vmin,
-                vmax=vmax,
+                dvminmax=dvminmax,
+                # vmin=vmin,
+                # vmax=vmax,
                 cmap=cmap,
                 dax=daxi,
                 dmargin=dmargin,
@@ -217,8 +222,9 @@ def _check(
     keys=None,
     dlevels=None,
     # figure
-    vmin=None,
-    vmax=None,
+    dvminmax=None,
+    # vmin=None,
+    # vmax=None,
     cmap=None,
     cmap_err=None,
     dcolorbar=None,
@@ -277,7 +283,7 @@ def _check(
                 msg = (
                     "Provided keys must be profile2d with identical ref!"
                     " (apart from the actual profile2d bsplines)\n"
-                    f"\t- Provided:"
+                    "\t- Provided:"
                     + "\n".join(lstr)
                 )
                 raise Exception(msg)
@@ -332,6 +338,8 @@ def _check(
             # check fields
             dlevels[k0]['levels'] = np.atleast_1d(v0['levels']).ravel()
             dlevels[k0]['color'] = v0.get('color', 'k')
+            dlevels[k0]['ls'] = v0.get('ls', '-')
+            dlevels[k0]['lw'] = v0.get('lw', 1)
 
     # ----------
     # cmap
@@ -347,10 +355,13 @@ def _check(
     # ----------
     # vmin, vmax
 
-    if vmin is None:
-        vmin = min([0] + [np.nanmin(coll.ddata[kk]['data']) for kk in keys])
-    if vmax is None:
-        vmax = max([np.nanmax(coll.ddata[kk]['data']) for kk in keys])
+    if dvminmax is None:
+        dvminmax = {
+            'data': {
+                'min': min([0] + [np.nanmin(coll.ddata[kk]['data']) for kk in keys]),
+                'max': max([np.nanmax(coll.ddata[kk]['data']) for kk in keys]),
+            },
+        }
 
     # ----------
     # figure
@@ -392,7 +403,7 @@ def _check(
         dkeys,
         dlevels,
         cmap, cmap_err,
-        vmin, vmax,
+        dvminmax,
         dcolorbar, dleg,
         connect,
     )
@@ -501,7 +512,7 @@ def _prepare(
             # populate
             for k1 in ['cont0', 'cont1']:
                 dlevels[k0][k1] = dout[k1]
-                dlevels[k0]['cont0']['key'] = f'{k0}_{k1}'
+                dlevels[k0][k1]['key'] = f'{k0}_{k1}'
 
             dlevels[k0]['refZ'] = refZ
             dlevels[k0]['refU'] = refU
@@ -647,9 +658,9 @@ def _add_levels_2d(
                 ax.plot(
                     v0['cont0']['data'],
                     v0['cont1']['data'],
-                    ls='-',
-                    lw=1.,
+                    lw=dlevels[k0]['lw'],
                     c=dlevels[k0]['color'],
+                    ls=dlevels[k0]['ls'],
                 )
 
         elif ndim == 3:
@@ -660,25 +671,25 @@ def _add_levels_2d(
                     ax.plot(
                         v0['cont0']['data'],
                         v0['cont1']['data'],
-                        ls='-',
-                        lw=1.,
+                        lw=dlevels[k0]['lw'],
                         c=dlevels[k0]['color'],
+                        ls=dlevels[k0]['ls'],
                     )
 
                 else:
                     # slice
-                    sli = [
+                    sli = tuple([
                         slice(None) if ii == v0['axis'][0] else 0
                         for ii in range(ndim-1)
-                    ]
+                    ])
 
                     # plot
                     l0, = ax.plot(
                         v0['cont0']['data'][sli],
                         v0['cont1']['data'][sli],
-                        ls='-',
-                        lw=1.,
+                        lw=dlevels[k0]['lw'],
                         c=dlevels[k0]['color'],
+                        ls=dlevels[k0]['ls'],
                     )
 
                     # store mobile
@@ -774,8 +785,9 @@ def _plot_submesh(
     # plot_details
     plot_details=None,
     # figure
-    vmin=None,
-    vmax=None,
+    dvminmax=None,
+    # vmin=None,
+    # vmax=None,
     cmap=None,
     color_dict=None,
     dax=None,
@@ -808,8 +820,9 @@ def _plot_submesh(
 
     # plot usual parts
     collax, dgroup = collax.plot_as_array(
-        vmin=vmin,
-        vmax=vmax,
+        dvminmax=dvminmax,
+        # vmin=vmin,
+        # vmax=vmax,
         cmap=cmap,
         color_dict=color_dict,
         dax=dax,
@@ -930,10 +943,10 @@ def _plot_submesh(
             collax.ddata[kradius]['data'].max(),
         )
 
-        if vmin is not None:
-            ax.set_ylim(bottom=vmin)
-        if vmax is not None:
-            ax.set_ylim(top=vmax)
+        if dvminmax.get('data', {}).get('min') is not None:
+            ax.set_ylim(bottom=dvminmax['data']['vmin'])
+        if  dvminmax.get('data', {}).get('min') is not None:
+            ax.set_ylim(top=dvminmax['data']['vmax'])
 
     return collax, dgroup
 

@@ -162,7 +162,7 @@ def _check(
 
     # cropbs
     cropbs = coll.dobj['bsplines'][key]['crop']
-    keycropped = coll.dobj['bsplines'][key]['ref-bs'][0]
+    keycropped = coll.dobj['bsplines'][key]['ref_bs'][0]
     if cropbs not in [None, False] and crop is True:
         cropbs_flat = coll.ddata[cropbs]['data'].ravel(order='F')
         if coll.dobj['bsplines'][key]['deg'] == 0:
@@ -370,12 +370,12 @@ def _ref_units(
     keym = coll.dobj[wbs][key][wm]
 
     ref = keycropped
-    ref0 = coll.dobj[wbs][key]['ref-bs']
+    ref0 = coll.dobj[wbs][key]['ref_bs']
 
     if deg > 0:
         kbsm1 = f'{keym}_bs{deg-1}'
         if kbsm1 in coll.dobj[wbs].keys():
-            rm1 = coll.dobj[wbs][kbsm1]['ref-bs']
+            rm1 = coll.dobj[wbs][kbsm1]['ref_bs']
             if ref0 != ref:
                 rm1 = f'{rm1}_crop'
         else:

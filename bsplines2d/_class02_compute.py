@@ -82,7 +82,7 @@ def _mesh1d_bsplines(
                 'deg': deg,
                 wm: keym,
                 'ref': ref,
-                'ref-bs': (kbsn,),
+                'ref_bs': (kbsn,),
                 'apex': apex,
                 'shape': clas.shapebs,
                 'class': clas,
@@ -172,7 +172,7 @@ def _mesh2DRect_bsplines(coll=None, keym=None, keybs=None, deg=None):
                 'deg': deg,
                 'mesh': keym,
                 'ref': (kRbsapn, kZbsapn),
-                'ref-bs': (keybsr,),
+                'ref_bs': (keybsr,),
                 'apex': (kRbsap, kZbsap),
                 'shape': shapebs,
                 'crop': False,
@@ -246,7 +246,7 @@ def _mesh2DTri_bsplines(coll=None, keym=None, keybs=None, deg=None):
                 'deg': deg,
                 'mesh': keym,
                 'ref': (keybsr,),
-                'ref-bs': (keybsr,),
+                'ref_bs': (keybsr,),
                 'apex': (kbscr, kbscz),
                 'shape': (clas.nbs,),
                 'crop': False,
@@ -332,13 +332,24 @@ def _get_profiles2d(coll=None):
 # ##################################################################
 
 
-def extract(coll=None, coll2=None, vectors=None):
+def extract(
+    coll=None,
+    keys=None,
+    # optional includes
+    inc_monot=None,
+    inc_vectors=None,
+    inc_allrefs=None,
+    # output
+    coll2=None,
+    return_keys=None,
+):
 
     wm = coll._which_mesh
     wbs = coll._which_bsplines
 
-    # -------------
+    # ------------------------
     # find bsplines and meshes
+    # ------------------------
 
     lbs, lmesh, ldata = _extract_bsplines_mesh(
         coll=coll,
@@ -347,12 +358,66 @@ def extract(coll=None, coll2=None, vectors=None):
 
     # ---------------
     # trivial
+    # ---------------
 
     if len(lmesh) == 0:
-        return coll2
+        return coll2, keys
 
     # ---------------
-    # extract data
+    # add mesh
+    # ---------------
+
+    coll2._dobj[wm] = {
+        k0: copy.deepcopy(coll.dobj[wm][k0])
+        for k0 in lmesh
+    }
+
+    # ----------------
+    # add bsplines
+    # ----------------
+
+    if len(lbs) > 0:
+        coll2._dobj[wbs] = {}
+        for k0 in lbs:
+            din = {
+                k1: copy.deepcopy(v1)
+                for k1, v1 in coll.dobj[wbs][k0].items()
+                if k1 != 'class'
+            }
+
+            # clas has to be treated sepearately (cannot be copied)
+            km = coll.dobj[wbs][k0][wm]
+            nd = str(coll.dobj[wm][km]['nd'])
+            mtype = str(coll.dobj[wm][km]['type'])
+            deg = int(coll.dobj[wbs][k0]['deg'])
+            kn = coll.dobj[wm][km]['knots']
+            knots0 = np.copy(coll.ddata[kn[0]]['data'])
+            knots1 = np.copy(coll.ddata[kn[1]]['data']) if nd == '2d' else None
+            shapebs = tuple(coll.dobj[wbs][k0]['shape'])
+            if mtype == 'tri':
+                kind = coll2.dobj[wm][km]['ind']
+                indices = np.copy(coll.ddata[kind]['data'])
+            else:
+                indices = None
+
+            din['class'] = get_bs_class(
+                nd=nd,
+                mtype=mtype,
+                deg=deg,
+                knots0=knots0,
+                knots1=knots1,
+                shapebs=shapebs,
+                indices=indices,
+            )
+
+            coll2._dobj[wbs][k0] = din
+
+    # ------------------------------------------------
+    # extract mesh and bsplines-related data and ref
+    # ------------------------------------------------
+
+    # ---------------
+    # identify data
 
     dmesh = _extract_refdata_from_obj(coll=coll, which=wm, keys=lmesh)
     dbs = _extract_refdata_from_obj(coll=coll, which=wbs, keys=lbs)
@@ -365,90 +430,42 @@ def extract(coll=None, coll2=None, vectors=None):
         v0['ref'] + v0['data'] for v0 in dbs.values()
     ]))
 
-    # get all ref and data
-    lref2, ldata2 = ds._class1_compute._extract_dataref(
+    return ds._class1_compute._extract_instance(
         coll=coll,
-        keys=list(set(kmesh + kbs + ldata)),
-        vectors=vectors
-    )
-
-    # ---------------
-    # add mesh
-
-    coll2._dobj[wm] = {
-        k0: copy.deepcopy(coll.dobj[wm][k0])
-        for k0 in lmesh
-    }
-
-    # ----------------
-    # add bsplines
-
-    coll2._dobj[wbs] = {}
-    for k0 in lbs:
-        din = {
-            k1: copy.deepcopy(v1)
-            for k1, v1 in coll.dobj[wbs][k0].items()
-            if k1 != 'class'
-        }
-
-        # clas has to be treated sepearately (cannot be copied)
-        km = coll.dobj[wbs][k0][wm]
-        nd = str(coll.dobj[wm][km]['nd'])
-        mtype = str(coll.dobj[wm][km]['type'])
-        deg = int(coll.dobj[wbs][k0]['deg'])
-        kn = coll.dobj[wm][km]['knots']
-        knots0 = np.copy(coll.ddata[kn[0]]['data'])
-        knots1 = np.copy(coll.ddata[kn[1]]['data']) if nd == '2d' else None
-        shapebs = tuple(coll.dobj[wbs][k0]['shape'])
-        if mtype == 'tri':
-            kind = coll2.dobj[wm][km]['ind']
-            indices = np.copy(coll.ddata[kind]['data'])
-        else:
-            indices = None
-
-        din['class'] = get_bs_class(
-            nd=nd,
-            mtype=mtype,
-            deg=deg,
-            knots0=knots0,
-            knots1=knots1,
-            shapebs=shapebs,
-            indices=indices,
-        )
-
-        coll2._dobj[wbs][k0] = din
-
-    # --------------------
-    # extract
-
-    coll2 = ds._class1_compute._extract_instance(
-        coll=coll,
-        lref=lref2,
-        ldata=ldata2,
+        keys=list(set(kmesh + kbs + ldata)) + keys,
+        # optional include
+        inc_monot=inc_monot,
+        inc_vectors=inc_vectors,
+        inc_allrefs=inc_allrefs,
+        # output
         coll2=coll2,
+        return_keys=return_keys,
     )
-
-    return coll2
 
 
 def _extract_bsplines_mesh(coll=None, coll2=None):
 
     # -------------
     # find bsplines
+    # -------------
 
+    # ------------------------
     # bs from data['bsplines']
+
     wbs = coll._which_bsplines
     lbs = list(set(itt.chain.from_iterable([
         v0[wbs] for v0 in coll2.ddata.values()
         if isinstance(v0.get(wbs), tuple)
     ])))
 
+    # ------------
     # bs from ref
+
     lbs2 = []
     if wbs in coll.dobj.keys():
         for k0, v0 in coll.dobj[wbs].items():
             for k1 in coll2.dref.keys():
-                if k1 in v0['ref'] + v0['ref-bs']:
+                if k1 in v0['ref'] + v0['ref_bs']:
                     lbs2.append(k0)
             for k1 in coll2.ddata.keys():
                 if k1 in v0['apex']:
@@ -458,6 +475,7 @@ def _extract_bsplines_mesh(coll=None, coll2=None):
 
     # -----------
     # find meshes
+    # -----------
 
     wm = coll._which_mesh
     lmesh = list({coll.dobj[wbs][k0][wm] for k0 in lbs})
@@ -624,7 +642,7 @@ def _extract_refdata_from_dict(
                 # 'deg': deg,
                 # 'mesh': keym,
                 # 'ref': ref,
-                # 'ref-bs': (keybsn,),
+                # 'ref_bs': (keybsn,),
                 # 'apex': apex,
                 # 'shape': clas.shapebs,
                 # 'class': clas,

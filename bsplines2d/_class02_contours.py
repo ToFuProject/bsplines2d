@@ -124,6 +124,7 @@ def get_contours(
     # compute contours
 
     cont0, cont1 = _get_contours(
+        key=key,
         xx0=dsamp['x0']['data'],
         xx1=dsamp['x1']['data'],
         val=dinterp['data'],
@@ -292,6 +293,7 @@ def _check(
 
 
 def _get_contours(
+    key=None,
     xx0=None,
     xx1=None,
     val=None,
@@ -415,7 +417,10 @@ def _get_contours(
     # -----------------
     # Warning + return
 
-    msg = f"Contour computing: npts {npts} vs {maxnpts} (level {maxlvl})"
+    msg = (
+        f"\nContour computing for '{key}':\n"
+        f"\t- npts {npts} vs {maxnpts} (level {maxlvl})"
+    )
     if maxnpts > npts:
         warnings.warn(msg)
     else:
@@ -509,7 +514,7 @@ def _compute_check(
     npts = ds._generic_check._check_var(
         npts, 'npts',
         types=int,
-        default=100,
+        default=500,
         sign='>0',
     )
 

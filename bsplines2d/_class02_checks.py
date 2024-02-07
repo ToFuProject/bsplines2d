@@ -229,7 +229,7 @@ def remove_bsplines(coll=None, key=None, propagate=None):
         # specific ref
         lref = (
             coll.dobj[wbs][k0]['ref']
-            + coll.dobj[wbs][k0]['ref-bs']
+            + coll.dobj[wbs][k0]['ref_bs']
         )
         for rr in lref:
             if rr in coll.dref.keys():
