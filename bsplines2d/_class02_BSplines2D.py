@@ -254,19 +254,58 @@ class BSplines2D(Previous):
 
         return _compute._get_profiles2d(self)
 
-    def extract(self, keys=None, vectors=None):
+    def extract(
+        self,
+        keys=None,
+        # optional includes
+        inc_monot=None,
+        inc_vectors=None,
+        inc_allrefs=None,
+        # output
+        coll2=None,
+        inplace=None,
+        return_keys=None,
+    ):
         """ Extract some selected data and return as new instance
 
-        Includes:
+        Automatically includes:
             - all desired data keys
             - all relevant ref
-            - all associated monotonous vectors (optional)
-            - all relevant bsplines and meshes
+
+        Optionally can also include:
+            - inc_monot: monotonous vectors matching any ref
+            - inc_vectors: all (1d) vectors matching any ref
+            - inc_allrefs: all (nd) array matching any full ref set
+
+        Optionally:
+            coll2: DataStock instance to be populated
+            return_keys: returns the value of keys
 
         """
 
-        coll2 = super().extract(keys=keys, vectors=vectors)
-        return _compute.extract(self, coll2=coll2, vectors=vectors)
+        coll2, keys = super().extract(
+            keys=keys,
+            # optional includes
+            inc_monot=inc_monot,
+            inc_vectors=inc_vectors,
+            inc_allrefs=inc_allrefs,
+            # output
+            coll2=coll2,
+            inplace=inplace,
+            return_keys=True,
+        )
+        return _compute.extract(
+            coll=self,
+            keys=keys,
+            # optional includes
+            inc_monot=inc_monot,
+            inc_vectors=inc_vectors,
+            inc_allrefs=inc_allrefs,
+            # output
+            coll2=coll2,
+            return_keys=return_keys,
+        )
+
 
     # -----------------
     # Integration operators
@@ -1002,8 +1041,9 @@ class BSplines2D(Previous):
         val_out=None,
         nan0=None,
         # plot options
-        vmin=None,
-        vmax=None,
+        dvminmax=None,
+        # vmin=None,
+        # vmax=None,
         cmap=None,
         dax=None,
         dmargin=None,
@@ -1036,8 +1076,9 @@ class BSplines2D(Previous):
             val_out=val_out,
             nan0=nan0,
             # plot options
-            vmin=vmin,
-            vmax=vmax,
+            dvminmax=dvminmax,
+            # vmin=vmin,
+            # vmax=vmax,
             cmap=cmap,
             dax=dax,
             dmargin=dmargin,

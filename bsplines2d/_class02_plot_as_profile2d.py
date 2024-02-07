@@ -38,8 +38,9 @@ def plot_as_profile2d(
     val_out=None,
     nan0=None,
     # figure
-    vmin=None,
-    vmax=None,
+    dvminmax=None,
+    # vmin=None,
+    # vmax=None,
     cmap=None,
     dax=None,
     dmargin=None,
@@ -62,7 +63,7 @@ def plot_as_profile2d(
         dkeys,
         dlevels,
         cmap, _,
-        vmin, vmax,
+        dvminmax,
         dcolorbar, dleg,
         connect,
     ) = _check(
@@ -70,8 +71,9 @@ def plot_as_profile2d(
         keys=key,
         dlevels=dlevels,
         # plotting
-        vmin=vmin,
-        vmax=vmax,
+        dvminmax=dvminmax,
+        # vmin=vmin,
+        # vmax=vmax,
         cmap=cmap,
         # figure
         dcolorbar=dcolorbar,
@@ -145,8 +147,9 @@ def plot_as_profile2d(
                 # details
                 plot_details=plot_details,
                 # plotting
-                vmin=vmin,
-                vmax=vmax,
+                dvminmax=dvminmax,
+                # vmin=vmin,
+                # vmax=vmax,
                 cmap=cmap,
                 color_dict=color_dict[k0],
                 # figure
@@ -164,9 +167,11 @@ def plot_as_profile2d(
         # without submesh
 
         else:
+
             collax, dgroup = collax.plot_as_array(
-                vmin=vmin,
-                vmax=vmax,
+                dvminmax=dvminmax,
+                # vmin=vmin,
+                # vmax=vmax,
                 cmap=cmap,
                 dax=daxi,
                 dmargin=dmargin,
@@ -217,8 +222,9 @@ def _check(
     keys=None,
     dlevels=None,
     # figure
-    vmin=None,
-    vmax=None,
+    dvminmax=None,
+    # vmin=None,
+    # vmax=None,
     cmap=None,
     cmap_err=None,
     dcolorbar=None,
@@ -349,10 +355,13 @@ def _check(
     # ----------
     # vmin, vmax
 
-    if vmin is None:
-        vmin = min([0] + [np.nanmin(coll.ddata[kk]['data']) for kk in keys])
-    if vmax is None:
-        vmax = max([np.nanmax(coll.ddata[kk]['data']) for kk in keys])
+    if dvminmax is None:
+        dvminmax = {
+            'data': {
+                'min': min([0] + [np.nanmin(coll.ddata[kk]['data']) for kk in keys]),
+                'max': max([np.nanmax(coll.ddata[kk]['data']) for kk in keys]),
+            },
+        }
 
     # ----------
     # figure
@@ -394,7 +403,7 @@ def _check(
         dkeys,
         dlevels,
         cmap, cmap_err,
-        vmin, vmax,
+        dvminmax,
         dcolorbar, dleg,
         connect,
     )
@@ -776,8 +785,9 @@ def _plot_submesh(
     # plot_details
     plot_details=None,
     # figure
-    vmin=None,
-    vmax=None,
+    dvminmax=None,
+    # vmin=None,
+    # vmax=None,
     cmap=None,
     color_dict=None,
     dax=None,
@@ -810,8 +820,9 @@ def _plot_submesh(
 
     # plot usual parts
     collax, dgroup = collax.plot_as_array(
-        vmin=vmin,
-        vmax=vmax,
+        dvminmax=dvminmax,
+        # vmin=vmin,
+        # vmax=vmax,
         cmap=cmap,
         color_dict=color_dict,
         dax=dax,
@@ -932,10 +943,10 @@ def _plot_submesh(
             collax.ddata[kradius]['data'].max(),
         )
 
-        if vmin is not None:
-            ax.set_ylim(bottom=vmin)
-        if vmax is not None:
-            ax.set_ylim(top=vmax)
+        if dvminmax.get('data', {}).get('min') is not None:
+            ax.set_ylim(bottom=dvminmax['data']['vmin'])
+        if  dvminmax.get('data', {}).get('min') is not None:
+            ax.set_ylim(top=dvminmax['data']['vmax'])
 
     return collax, dgroup
 

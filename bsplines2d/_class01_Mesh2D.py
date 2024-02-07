@@ -126,11 +126,11 @@ class Mesh2D(ds.DataStock):
         """ Add a mesh by key and domain / resolution
 
         Can create a 2d rectangular or triangular mesh:
-            - knots0:
-            - knots1:
+            - knots0: sequence of unique floats
+            - knots1: sequence of unique floats
             # or
-            - domain:
-            - res:
+            - domain: a list of 2 iterables of len() >= 2
+            - res: float
 
 
         Can optionally be cropped by a closed polygon crop_poly, that can be:
@@ -369,6 +369,9 @@ class Mesh2D(ds.DataStock):
         self._dobj[self._which_mesh][key]['crop'] = keycrop
         self._dobj[self._which_mesh][key]['crop-thresh'] = thresh_in
 
+        # safety check
+        self.get_mesh_outline(key, plot_debug=True)
+
     # -----------------
     # indices
     # ------------------
@@ -491,12 +494,14 @@ class Mesh2D(ds.DataStock):
         self,
         key=None,
         closed=None,
+        plot_debug=None,
     ):
         """ Get outline of 2d mesh """
         return _outline._get_outline(
             coll=self,
             key=key,
             closed=closed,
+            plot_debug=plot_debug,
         )
 
     # -----------------

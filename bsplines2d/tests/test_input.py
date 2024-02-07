@@ -881,12 +881,13 @@ def _plot_as_profile2d(bs,  nd=None, kind=None):
         span = np.abs(knots[-1] - knots[0])
         res = span / 3.
 
-        _ = bs.plot_as_profile2d(
+        dax = bs.plot_as_profile2d(
             key=k0,
             dres=res,
             show_commands=False,
         )
         plt.close('all')
+        del dax
 
 
 def _plot_as_profile2d_compare(bs,  nd=None, kind=None):
@@ -922,7 +923,7 @@ def _plot_as_profile2d_compare(bs,  nd=None, kind=None):
 
         _ = bs.plot_as_profile2d_compare(
             keys=[k0, lpassed[-2]],
-            dres=None,
+            dres=0.2,
             uniform=False,
             show_commands=False,
         )
