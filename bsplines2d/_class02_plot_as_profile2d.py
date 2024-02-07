@@ -944,9 +944,9 @@ def _plot_submesh(
         )
 
         if dvminmax.get('data', {}).get('min') is not None:
-            ax.set_ylim(bottom=dvminmax['data']['vmin'])
+            ax.set_ylim(bottom=dvminmax['data']['min'])
         if  dvminmax.get('data', {}).get('min') is not None:
-            ax.set_ylim(top=dvminmax['data']['vmax'])
+            ax.set_ylim(top=dvminmax['data']['max'])
 
     return collax, dgroup
 
