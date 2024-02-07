@@ -263,6 +263,7 @@ class BSplines2D(Previous):
         inc_allrefs=None,
         # output
         coll2=None,
+        inplace=None,
         return_keys=None,
     ):
         """ Extract some selected data and return as new instance
@@ -290,6 +291,7 @@ class BSplines2D(Previous):
             inc_allrefs=inc_allrefs,
             # output
             coll2=coll2,
+            inplace=inplace,
             return_keys=True,
         )
         return _compute.extract(

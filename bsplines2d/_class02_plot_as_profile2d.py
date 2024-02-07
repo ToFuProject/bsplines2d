@@ -167,6 +167,7 @@ def plot_as_profile2d(
         # without submesh
 
         else:
+
             collax, dgroup = collax.plot_as_array(
                 dvminmax=dvminmax,
                 # vmin=vmin,
