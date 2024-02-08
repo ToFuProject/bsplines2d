@@ -186,7 +186,6 @@ class BivariateSplineRect(scpinterp.BivariateSpline):
             )
 
             # can be called on any shape of x0, x1?
-            print(deriv, self.degrees)   # DB
             val[sliv] = super().__call__(
                 x0[slix],
                 x1[slix],
