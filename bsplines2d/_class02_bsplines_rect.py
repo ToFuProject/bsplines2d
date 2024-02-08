@@ -126,6 +126,8 @@ class BivariateSplineRect(scpinterp.BivariateSpline):
         # interp points
         x0=None,
         x1=None,
+        # derivatives
+        deriv=None,
         # coefs
         coefs=None,
         axis=None,
@@ -184,7 +186,14 @@ class BivariateSplineRect(scpinterp.BivariateSpline):
             )
 
             # can be called on any shape of x0, x1?
-            val[sliv] = super().__call__(x0[slix], x1[slix], grid=False)
+            print(deriv, self.degrees)   # DB
+            val[sliv] = super().__call__(
+                x0[slix],
+                x1[slix],
+                dx=int(deriv[0]),
+                dy=int(deriv[1]),
+                grid=False,
+            )
 
         # clean out-of-mesh
         if dref_com['ix'] is None and val_out is not False:
@@ -212,6 +221,9 @@ class BivariateSplineRect(scpinterp.BivariateSpline):
         self,
         x0=None,
         x1=None,
+        #derivatives
+        deriv=None,
+        # others
         indbs_tf=None,
         crop=None,
         cropbs=None,
@@ -250,7 +262,7 @@ class BivariateSplineRect(scpinterp.BivariateSpline):
                 coef,
                 self.degrees[1],
                 x1,
-                0,
+                deriv[0],
                 False,
                 out1,
             )
@@ -279,7 +291,7 @@ class BivariateSplineRect(scpinterp.BivariateSpline):
                     coef,
                     self.degrees[0],
                     x0[indok1[:, 0]],
-                    0,
+                    deriv[1],
                     False,
                     out0,
                 )
