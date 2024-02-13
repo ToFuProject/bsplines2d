@@ -531,6 +531,8 @@ class BSplines2D(Previous):
         # parameters
         val_out=None,
         nan0=None,
+        # for plotting => uniform
+        for_plotting=None,
     ):
         """ Return a new instance with fully interpolated data
 
@@ -546,6 +548,8 @@ class BSplines2D(Previous):
             # parameters
             val_out=val_out,
             nan0=nan0,
+            # for plotting => uniform
+            for_plotting=for_plotting,
         )
 
     """

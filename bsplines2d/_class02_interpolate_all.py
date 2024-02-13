@@ -2,11 +2,11 @@
 
 
 # Built-in
-import copy
 import itertools as itt
 
 
 # Common
+import numpy as np
 import datastock as ds
 
 # local
@@ -28,6 +28,8 @@ def interpolate_all_bsplines(
     # parameters
     val_out=None,
     nan0=None,
+    # for plotting => uniform
+    for_plotting=None,
 ):
     """ Interpolate along all bsplines for multiple keys
 
@@ -42,6 +44,8 @@ def interpolate_all_bsplines(
         # sampling
         dres=dres,
         submesh=submesh,
+        # for plotting => uniform
+        for_plotting=for_plotting,
     )
 
     # ---------
@@ -180,6 +184,8 @@ def _check(
     knots1=None,
     dres=None,
     submesh=None,
+    # for plotting => uniform
+    for_plotting=None,
 ):
 
     # ----
@@ -298,9 +304,24 @@ def _check(
                 # get default x0, x1
                 if ldeg1 is not None:
                     kx = coll.dobj[wbs][ldeg1[0]]['apex']
-                    dres[k0]['x0'] = coll.ddata[kx[0]]['data']
+                    x0 = coll.ddata[kx[0]]['data']
+                    c0 = (
+                        for_plotting is not True
+                        or np.allclose(np.diff(x0), x0[1]-x0[0])
+                    )
+                    if c0 and len(kx) == 1:
+                        dres[k0]['x0'] = x0
+
                     if len(kx) == 2:
-                        dres[k0]['x1'] = coll.ddata[kx[1]]['data']
+                        x1 = coll.ddata[kx[1]]['data']
+                        c1 = (
+                            for_plotting is not True
+                            or np.allclose(np.diff(x1), x1[1]-x1[0])
+                        )
+                        if c0 and c1:
+                            dres[k0]['x0'] = x0
+                            dres[k0]['x1'] = x1
+
 
     # -------- DEBUG ------
     # lstr = [
