@@ -25,6 +25,8 @@ def check(
     # automated
     domain=None,
     res=None,
+    uniform0=None,
+    uniform1=None,
     # defined from pre-existing bsplines
     subkey0=None,
     subkey1=None,
@@ -52,6 +54,8 @@ def check(
         # automated
         domain=domain,
         res=res,
+        uniform0=uniform0,
+        uniform1=uniform1,
     )
     cents0 = 0.5*(knots0[1:] + knots0[:-1])
     cents1 = 0.5*(knots1[1:] + knots1[:-1])
@@ -124,6 +128,8 @@ def _mesh2DRect_check(
     knots1=None,
     domain=None,
     res=None,
+    uniform0=None,
+    uniform1=None,
 ):
 
     # --------------
@@ -149,14 +155,14 @@ def _mesh2DRect_check(
         knots0, res0 = _checks_1d._check_knots(
             key=key,
             knots=knots0,
-            uniform=True,
+            uniform=uniform0,
         )
 
         # knots1
         knots1, res1 = _checks_1d._check_knots(
             key=key,
             knots=knots1,
-            uniform=True,
+            uniform=uniform1,
         )
 
     elif lc[1]:
