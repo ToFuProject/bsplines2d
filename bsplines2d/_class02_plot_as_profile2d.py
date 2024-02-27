@@ -451,6 +451,8 @@ def _prepare(
         # interpolation
         val_out=val_out,
         nan0=nan0,
+        # for plotting => uniform
+        for_plotting=True,
     )
     lbs2d = [k0 for k0, v0 in dbs.items() if len(v0['ref']) == 2]
 
