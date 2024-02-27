@@ -112,6 +112,8 @@ class Mesh2D(ds.DataStock):
         knots1=None,
         domain=None,
         res=None,
+        uniform0=None,
+        uniform1=None,
         # cropping
         crop_poly=None,
         thresh_in=None,
@@ -165,6 +167,8 @@ class Mesh2D(ds.DataStock):
             # rectangular
             domain=domain,
             res=res,
+            uniform0=uniform0,
+            uniform1=uniform1,
             # defined from pre-existing bsplines
             subkey0=subkey0,
             subkey1=subkey1,
