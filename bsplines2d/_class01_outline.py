@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 
 
+import itertools as itt
+
+
 # Common
 import numpy as np
 import datastock as ds
@@ -139,14 +142,16 @@ def _rect_outline(coll=None, key=None, plot_debug=None):
         i0min, i1min = i0.min(), i1.min()
         i0max, i1max = i0.max(), i1.max()
 
-        # get indices of edge knots
-        iok = (ic0 >= 0) & (ic1 >= 0)
-        ind0 = np.array([
-            np.any(~crop[ic0[ii, iok[ii, :]], ic1[ii, iok[ii, :]]])
-            for ii in range(i0.size)
-        ])
+        # find indices of all knots adjacent to at least one excluded cent
+        ind0 = np.zeros(i0.shape, dtype=bool)
+        linds = [range(ss) for ss in i0.shape]
+        for ind in itt.product(*linds):
+            sli = tuple(list(ind) + [slice(None)])
+            iok = (ic0[sli] >= 0) & (ic1[sli] >= 0)
+            sli = tuple(list(ind) + [iok])
+            ind0[ind] = np.any(~crop[ic0[sli], ic1[sli]])
 
-        # get subest of extreme coordinates
+        # get subset of extreme coordinates
         ind = (
             ind0
             | (i0 == i0min) | (i0 == i0max)
