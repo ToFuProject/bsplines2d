@@ -1112,7 +1112,7 @@ def _plot_profile2d_polar_add_radial(
         lk = [f'{key}_radial']
         collax.add_data(key=lk[0], data=radial, ref=ref)
         if plot_details is True:
-            lkdet = [f'{key}_radial-detail-{ii}' for ii in range(nbs)]
+            lkdet = [f'{key}_radial_detail_{ii}' for ii in range(nbs)]
             for ii in range(nbs):
                 collax.add_data(
                     key=lkdet[ii], data=radial_details[..., ii], ref=refdet,

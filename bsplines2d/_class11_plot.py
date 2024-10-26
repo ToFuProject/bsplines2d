@@ -624,7 +624,7 @@ def _plot_profile2d_polar_add_radial(
     if angle is None:
         lk = ['radial']
         dax.add_data(key=lk[0], data=radial, ref=ref)
-        lkdet = [f'radial-detail-{ii}' for ii in range(nbs)]
+        lkdet = [f'radial_detail_{ii}' for ii in range(nbs)]
         for ii in range(nbs):
             dax.add_data(
                 key=lkdet[ii], data=radial_details[..., ii], ref=refdet,
