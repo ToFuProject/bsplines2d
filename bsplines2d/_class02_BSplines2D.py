@@ -1231,3 +1231,5 @@ class BSplines2D(Previous):
         # restore bsplines-specific
 
         _saveload.restore_bsplines(self, dclas=dclas)
+
+        return out
