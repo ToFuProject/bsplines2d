@@ -994,7 +994,8 @@ def _interp(
 
     # loop on keys
     derr = {}
-    clas = coll.dobj[coll._which_bsplines][keybs]['class']
+    wbs = coll._which_bsplines
+    clas = coll.dobj[wbs][keybs]['class']
     for ii, k0 in enumerate(keys):
 
         try:
