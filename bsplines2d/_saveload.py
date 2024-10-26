@@ -22,10 +22,27 @@ def prepare_bsplines(coll=None):
 
     wbs = coll._which_bsplines
 
+    dclas = {}
     lkbs = list(coll.dobj.get(wbs, {}).keys())
     for kbs in lkbs:
+        dclas[kbs] = coll._dobj[wbs][kbs]['class']
         coll._dobj[wbs][kbs]['class'] = None
 
+    return dclas
+
+
+def restore_bsplines(coll=None, dclas=None):
+
+    # -----------------
+    # Remove classes
+
+    wbs = coll._which_bsplines
+
+    lkbs = list(coll.dobj.get(wbs, {}).keys())
+    for kbs in lkbs:
+        coll._dobj[wbs][kbs]['class'] = dclas[kbs]
+
+    return
 
 
 # ############################################################
