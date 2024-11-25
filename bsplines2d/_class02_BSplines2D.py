@@ -1214,15 +1214,22 @@ class BSplines2D(Previous):
         # ------------------------------
         # bsplines-specific preparation
 
-        _saveload.prepare_bsplines(self)
+        dclas = _saveload.prepare_bsplines(self)
 
         # ---------------------
         # call inherited method
 
-        return super().save(
+        out = super().save(
             path=path,
             name=name,
             sep=sep,
             verb=verb,
             return_pfe=return_pfe,
         )
+
+        # ------------------------------
+        # restore bsplines-specific
+
+        _saveload.restore_bsplines(self, dclas=dclas)
+
+        return out
