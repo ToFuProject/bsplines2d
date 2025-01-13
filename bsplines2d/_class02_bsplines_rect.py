@@ -41,8 +41,12 @@ else:
             np.array([t.size], dtype=np.int32),
             np.array([k], dtype=np.int32),
             np.array([nu], dtype=np.int32),
-            extrapolate, c, num_c_tr,
-            strides_c1, indices_k1d, out,
+            extrapolate,
+            c.ravel(),
+            num_c_tr,
+            strides_c1,
+            indices_k1d,
+            out,
         )
 
 
