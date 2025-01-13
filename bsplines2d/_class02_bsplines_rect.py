@@ -3,6 +3,7 @@
 
 # Built-in
 import itertools as itt
+import warnings
 
 
 # Common
@@ -13,6 +14,40 @@ import scipy.interpolate as scpinterp
 # specific
 from . import _utils_bsplines
 from . import _class02_bsplines_operators_rect
+
+
+if hasattr(scpinterp._bspl, 'evaluate_spline'):
+    evaluate_spline = scpinterp._bspl.evaluate_spline
+
+else:
+    msg = (
+        "\n\n"
+        "bsplines2d using a new version of scipy"
+        " with no scpinterp._bspl.evaluate_spline()\n"
+        "Instead using scpinterp._bspl.evaluate_ndspline()\n"
+        "Prototypal and not thoroughly tested!\n"
+    )
+    warnings.warn(msg)
+
+    def evaluate_spline(t, c, k, xp, nu, extrapolate, out):
+        ndim = 1
+        c1 = c.reshape(c.shape[:ndim] + (-1,))
+        num_c_tr = c1.shape[-1]
+        strides_c1 = [stride // c.dtype.itemsize for stride in c.strides]
+        indices_k1d = np.unravel_index(np.arange((k+1)**ndim), (k+1,)*ndim)[0][:, None]
+        return scpinterp._bspl.evaluate_ndbspline(
+            xp[:, None],
+            t[None, :],
+            np.array([t.size], dtype=np.int32),
+            np.array([k], dtype=np.int32),
+            np.array([nu], dtype=np.int32),
+            extrapolate,
+            c.ravel(),
+            num_c_tr,
+            np.array(strides_c1, dtype=np.intp),
+            indices_k1d,
+            out,
+        )
 
 
 # ################################################################
@@ -256,7 +291,7 @@ class BivariateSplineRect(scpinterp.BivariateSpline):
 
         for iz in iz_u:
 
-            scpinterp._bspl.evaluate_spline(
+            evaluate_spline(
                 self.knots_per_bs_x1_pad[:, iz],
                 coef,
                 self.degrees[1],
@@ -285,7 +320,7 @@ class BivariateSplineRect(scpinterp.BivariateSpline):
 
                 out0 = np.full((indok1.sum(), 1), np.nan)
 
-                scpinterp._bspl.evaluate_spline(
+                evaluate_spline(
                     self.knots_per_bs_x0_pad[:, ii0],
                     coef,
                     self.degrees[0],
