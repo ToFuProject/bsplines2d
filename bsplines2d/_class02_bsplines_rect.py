@@ -44,7 +44,7 @@ else:
             extrapolate,
             c.ravel(),
             num_c_tr,
-            strides_c1,
+            np.array(strides_c1, dtype=np.int32),
             indices_k1d,
             out,
         )
