@@ -34,7 +34,7 @@ else:
         c1 = c.reshape(c.shape[:ndim] + (-1,))
         num_c_tr = c1.shape[-1]
         strides_c1 = [stride // c.dtype.itemsize for stride in c.strides]
-        indices_k1d = np.unravel_index(np.arange((k+1)**ndim), (k+1,)*ndim)
+        indices_k1d = np.unravel_index(np.arange((k+1)**ndim), (k+1,)*ndim)[0][:, None]
         return scpinterp._bspl.evaluate_ndbspline(
             xp[:, None],
             t[None, :],
