@@ -1204,9 +1204,11 @@ class BSplines2D(Previous):
 
     def save(
         self,
+        pfe=None,
         path=None,
         name=None,
         sep=None,
+        overwrite=None,
         verb=True,
         return_pfe=False,
     ):
@@ -1220,9 +1222,11 @@ class BSplines2D(Previous):
         # call inherited method
 
         out = super().save(
+            pfe=pfe,
             path=path,
             name=name,
             sep=sep,
+            overwrite=overwrite,
             verb=verb,
             return_pfe=return_pfe,
         )
