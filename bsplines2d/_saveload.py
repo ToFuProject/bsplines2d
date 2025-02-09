@@ -54,6 +54,7 @@ def restore_bsplines(coll=None, dclas=None):
 def load(
     pfe=None,
     cls=None,
+    coll=None,
     allow_pickle=None,
     sep=None,
     verb=None,
@@ -71,6 +72,7 @@ def load(
     coll = ds.load(
         pfe=pfe,
         cls=cls,
+        coll=coll,
         allow_pickle=allow_pickle,
         sep=sep,
         verb=verb,

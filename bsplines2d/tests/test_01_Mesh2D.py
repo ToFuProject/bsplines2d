@@ -375,3 +375,18 @@ class Test01_BSplines2D():
 
         # equal
         assert self.bs == out
+
+    def test60_saveload_coll(self):
+
+        # save
+        pfe = self.bs.save(return_pfe=True)
+
+        # load
+        coll = BSplines2D()
+        coll = _saveload.load(pfe, coll=coll)
+
+        # remove file
+        os.remove(pfe)
+
+        # equal
+        assert self.bs == coll

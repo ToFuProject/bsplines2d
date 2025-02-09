@@ -123,7 +123,7 @@ setup(
         "matplotlib",
         "astropy",
         "contourpy",
-        "datastock>=0.0.42",
+        "datastock>=0.0.44",
     ],
     python_requires=">=3.6",
 
