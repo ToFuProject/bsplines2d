@@ -4,4 +4,4 @@ scipy
 matplotlib
 astropy
 contourpy
-datastock>=0.0.43
+datastock>=0.0.44
