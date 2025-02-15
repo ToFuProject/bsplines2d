@@ -143,6 +143,69 @@ def _add_tri_delaunay(bsplines, key=None):
 
 #######################################################
 #
+#     mesh outlines
+#
+#######################################################
+
+
+def _get_mesh_outline_rect(coll):
+
+    # -----------------------------
+    # check existence of mesh rect
+    # -----------------------------
+
+    wm = coll._which_mesh
+    lm = [
+        k0 for k0, v0 in coll.dobj.get(wm, {}).items()
+        if v0['type'] == 'rect'
+    ]
+    if len(lm) == 0:
+        _add_rect_uniform(coll)
+        lm = lm = [
+            k0 for k0, v0 in coll.dobj.get(wm, {}).items()
+            if v0['type'] == 'rect'
+        ]
+
+    # -----------------------------
+    # get outline
+    # -----------------------------
+
+    for km in lm:
+        dout = coll.get_mesh_outline(key=km)
+
+    return
+
+
+def _get_mesh_outline_tri(coll):
+
+    # -----------------------------
+    # check existence of mesh rect
+    # -----------------------------
+
+    wm = coll._which_mesh
+    lm = [
+        k0 for k0, v0 in coll.dobj.get(wm, {}).items()
+        if v0['type'] == 'tri'
+    ]
+    if len(lm) == 0:
+        _add_tri_ntri1(coll)
+        lm = lm = [
+            k0 for k0, v0 in coll.dobj.get(wm, {}).items()
+            if v0['type'] == 'tri'
+        ]
+
+    # -----------------------------
+    # get outline
+    # -----------------------------
+
+    for km in lm:
+        dout = coll.get_mesh_outline(key=km)
+
+    return
+
+
+#######################################################
+#
 #     Add variable meshes
 #
 #######################################################
