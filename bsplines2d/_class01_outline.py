@@ -15,10 +15,16 @@ import datastock as ds
 # ###############################################################
 
 
-def _get_outline(coll=None, key=None, closed=None, plot_debug=None):
+def _get_outline(
+    coll=None,
+    key=None,
+    closed=None,
+    plot_debug=None,
+):
 
     # ------------
     # check inputs
+    # ------------
 
     # key
     wm = coll._which_mesh
@@ -51,32 +57,65 @@ def _get_outline(coll=None, key=None, closed=None, plot_debug=None):
 
     # ------------
     # compute
+    # ------------
 
     if mtype == 'rect':
-        x0, x1 = _rect_outline(
+        i0, i1, knots0, knots1 = _rect_outline(
             coll=coll,
             key=key,
             plot_debug=plot_debug,
         )
+
+        # close
+        if closed is True:
+            i0 = np.append(i0, i0[0])
+            i1 = np.append(i1, i1[0])
+
+        x0 = knots0[i0]
+        x1 = knots1[i1]
+
+        dout = {
+            'i0': {
+                'data': i0,
+                'units': None,
+                'dim': 'index',
+            },
+            'i1': {
+                'data': i1,
+                'units': None,
+                'dim': 'index',
+            },
+        }
 
     else:
-        x0, x1 = _tri_outline(
+        ind, knots0, knots1 = _tri_outline(
             coll=coll,
             key=key,
             plot_debug=plot_debug,
         )
 
-    # close
-    if closed is True:
-        x0 = np.append(x0, x0[0])
-        x1 = np.append(x1, x1[0])
+        # close
+        if closed is True:
+            ind = np.append(ind, ind[0])
+
+        x0 = knots0[ind]
+        x1 = knots1[ind]
+
+        dout = {
+            'ind': {
+                'data': ind,
+                'units': None,
+                'dim': 'index',
+            },
+        }
 
     # -------------
     # format output
+    # -------------
 
     k0, k1 = coll.dobj[wm][key]['knots']
 
-    dout = {
+    dout.update({
         'x0': {
             'data': x0,
             'units': coll.ddata[k0]['units'],
@@ -91,7 +130,7 @@ def _get_outline(coll=None, key=None, closed=None, plot_debug=None):
             'name': coll.ddata[k1]['name'],
             'quant': coll.ddata[k1]['quant'],
         },
-    }
+    })
 
     return dout
 
@@ -121,10 +160,11 @@ def _rect_outline(coll=None, key=None, plot_debug=None):
     # compute
 
     if crop is False:
-        x0min, x0max = knots0.min(), knots0.max()
-        x1min, x1max = knots1.min(), knots1.max()
-        x0 = np.r_[x0min, x0max, x0max, x0min]
-        x1 = np.r_[x1min, x1min, x1max, x1max]
+        i0min, i0max = np.argmin(knots0), np.argmax(knots0)
+        i1min, i1max = np.argmin(knots1), np.argmax(knots1)
+
+        i0 = np.r_[i0min, i0max, i0max, i0min]
+        i1 = np.r_[i1min, i1min, i1max, i1max]
 
     else:
         crop = coll.ddata[crop]['data']
@@ -237,10 +277,8 @@ def _rect_outline(coll=None, key=None, plot_debug=None):
             lp.append(pp)
 
         i0, i1 = np.array(lp).T
-        x0 = knots0[i0]
-        x1 = knots1[i1]
 
-    return x0, x1
+    return i0, i1, knots0, knots1
 
 
 def _next_pp(
@@ -331,5 +369,100 @@ def _next_pp(
 
 def _tri_outline(coll=None, key=None, plot_debug=None):
 
-    msg = "outline not implemented yet for triangular meshes"
-    raise NotImplementedError(msg)
+    # ----------
+    # prepare
+    # ----------
+
+    wm = coll._which_mesh
+
+    # knots
+    k0, k1 = coll.dobj[wm][key]['knots']
+    knots0 = coll.ddata[k0]['data']
+    knots1 = coll.ddata[k1]['data']
+
+    # indices
+    ind = coll.ddata[coll.dobj[wm][key]['ind']]['data']
+
+    # crop (not implemented for triangulare meshes)
+    # crop = coll.dobj[wm][key]['crop']
+
+    # -----------------------
+    # compute
+    # method: check if each segment belongs to 1 or 2 triangles
+    # -----------------------
+
+    # ---------------------
+    # get all segments
+
+    seg = np.array([
+        np.sort(ind[:, :-1], axis=1),
+        np.sort(ind[:, ::2], axis=1),
+        np.sort(ind[:, 1:], axis=1),
+    ])
+
+    # ---------------------
+    # list unique segments
+
+    useg = np.unique(np.concatenate(seg, axis=0), axis=0)
+
+    # ---------------------
+    # nb of triangles
+
+    ntri = np.array([
+        np.any(np.all(seg == ss[None, None, :], axis=-1), axis=0).sum()
+        for ss in useg
+    ])
+
+    # safety checks
+    iout = (ntri != 1) & (ntri != 2)
+    if np.any(iout):
+        msg = (
+            f"Outline of triangular mesh '{key}':\n"
+            "Some segments in ntri are use not 1 or 2:\n"
+            f"{iout.nonzero()[0]}"
+        )
+        raise Exception(msg)
+
+    # --------------
+    # seg_outline
+
+    seg_out = useg[ntri == 1]
+
+    # each node used exacty twice
+    nodu, counts = np.unique(seg_out.ravel(), return_counts=True)
+    iout = counts != 2
+    if np.any(iout):
+        lstr = [f"\t- {nodu[ii]}" for ii in iout.nonzero()[0]]
+        msg = (
+            f"Outline of triangular mesh '{key}':\n"
+            "Some nodes in seg_out are not used exactly twice!\n"
+            + "\n".join(lstr)
+        )
+        raise Exception(msg)
+
+    # check nb of outline segment == number of unique nodes
+    nnod = nodu.size
+    if seg_out.shape[0] != nnod:
+        msg = (
+            f"Outline of triangular mesh '{key}':\n"
+            "Nb. of outline segments does not match nb. of unique nodes\n"
+            f"\t- nb outline segments: {seg_out.shape[0]}\n"
+            f"\t- nb of unique nodes:  {nodu.size}\n"
+        )
+        raise Exception(msg)
+
+    # --------------
+    # order
+
+    iout = np.r_[seg_out[0, :], np.zeros((nodu.size-2,), dtype=int)]
+    iseg = np.arange(1, nnod)
+    for ii in range(2, nnod):
+
+        iok = seg_out[iseg, :] == iout[ii-1]
+        iokn = np.any(iok, axis=1).nonzero()[0][0]
+        isegi = iseg[iokn]
+
+        iout[ii] = seg_out[isegi, :][~iok[iokn, :]][0]
+        iseg = np.delete(iseg, iokn)
+
+    return iout, knots0, knots1
