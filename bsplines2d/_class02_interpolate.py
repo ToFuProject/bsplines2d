@@ -271,6 +271,7 @@ def interpolate(
         ddata, dout, dsh_other, sli_c, sli_x, sli_v,
         log_log, nan0, grid, ndim, xunique,
         returnas, return_params, store, inplace,
+        domain,
     ) = ds._class1_interpolate._check(
         coll=coll,
         # interpolation base
@@ -372,7 +373,7 @@ def interpolate(
 
     if xunique:
         # try:
-        ds._class1_interpolate._xunique(dout)
+        ds._class1_interpolate._xunique(dout, domain=domain)
         # except Exception as err:
         #     msg = (
         #         err.args[0]
