@@ -16,6 +16,7 @@ from . import _class02_checks as _checks
 from . import _class02_compute as _compute
 from . import _class02_contours as _contours
 from . import _class01_rect_cropping as _cropping
+from . import _class02_line_tracing as _line_tracing
 from . import _class02_interpolate as _interpolate
 from . import _class02_interpolate_all as _interpolate_all
 from . import _class02_operators as _operators
@@ -304,6 +305,83 @@ class BSplines2D(Previous):
             # output
             coll2=coll2,
             return_keys=return_keys,
+        )
+
+    # -----------------
+    # Vector field line tracing
+    # ------------------
+
+    def get_bsplines2d_vector_field_line_tracing(
+        self,
+        # 3 componants
+        key_XR=None,
+        key_YZ=None,
+        key_Zphi=None,
+        # domain
+        domain=None,
+        # linear vs toroidal
+        geometry=None,
+        # starting points
+        pts_X=None,
+        pts_Y=None,
+        pts_Z=None,
+        # length and resolution of lines
+        res=None,
+        length=None,
+        npts=None,
+        dl=None,
+        # direction
+        direct=None,
+        # solver options
+        dsolver=None,
+    ):
+        """ Perform field line tracing for a vector field
+
+        Vector field defined by 3 components, with same shape
+
+        Parameters
+        ----------
+        # 3 componants        key_XR : TYPE, optional
+            DESCRIPTION. The default is None.
+        key_YZ : TYPE, optional
+            DESCRIPTION. The default is None.
+        key_Zphi : TYPE, optional
+            DESCRIPTION. The default is None.
+        # linear vs toroidal        geometry : TYPE, optional
+            DESCRIPTION. The default is None.
+        # options : TYPE
+            DESCRIPTION.
+
+        Returns
+        -------
+        TYPE
+            DESCRIPTION.
+
+        """
+
+        return _line_tracing.main(
+            coll=self,
+            # 3 componants
+            key_XR=key_XR,
+            key_YZ=key_YZ,
+            key_Zphi=key_Zphi,
+            # domain
+            domain=domain,
+            # linear vs toroidal
+            geometry=geometry,
+            # starting points
+            pts_X=pts_X,
+            pts_Y=pts_Y,
+            pts_Z=pts_Z,
+            # length and resolution of lines
+            res=res,
+            length=length,
+            npts=npts,
+            dl=dl,
+            # direction
+            direct=direct,
+            # solver options
+            dsolver=dsolver,
         )
 
 
