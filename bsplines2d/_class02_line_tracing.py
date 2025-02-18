@@ -717,10 +717,13 @@ def _prepare_output(
     # -------------
 
     if len(direct) == 1:
-        dl_full = dl
+        if 'bck' in direct:
+            dl_full = -dl
+        else:
+            dl_full = dl
 
     else:
-        dl_full = np.r_[dl[:0:-1], dl]
+        dl_full = np.r_[-dl[:0:-1], dl]
     assert dl_full.size == npts_full
 
     # -------------
@@ -1017,31 +1020,57 @@ def _add_dphi(
     phi = np.arctan2(dout['pts_Y']['data'], dout['pts_X']['data'])
 
     # ------------
-    # get i0
+    # get nturns
     # ------------
 
     if len(direct) == 2:
         i0 = npts - 1
 
+        sli_bck = tuple([
+            slice(i0, None, -1) if ii == axis else slice(None)
+            for ii in range(phi.ndim)
+        ])
+        sli_fwd = tuple([
+            slice(i0, None, 1) if ii == axis else slice(None)
+            for ii in range(phi.ndim)
+        ])
+        nturns_fwd = _add_turns(phi[sli_fwd], axis=axis)
+        nturns_bck = _add_turns(phi[sli_bck], axis=axis)
+
+        sli_rev = tuple([
+            slice(None, 0, -1) if ii == axis else slice(None)
+            for ii in range(phi.ndim)
+        ])
+        nturns = np.concatenate(
+            (nturns_bck[sli_rev], nturns_fwd),
+            axis=axis,
+        )
+
     else:
         i0 = 0
-        nturns = _add_turns(phi axis=axis)
-        dphi = (phi - phi[sli0]) + nturns * 2*np.pi
+        nturns = _add_turns(phi, axis=axis)
 
-    # ------------
-    # compute
-    # ------------
+    # -----------------
+    # derive dphi
+    # -----------------
 
+    sli0 = tuple([
+        slice(i0, i0+1) if ii == axis else slice(None)
+        for ii in range(phi.ndim)
+    ])
+    dphi = (phi - phi[sli0]) + nturns * 2*np.pi
 
     # ------------
     # store
     # ------------
 
     dout.update({
-        'dphi': dphi,
-        'units': 'rad',
-        'ref': dout['pts_X']['ref'],
-        'dim': 'angle',
+        'dphi': {
+            'data': dphi,
+            'units': 'rad',
+            'ref': dout['pts_X']['ref'],
+            'dim': 'angle',
+        }
     })
 
     return
@@ -1050,11 +1079,16 @@ def _add_dphi(
 def _add_turns(phi, axis=None):
 
     dphi = np.diff(phi, axis=axis)
-    dd =
 
-    cross = np.zeros()
-    ind = dphi * sign < 0
-    cross[ind] = 1
+    sli0 = tuple([
+        slice(0, 1) if ii == axis else slice(None)
+        for ii in range(dphi.ndim)
+    ])
+    sign = np.sign(dphi[sli0])
 
+    ind = np.concatenate(
+        (np.zeros(sign.shape), dphi * sign < 0),
+        axis=axis,
+    )
 
-    return np.cumsum(cross, axis=axis)
+    return sign * np.cumsum(ind, axis=axis)
