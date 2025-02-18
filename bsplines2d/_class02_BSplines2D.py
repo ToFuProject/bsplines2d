@@ -317,13 +317,23 @@ class BSplines2D(Previous):
         key_XR=None,
         key_YZ=None,
         key_Zphi=None,
+        # domain
+        domain=None,
         # linear vs toroidal
         geometry=None,
         # starting points
         pts_X=None,
         pts_Y=None,
         pts_Z=None,
-        # options
+        # length and resolution of lines
+        res=None,
+        length=None,
+        npts=None,
+        dl=None,
+        # direction
+        direct=None,
+        # solver options
+        dsolver=None,
     ):
         """ Perform field line tracing for a vector field
 
@@ -355,13 +365,23 @@ class BSplines2D(Previous):
             key_XR=key_XR,
             key_YZ=key_YZ,
             key_Zphi=key_Zphi,
+            # domain
+            domain=domain,
             # linear vs toroidal
             geometry=geometry,
             # starting points
             pts_X=pts_X,
             pts_Y=pts_Y,
             pts_Z=pts_Z,
-            # options
+            # length and resolution of lines
+            res=res,
+            length=length,
+            npts=npts,
+            dl=dl,
+            # direction
+            direct=direct,
+            # solver options
+            dsolver=dsolver,
         )
 
 
