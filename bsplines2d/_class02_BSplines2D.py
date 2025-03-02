@@ -295,6 +295,7 @@ class BSplines2D(Previous):
             inplace=inplace,
             return_keys=True,
         )
+
         return _compute.extract(
             coll=self,
             keys=keys,
