@@ -15,7 +15,7 @@ from . import _class01_select as _select
 from . import _class02_checks as _checks
 from . import _class02_compute as _compute
 from . import _class02_contours as _contours
-from . import _class01_rect_cropping as _cropping
+from . import _class01_cropping as _cropping
 from . import _class02_line_tracing as _line_tracing
 from . import _class02_interpolate as _interpolate
 from . import _class02_interpolate_all as _interpolate_all
