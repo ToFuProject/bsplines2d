@@ -8,6 +8,7 @@ import warnings
 # Common
 import numpy as np
 from matplotlib.tri import Triangulation as mplTri
+from matplotlib.path import Path
 import scipy.spatial as scpsp
 import datastock as ds
 
@@ -31,9 +32,12 @@ def check(
     # from pts
     pts_x0=None,
     pts_x1=None,
+    crop_poly=None,
     # names of coords
     knots0_name=None,
     knots1_name=None,
+    # crop poly
+    poly=None,
     # attributes
     **kwdargs,
 ):
@@ -82,6 +86,41 @@ def check(
 
     cents0 = np.mean(knots[indices, 0], axis=1)
     cents1 = np.mean(knots[indices, 1], axis=1)
+
+    # -------------
+    # crop_poly
+
+    if poly is not None:
+        # tri => eliminate mesh elements definitively
+        # only keep track of crop_bs
+
+        c0 = (
+            isinstance(poly, np.ndarray)
+            and poly.ndim == 2
+            and poly.shape[0] == 2
+        )
+        if not c0:
+            msg = (
+                "Arg 'crop_poly' for tri mesh must be a (npts, 2) array!\n"
+                "Must contain 2d coordinates of a polygon"
+                f"Provided:\n{poly}\n"
+            )
+            raise Exception(msg)
+
+        pts = np.array([cents0, cents1]).T
+        keep = Path(poly.T).contains_points(pts)
+
+        if not np.all(keep):
+            knots, indices = _remove_unused_knots(knots, indices, keep)
+
+            knots, indices, ntri = _check_knotscents(
+                key=key,
+                knots=knots,
+                indices=indices,
+            )
+
+            cents0 = np.mean(knots[indices, 0], axis=1)
+            cents1 = np.mean(knots[indices, 1], axis=1)
 
     # --------------
     # to dict
@@ -351,6 +390,23 @@ def _mesh2DTri_conformity(knots=None, indices=None, key=None):
     return indices, knots
 
 
+def _remove_unused_knots(knots, indices, keep):
+
+    # unique knots still needed
+    indu = np.unique(indices[keep, :])
+
+    # cumulated differences in indices
+    keep_pts = np.in1d(np.arange(knots.shape[0]), indu)
+    icum = np.cumsum(~keep_pts)
+
+    # update
+    knots = knots[indu, :]
+    indices = indices - icum[indices]
+    indices = indices[keep, :]
+
+    return knots, indices
+
+
 def _mesh2DTri_ccw(knots=None, indices=None, key=None):
 
     x, y = knots[indices, 0], knots[indices, 1]
@@ -496,8 +552,8 @@ def _to_dict(
                 'ind': kii,
                 # 'ref-k': (kk,),
                 # 'ref-c': (kc,),
-                'shape-c': (indices.shape[0],),
-                'shape-k': (knots.shape[0],),
+                'shape_c': (indices.shape[0],),
+                'shape_k': (knots.shape[0],),
                 'crop': False,
             },
         }
