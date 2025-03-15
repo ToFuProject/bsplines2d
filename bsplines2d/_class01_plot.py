@@ -507,7 +507,7 @@ def _plot_mesh_prepare_2d_tri(
     # # contour of angle if angle not None
 
     # contRang, contZang, ang, refang = None, None, None, None
-    # if len(coll.dobj[coll._which_mesh][key]['shape-c']) == 2:
+    # if len(coll.dobj[coll._which_mesh][key]['shape_c']) == 2:
         # # create rectangular grid and compute radius at each point
         # k2d = coll.dobj[coll._which_mesh][key]['angle2d']
         # (

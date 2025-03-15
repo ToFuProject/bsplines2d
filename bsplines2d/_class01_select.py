@@ -59,7 +59,7 @@ def _select_ind(
     shape2d = None
     if cat == coll._which_mesh:
         key = km
-        shape2d = len(coll.dobj[cat][key]['shape-c']) == 2
+        shape2d = len(coll.dobj[cat][key]['shape_c']) == 2
     else:
         key = keybs
         shape2d = len(coll.dobj[cat][key]['shape']) == 2
@@ -78,13 +78,13 @@ def _select_ind(
 
     if shape2d:
         if cat == coll._which_mesh:
-            ke = f'shape-{elem[0]}'
+            ke = f'shape_{elem[0]}'
             nR, nZ = coll.dobj[cat][key][ke]
         else:
             nR, nZ = coll.dobj[cat][key]['shape']
     else:
         if cat == coll._which_mesh:
-            ke = f'shape-{elem[0]}'
+            ke = f'shape_{elem[0]}'
             nelem = coll.dobj[cat][key][ke][0]
         else:
             nelem = coll.dobj[cat][key]['shape'][0]

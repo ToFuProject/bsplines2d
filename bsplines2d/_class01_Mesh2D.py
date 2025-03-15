@@ -13,7 +13,7 @@ from . import _class01_checks_2d_tri as _checks_2d_tri
 # from . import _class01_checks_2d_polar as _checks_2d_polar
 
 
-from . import _class01_rect_cropping as _cropping
+from . import _class01_cropping as _cropping
 from . import _class01_select as _select
 from . import _class01_sample as _sample
 from . import _class01_outline as _outline
@@ -42,12 +42,12 @@ class Mesh2D(ds.DataStock):
             'type',
             'variable',
             'crop',
-            'crop-thresh',
+            'crop_thresh',
             'ntri',
             'knots',
             'cents',
-            'shape-k',
-            'shape-c',
+            'shape_k',
+            'shape_c',
             'ind',
             'subkey',
             f'nb {_which_bsplines}',
@@ -202,6 +202,10 @@ class Mesh2D(ds.DataStock):
         # from points and polygon
         pts_x0=None,
         pts_x1=None,
+        # cropping
+        crop_poly=None,
+        thresh_in=None,
+        remove_isolated=None,
         # direct addition of bsplines
         deg=None,
         **kwdargs,
@@ -216,6 +220,15 @@ class Mesh2D(ds.DataStock):
 
         """
 
+        # get domain, poly from crop_poly
+        if crop_poly is not None:
+            poly = _checks_2d_rect._from_croppoly(
+                crop_poly=crop_poly,
+                domain=None,
+            )[1]
+        else:
+            poly = None
+
         # check input data and get input dicts
         key, dref, ddata, dobj = _checks_2d_tri.check(
             coll=self,
@@ -227,6 +240,8 @@ class Mesh2D(ds.DataStock):
             # from pts and polygon
             pts_x0=pts_x0,
             pts_x1=pts_x1,
+            # crop poly
+            poly=poly,
             # others
             **kwdargs,
         )
@@ -347,6 +362,7 @@ class Mesh2D(ds.DataStock):
         If applied on a bspline, cropping is double-checked to make sure
         all remaining bsplines have full support domain
         """
+
         crop, key, thresh_in = _cropping.crop(
             coll=self,
             key=key,
@@ -356,11 +372,18 @@ class Mesh2D(ds.DataStock):
         )
 
         # add crop data
+        wm = self._which_mesh
+        mtype = self.dobj[wm][key]['type']
+
         keycrop = f'{key}_crop'
-        ref = tuple([
-            self._ddata[k0]['ref'][0]
-            for k0 in self._dobj[self._which_mesh][key]['cents']
-        ])
+        if mtype == 'rect':
+            ref = tuple([
+                self._ddata[k0]['ref'][0]
+                for k0 in self._dobj[wm][key]['cents']
+            ])
+        else:
+            ref = self.ddata[self.dobj[wm][key]['cents'][0]]['ref']
+
         self.add_data(
             key=keycrop,
             data=crop,
@@ -370,8 +393,8 @@ class Mesh2D(ds.DataStock):
         )
 
         # update obj
-        self._dobj[self._which_mesh][key]['crop'] = keycrop
-        self._dobj[self._which_mesh][key]['crop-thresh'] = thresh_in
+        self._dobj[wm][key]['crop'] = keycrop
+        self._dobj[wm][key]['crop_thresh'] = thresh_in
 
         # safety check
         self.get_mesh_outline(key, plot_debug=True)

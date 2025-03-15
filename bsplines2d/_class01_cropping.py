@@ -55,65 +55,87 @@ def crop(
 
     # ------------
     # check inputs
+    # ------------
 
-    key, cropbool, thresh_in, remove_isolated = _crop_check(
+    key, mtype, cropbool, thresh_in, remove_isolated = _crop_check(
         coll=coll, key=key, crop=crop, thresh_in=thresh_in,
         remove_isolated=remove_isolated,
     )
 
     # -----------
     # if crop is a poly => compute as bool
+    # -----------
 
     if not cropbool:
 
-        (Rc, Zc), (Rk, Zk) = coll.select_mesh_elements(
-            key=key,
-            elements='cents',
-            return_neighbours=True,
-            returnas='data',
-        )
+        # --------------
+        # rect
 
-        nR, nZ = Rc.shape
-        npts = Rk.shape[-1] + 1
+        if mtype == 'rect':
 
-        pts = np.concatenate(
-            (
-                np.concatenate((Rc[:, :, None], Rk), axis=-1)[..., None],
-                np.concatenate((Zc[:, :, None], Zk), axis=-1)[..., None],
-            ),
-            axis=-1,
-        ).reshape((npts*nR*nZ, 2))
+            (Rc, Zc), (Rk, Zk) = coll.select_mesh_elements(
+                key=key,
+                elements='cents',
+                return_neighbours=True,
+                returnas='data',
+            )
 
-        isin = Path(crop.T).contains_points(pts).reshape((nR, nZ, npts))
-        crop = np.sum(isin, axis=-1) >= thresh_in
+            nR, nZ = Rc.shape
+            npts = Rk.shape[-1] + 1
 
-        # Remove isolated pixelsi
-        if remove_isolated is True:
-            # All pixels should have at least one neighbour in R and one in Z
-            # This constraint is useful for discrete gradient evaluation (D1N2)
-            crop0 = crop
-            while True:
+            pts = np.concatenate(
+                (
+                    np.concatenate((Rc[:, :, None], Rk), axis=-1)[..., None],
+                    np.concatenate((Zc[:, :, None], Zk), axis=-1)[..., None],
+                ),
+                axis=-1,
+            ).reshape((npts*nR*nZ, 2))
 
-                # neighR
-                neighR = np.copy(crop0)
-                neighR[0, :] &= neighR[1, :]
-                neighR[-1, :] &= neighR[-2, :]
-                neighR[1:-1, :] &= (neighR[:-2, :] | neighR[2:, :])
+            isin = Path(crop.T).contains_points(pts).reshape((nR, nZ, npts))
+            crop = np.sum(isin, axis=-1) >= thresh_in
 
-                # neighZ
-                neighZ = np.copy(crop0)
-                neighZ[:, 0] &= neighZ[:, 1]
-                neighZ[:, -1] &= neighZ[:, -2]
-                neighZ[:, 1:-1] &= (neighZ[:, :-2] | neighZ[:, 2:])
+            # Remove isolated pixelsi
+            if remove_isolated is True:
+                # All pixels should have at least one neighbour in R and one in Z
+                # This constraint is useful for discrete gradient evaluation (D1N2)
+                crop0 = crop
+                while True:
 
-                # overall
-                crop = neighR & neighZ
+                    # neighR
+                    neighR = np.copy(crop0)
+                    neighR[0, :] &= neighR[1, :]
+                    neighR[-1, :] &= neighR[-2, :]
+                    neighR[1:-1, :] &= (neighR[:-2, :] | neighR[2:, :])
 
-                # stop or continue
-                if np.all(crop[crop0]):
-                    break
-                else:
-                    crop0 = crop
+                    # neighZ
+                    neighZ = np.copy(crop0)
+                    neighZ[:, 0] &= neighZ[:, 1]
+                    neighZ[:, -1] &= neighZ[:, -2]
+                    neighZ[:, 1:-1] &= (neighZ[:, :-2] | neighZ[:, 2:])
+
+                    # overall
+                    crop = neighR & neighZ
+
+                    # stop or continue
+                    if np.all(crop[crop0]):
+                        break
+                    else:
+                        crop0 = crop
+
+        # --------------
+        # tri
+
+        else:
+
+            Rc, Zc = coll.select_mesh_elements(
+                key=key,
+                elements='cents',
+                return_neighbours=False,
+                returnas='data',
+            )
+
+            pts = np.array([Rc, Zc]).T
+            crop = Path(crop.T).contains_points(pts)
 
     return crop, key, thresh_in
 
@@ -132,23 +154,31 @@ def _crop_check(
     remove_isolated=None,
 ):
 
+    # -----------
     # key
-    lkm = list(coll.dobj[coll._which_mesh].keys())
+    # -----------
+
+    wm = coll._which_mesh
+    lkm = list(coll.dobj[wm].keys())
     key = ds._generic_check._check_var(
         key, 'key',
         default=None,
         types=str,
         allowed=lkm,
     )
-    meshtype = coll.dobj[coll._which_mesh][key]['type']
+    meshtype = coll.dobj[wm][key]['type']
 
-    if meshtype != 'rect':
+    if meshtype not in ['rect', 'tri']:
         raise NotImplementedError()
 
     # shape
-    shape = coll.dobj[coll._which_mesh][key]['shape-c']
+    shape = coll.dobj[wm][key]['shape_c']
 
+    # -----------
     # crop
+    # -----------
+
+    # basic
     c0 = (
         isinstance(crop, np.ndarray)
         and crop.ndim == 2
@@ -179,9 +209,12 @@ def _crop_check(
     # thresh_in and maxth
     if thresh_in is None:
         thresh_in = 3
-    maxth = 5 if coll.dobj[coll._which_mesh][key]['type'] == 'rect' else 4
+    maxth = 5 if coll.dobj[wm][key]['type'] == 'rect' else 4
 
-    c0 = isinstance(thresh_in, (int, np.integer)) and (1 <= thresh_in <= maxth)
+    c0 = (
+        isinstance(thresh_in, (int, np.integer))
+        and (1 <= thresh_in <= maxth)
+    )
     if not c0:
         msg = (
             f"Arg thresh_in must be a int in 1 <= thresh_in <= {maxth}\n"
@@ -189,14 +222,17 @@ def _crop_check(
         )
         raise Exception(msg)
 
+    # ----------------
     # remove_isolated
+    # ----------------
+
     remove_isolated = ds._generic_check._check_var(
         remove_isolated, 'remove_isolated',
         default=True,
         types=bool,
     )
 
-    return key, cropbool, thresh_in, remove_isolated
+    return key, meshtype, cropbool, thresh_in, remove_isolated
 
 
 # #############################################################################
@@ -211,8 +247,11 @@ def add_cropbs_from_crop(coll=None, keybs=None, keym=None):
     # get
 
     kcropbs = False
-    if coll.dobj[coll._which_mesh][keym]['crop'] is not False:
-        kcropm = coll.dobj[coll._which_mesh][keym]['crop']
+    wm = coll._which_mesh
+    wbs = coll._which_bsplines
+
+    if coll.dobj[wm][keym]['crop'] is not False:
+        kcropm = coll.dobj[wm][keym]['crop']
         cropbs = _get_cropbs_from_crop(
             coll=coll,
             crop=coll.ddata[kcropm]['data'],
@@ -220,6 +259,9 @@ def add_cropbs_from_crop(coll=None, keybs=None, keym=None):
         )
         kcropbs = f'{keybs}_crop'
         kcroppedbs = f'{keybs}_nbs_crop'
+
+    elif coll.dobj[wm][keym]['type'] == 'tri':
+        kcropbs = f'{keybs}_crop'
 
     # ----------------
     # optional crop
@@ -235,11 +277,11 @@ def add_cropbs_from_crop(coll=None, keybs=None, keym=None):
         coll.add_data(
             key=kcropbs,
             data=cropbs,
-            ref=coll._dobj[coll._which_bsplines][keybs]['ref'],
+            ref=coll._dobj[wbs][keybs]['ref'],
             dim='bool',
             quant='bool',
         )
-        coll._dobj[coll._which_bsplines][keybs]['crop'] = kcropbs
+        coll._dobj[wbs][keybs]['crop'] = kcropbs
 
 
 # #############################################################################
@@ -253,28 +295,31 @@ def _get_cropbs_from_crop(coll=None, crop=None, keybs=None):
     if isinstance(crop, str) and crop in coll.ddata.keys():
         crop = coll.ddata[crop]['data']
 
-    shref = coll.dobj[coll._which_mesh][coll.dobj['bsplines'][keybs]['mesh']]['shape-c']
+    wm = coll._which_mesh
+    wbs = coll._which_bsplines
+
+    shref = coll.dobj[wm][coll.dobj[wbs][keybs][wm]]['shape_c']
     if crop.shape != shref:
         msg = "Arg crop seems to have the wrong shape!"
         raise Exception(msg)
 
-    keym = coll.dobj['bsplines'][keybs][coll._which_mesh]
-    kRk, kZk = coll.dobj['mesh'][keym]['knots']
-    kRc, kZc = coll.dobj['mesh'][keym]['cents']
+    keym = coll.dobj[wbs][keybs][coll._which_mesh]
+    kRk, kZk = coll.dobj[wm][keym]['knots']
+    kRc, kZc = coll.dobj[wm][keym]['cents']
 
     cents_per_bs_R, cents_per_bs_Z = _select._mesh2DRect_bsplines_knotscents(
         returnas='ind',
         return_knots=False,
         return_cents=True,
         ind=None,
-        deg=coll.dobj['bsplines'][keybs]['deg'],
+        deg=coll.dobj[wbs][keybs]['deg'],
         Rknots=coll.ddata[kRk]['data'],
         Zknots=coll.ddata[kZk]['data'],
         Rcents=coll.ddata[kRc]['data'],
         Zcents=coll.ddata[kZc]['data'],
     )
 
-    shapebs = coll.dobj['bsplines'][keybs]['shape']
+    shapebs = coll.dobj[wbs][keybs]['shape']
     cropbs = np.array([
         [
             np.all(crop[cents_per_bs_R[:, ii], cents_per_bs_Z[:, jj]])
