@@ -113,6 +113,10 @@ def _from_pts_poly(
     pts_x1=None,
 ):
 
+    # ----------
+    # check pts
+    # ----------
+
     pts_x0 = ds._generic_check._check_flat1darray(
         pts_x0, 'pts_x0',
         dtype=float,
@@ -126,17 +130,42 @@ def _from_pts_poly(
         can_be_None=False,
     )
 
-    # --------
+    # ----------
     # Delauney
+    # ----------
 
     knots = np.array([pts_x0, pts_x1]).T
 
-    delau = scpsp.Delaunay(
-        knots,
-        furthest_site=False,
-        incremental=False,
-        qhull_options='QJ',
-    )
+    # ------------------
+    # try 'QJ'
+    # => garantees that each input point appears as a vertex
+    try:
+        delau = scpsp.Delaunay(
+            knots,
+            furthest_site=False,
+            incremental=False,
+            qhull_options='QJ',
+        )
+        mplTri(knots[:, 0], knots[:, 1], delau.simplices).get_trifinder()
+
+    except RuntimeError:
+        delau = scpsp.Delaunay(
+            knots,
+            furthest_site=False,
+            incremental=False,
+            qhull_options='Qt',
+        )
+
+        # warning on left-over points
+        if delau.coplanar.shape[0] > 0:
+            msg = (
+                "The 'Qt' Delaunay triangulation leaves out those points:\n"
+                f"{np.unique(delau.coplanar)}\n"
+            )
+            warnings.warn(msg)
+
+    except Exception as err:
+        raise err
 
     return knots, delau.simplices
 
