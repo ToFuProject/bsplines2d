@@ -15,6 +15,7 @@ import datastock as ds
 
 # specific
 from . import _generic_mesh
+from . import _class01_checks_1d as _checks_1d
 
 
 # ################################################################
@@ -38,6 +39,9 @@ def check(
     knots1_name=None,
     # crop poly
     poly=None,
+    # defined from pre-existing bsplines
+    subkey0=None,
+    subkey1=None,
     # attributes
     **kwdargs,
 ):
@@ -122,6 +126,41 @@ def check(
             cents0 = np.mean(knots[indices, 0], axis=1)
             cents1 = np.mean(knots[indices, 1], axis=1)
 
+    # ------------------------
+    # depend on other bsplines
+
+    submesh0, subbs0, kwdargs = _checks_1d._defined_from(
+        coll=coll,
+        subkey=subkey0,
+        # parameters
+        kwdargs=kwdargs,
+        nd='2d',
+    )
+
+    submesh1, subbs1, kwdargs = _checks_1d._defined_from(
+        coll=coll,
+        subkey=subkey1,
+        # parameters
+        kwdargs=kwdargs,
+        nd='2d',
+    )
+
+    if subbs0 != subbs1:
+        msg = (
+            "Args subkey0 and subkey1 must be refering to "
+            "2 data defined on the same 2d bsplines\n"
+            "Provided:\n"
+            "\t- subkey0: {subkey0}\n"
+            "\t- subkey1: {subkey1}\n"
+            "\t- subbs0: {subbs0}\n"
+            "\t- subbs1: {subbs1}\n"
+        )
+        raise Exception(msg)
+
+    subbs = subbs0
+    submesh = submesh0
+
+
     # --------------
     # to dict
 
@@ -135,6 +174,11 @@ def check(
         ntri=ntri,
         knots0_name=knots0_name,
         knots1_name=knots1_name,
+        # sub quantity
+        subkey0=subkey0,
+        subkey1=subkey1,
+        subbs=subbs,
+        submesh=submesh,
         **kwdargs,
     )
 
@@ -224,7 +268,11 @@ def _check_knotscents(
     # ---------------------
     # check mesh conformity
 
-    indices, knots = _mesh2DTri_conformity(knots=knots, indices=indices, key=key)
+    indices, knots = _mesh2DTri_conformity(
+        knots=knots,
+        indices=indices,
+        key=key,
+    )
 
     # ---------------------------------------------
     # define triangular mesh and trifinder function
@@ -246,7 +294,11 @@ def _check_knotscents(
         indices = ind2
 
         # Re-check mesh conformity
-        indices, knots = _mesh2DTri_conformity(knots=knots, indices=indices, key=key)
+        indices, knots = _mesh2DTri_conformity(
+            knots=knots,
+            indices=indices,
+            key=key,
+        )
         indices = _mesh2DTri_ccw(knots=knots, indices=indices, key=key)
         ntri = 2
 
@@ -439,6 +491,11 @@ def _to_dict(
     # names of coords
     knots0_name=None,
     knots1_name=None,
+    # submesh
+    subkey0=None,
+    subkey1=None,
+    subbs=None,
+    submesh=None,
     # attributes
     **kwdargs,
 ):
@@ -480,6 +537,12 @@ def _to_dict(
     # attributes
     latt = ['dim', 'quant', 'name', 'units']
     dim, quant, name, units = _generic_mesh._get_kwdargs_2d(kwdargs, latt)
+
+    # subkey
+    if subkey0 is not None:
+        subkey = (subkey0, subkey1)
+    else:
+        subkey = None
 
     # -----------------
     # dict
@@ -555,6 +618,10 @@ def _to_dict(
                 'shape_c': (indices.shape[0],),
                 'shape_k': (knots.shape[0],),
                 'crop': False,
+                # submesh
+                'subkey': subkey,
+                'subbs': subbs,
+                'submesh': submesh,
             },
         }
     }
