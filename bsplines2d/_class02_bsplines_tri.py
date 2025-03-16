@@ -59,7 +59,7 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
             deg, 'deg',
             types=int,
             default=1,
-            allowed=[0, 1],
+            allowed=[0, 1, 2],
         )
 
         self.knots0 = knots0
@@ -88,11 +88,16 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
         elif deg == 1:
             nbs = self.nknots
         elif deg == 2:
-            raise NotImplementedError()
+            self.indices_bs = self._get_tri_bs().nonzero()[0]
+            nbs = self.indices_bs.size
 
         self.nbs = nbs
         self.shapebs = (nbs,)
         self.coefs = np.ones((nbs,), dtype=float)
+
+    # ----------------------
+    # preparatory functions
+    # ----------------------
 
     def _get_cents_per_knots(self):
         """ Return a (nknots, nmax) array of int indices
@@ -132,6 +137,35 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
             ) / base
 
         return heights
+
+    def _get_tri_bs(self):
+        """ Return indices of triangles at the edge
+
+         Return ind (nbs_edge,) array of int indices
+        """
+
+        # edge => 2 knots at the egde are part of only one triangle
+        inds = np.sort(self.indices, axis=1)
+        lind = [(0, 1), (1, 2), (0, 2)]
+        lcomb = np.concatenate(
+            tuple([inds[:, i2, None] for i2 in lind]),
+            axis=-1,
+        )
+
+        # check which
+        ibs = np.zeros(inds.shape[0], dtype=bool)
+        for ii in range(inds.shape[0]):
+            lnb = np.array([
+                np.sum(np.all(lcomb[ii:ii+1, :, iref:iref+1] == lcomb, axis=1))
+                for iref in range(3)
+            ])
+            ibs[ii] = np.all(lnb == 2)
+
+        return ibs
+
+    # ----------------------
+    # get coordinates of pts
+    # ----------------------
 
     def get_heights_per_centsknots_pts(self, x, y):
         """ Return the height of each knot in each cent
@@ -325,7 +359,11 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
             ])
 
         elif self.deg == 2:
-            raise NotImplementedError()
+            indbs = self.indices_bs[ind]
+            bs_cents = np.array([
+                np.mean(self.knots0[self.indices[indbs, :]], axis=1),
+                np.mean(self.knots1[self.indices[indbs, :]], axis=1),
+            ])
 
         return bs_cents
 
