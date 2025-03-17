@@ -201,7 +201,7 @@ def _defined_from(
             lok2 = []
             for k0 in lok:
                 kbs = list(dbs[k0].keys())[0]
-                if coll.dobj[wm][coll.dobj[wbs][kbs]['mesh']]['nd'] == nd:
+                if coll.dobj[wm][coll.dobj[wbs][kbs][wm]]['nd'] == nd:
                     lok2.append(k0)
 
             lok = lok2
@@ -227,7 +227,7 @@ def _defined_from(
     # key_submesh
 
     subbs = coll.ddata[subkey][wbs][0]
-    submesh = coll.dobj[wbs][subbs]['mesh']
+    submesh = coll.dobj[wbs][subbs][wm]
 
     return submesh, subbs, kwdargs
 
@@ -315,8 +315,8 @@ def _to_dict(
                 'type': None,
                 'knots': (kk,),
                 'cents': (kc,),
-                'shape-c': (cents.size,),
-                'shape-k': (knots.size,),
+                'shape_c': (cents.size,),
+                'shape_k': (knots.size,),
                 'variable': variable,
                 'subkey': subkey,
                 'subbs': subbs,

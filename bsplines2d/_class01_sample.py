@@ -428,8 +428,8 @@ def _get_res(
 
         if not (np.isscalar(res) and res > 0.):
             msg = (
-                f"Arg res must be a positive float!\n"
-                "Provided: {res}"
+                "Arg res must be a positive float!\n"
+                f"Provided: {res}"
             )
             raise Exception(msg)
 
