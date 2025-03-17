@@ -8,12 +8,14 @@ import warnings
 # Common
 import numpy as np
 from matplotlib.tri import Triangulation as mplTri
+from matplotlib.path import Path
 import scipy.spatial as scpsp
 import datastock as ds
 
 
 # specific
 from . import _generic_mesh
+from . import _class01_checks_1d as _checks_1d
 
 
 # ################################################################
@@ -31,9 +33,15 @@ def check(
     # from pts
     pts_x0=None,
     pts_x1=None,
+    crop_poly=None,
     # names of coords
     knots0_name=None,
     knots1_name=None,
+    # crop poly
+    poly=None,
+    # defined from pre-existing bsplines
+    subkey0=None,
+    subkey1=None,
     # attributes
     **kwdargs,
 ):
@@ -83,6 +91,76 @@ def check(
     cents0 = np.mean(knots[indices, 0], axis=1)
     cents1 = np.mean(knots[indices, 1], axis=1)
 
+    # -------------
+    # crop_poly
+
+    if poly is not None:
+        # tri => eliminate mesh elements definitively
+        # only keep track of crop_bs
+
+        c0 = (
+            isinstance(poly, np.ndarray)
+            and poly.ndim == 2
+            and poly.shape[0] == 2
+        )
+        if not c0:
+            msg = (
+                "Arg 'crop_poly' for tri mesh must be a (npts, 2) array!\n"
+                "Must contain 2d coordinates of a polygon"
+                f"Provided:\n{poly}\n"
+            )
+            raise Exception(msg)
+
+        pts = np.array([cents0, cents1]).T
+        keep = Path(poly.T).contains_points(pts)
+
+        if not np.all(keep):
+            knots, indices = _remove_unused_knots(knots, indices, keep)
+
+            knots, indices, ntri = _check_knotscents(
+                key=key,
+                knots=knots,
+                indices=indices,
+            )
+
+            cents0 = np.mean(knots[indices, 0], axis=1)
+            cents1 = np.mean(knots[indices, 1], axis=1)
+
+    # ------------------------
+    # depend on other bsplines
+
+    submesh0, subbs0, kwdargs = _checks_1d._defined_from(
+        coll=coll,
+        subkey=subkey0,
+        # parameters
+        kwdargs=kwdargs,
+        nd='2d',
+    )
+
+    submesh1, subbs1, kwdargs = _checks_1d._defined_from(
+        coll=coll,
+        subkey=subkey1,
+        # parameters
+        kwdargs=kwdargs,
+        nd='2d',
+    )
+
+    if subbs0 != subbs1:
+        msg = (
+            "Args subkey0 and subkey1 must be refering to "
+            "2 data defined on the same 2d bsplines\n"
+            "Provided:\n"
+            "\t- subkey0: {subkey0}\n"
+            "\t- subkey1: {subkey1}\n"
+            "\t- subbs0: {subbs0}\n"
+            "\t- subbs1: {subbs1}\n"
+        )
+        raise Exception(msg)
+
+    subbs = subbs0
+    submesh = submesh0
+
+
     # --------------
     # to dict
 
@@ -96,6 +174,11 @@ def check(
         ntri=ntri,
         knots0_name=knots0_name,
         knots1_name=knots1_name,
+        # sub quantity
+        subkey0=subkey0,
+        subkey1=subkey1,
+        subbs=subbs,
+        submesh=submesh,
         **kwdargs,
     )
 
@@ -113,6 +196,10 @@ def _from_pts_poly(
     pts_x1=None,
 ):
 
+    # ----------
+    # check pts
+    # ----------
+
     pts_x0 = ds._generic_check._check_flat1darray(
         pts_x0, 'pts_x0',
         dtype=float,
@@ -126,17 +213,42 @@ def _from_pts_poly(
         can_be_None=False,
     )
 
-    # --------
+    # ----------
     # Delauney
+    # ----------
 
     knots = np.array([pts_x0, pts_x1]).T
 
-    delau = scpsp.Delaunay(
-        knots,
-        furthest_site=False,
-        incremental=False,
-        qhull_options='QJ',
-    )
+    # ------------------
+    # try 'QJ'
+    # => garantees that each input point appears as a vertex
+    try:
+        delau = scpsp.Delaunay(
+            knots,
+            furthest_site=False,
+            incremental=False,
+            qhull_options='QJ',
+        )
+        mplTri(knots[:, 0], knots[:, 1], delau.simplices).get_trifinder()
+
+    except RuntimeError:
+        delau = scpsp.Delaunay(
+            knots,
+            furthest_site=False,
+            incremental=False,
+            qhull_options='Qt',
+        )
+
+        # warning on left-over points
+        if delau.coplanar.shape[0] > 0:
+            msg = (
+                "The 'Qt' Delaunay triangulation leaves out those points:\n"
+                f"{np.unique(delau.coplanar)}\n"
+            )
+            warnings.warn(msg)
+
+    except Exception as err:
+        raise err
 
     return knots, delau.simplices
 
@@ -156,7 +268,11 @@ def _check_knotscents(
     # ---------------------
     # check mesh conformity
 
-    indices, knots = _mesh2DTri_conformity(knots=knots, indices=indices, key=key)
+    indices, knots = _mesh2DTri_conformity(
+        knots=knots,
+        indices=indices,
+        key=key,
+    )
 
     # ---------------------------------------------
     # define triangular mesh and trifinder function
@@ -178,7 +294,11 @@ def _check_knotscents(
         indices = ind2
 
         # Re-check mesh conformity
-        indices, knots = _mesh2DTri_conformity(knots=knots, indices=indices, key=key)
+        indices, knots = _mesh2DTri_conformity(
+            knots=knots,
+            indices=indices,
+            key=key,
+        )
         indices = _mesh2DTri_ccw(knots=knots, indices=indices, key=key)
         ntri = 2
 
@@ -322,6 +442,23 @@ def _mesh2DTri_conformity(knots=None, indices=None, key=None):
     return indices, knots
 
 
+def _remove_unused_knots(knots, indices, keep):
+
+    # unique knots still needed
+    indu = np.unique(indices[keep, :])
+
+    # cumulated differences in indices
+    keep_pts = np.in1d(np.arange(knots.shape[0]), indu)
+    icum = np.cumsum(~keep_pts)
+
+    # update
+    knots = knots[indu, :]
+    indices = indices - icum[indices]
+    indices = indices[keep, :]
+
+    return knots, indices
+
+
 def _mesh2DTri_ccw(knots=None, indices=None, key=None):
 
     x, y = knots[indices, 0], knots[indices, 1]
@@ -354,6 +491,11 @@ def _to_dict(
     # names of coords
     knots0_name=None,
     knots1_name=None,
+    # submesh
+    subkey0=None,
+    subkey1=None,
+    subbs=None,
+    submesh=None,
     # attributes
     **kwdargs,
 ):
@@ -395,6 +537,12 @@ def _to_dict(
     # attributes
     latt = ['dim', 'quant', 'name', 'units']
     dim, quant, name, units = _generic_mesh._get_kwdargs_2d(kwdargs, latt)
+
+    # subkey
+    if subkey0 is not None:
+        subkey = (subkey0, subkey1)
+    else:
+        subkey = None
 
     # -----------------
     # dict
@@ -467,9 +615,13 @@ def _to_dict(
                 'ind': kii,
                 # 'ref-k': (kk,),
                 # 'ref-c': (kc,),
-                'shape-c': (indices.shape[0],),
-                'shape-k': (knots.shape[0],),
+                'shape_c': (indices.shape[0],),
+                'shape_k': (knots.shape[0],),
                 'crop': False,
+                # submesh
+                'subkey': subkey,
+                'subbs': subbs,
+                'submesh': submesh,
             },
         }
     }
