@@ -14,7 +14,6 @@ import datastock as ds
 # specific
 from . import _class01_checks_2d_tri as _checks
 # from . import _class02_bsplines_operators_tri
-from . import _class02_bsplines_rect as _mbr
 
 
 # #############################################################################
@@ -148,18 +147,35 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
         inds = np.sort(self.indices, axis=1)
         lind = [(0, 1), (1, 2), (0, 2)]
         lcomb = np.concatenate(
-            tuple([inds[:, i2, None] for i2 in lind]),
-            axis=-1,
+            tuple([inds[:, None, i2] for i2 in lind]),
+            axis=1,
         )
 
-        # check which
+        # -------------
+        # initialize
         ibs = np.zeros(inds.shape[0], dtype=bool)
+
+        # -----------------------
+        # all 3 edges are inside
+
+        iedge_out = np.zeros((inds.shape[0], 3), dtype=bool)
         for ii in range(inds.shape[0]):
+
+            # all 3 edges are inside
             lnb = np.array([
-                np.sum(np.all(lcomb[ii:ii+1, :, iref:iref+1] == lcomb, axis=1))
+                np.sum(np.all(lcomb[ii:ii+1, iref:iref+1, :] == lcomb, axis=2))
                 for iref in range(3)
             ])
-            ibs[ii] = np.all(lnb == 2)
+            iedge_out[ii, :] = lnb == 1
+
+        sli = (iedge_out, slice(None))
+        edge_out = np.unique(lcomb[sli], axis=0)
+        ipts_out = np.unique(edge_out)
+
+        # -----------------------
+        # all 3 pts are inside
+
+        ibs = ~np.any(np.isin(inds, ipts_out), axis=1)
 
         return ibs
 
@@ -239,6 +255,7 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
 
         # ------------
         # check inputs
+        # ------------
 
         return_cents = ds._generic_check._check_var(
             return_cents, 'return_cents',
@@ -264,18 +281,23 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
         ind_num = ind.nonzero()[0]
         nbs = ind.sum()
 
-        # ------------
+        # -----------------
         # added for details
+        # -----------------
 
         if self.deg == 0:
+
             if return_cents:
                 cents_per_bs = ind_num[:, None]
+
             if return_knots:
                 knots_per_bs = self.indices[ind, :]
 
         elif self.deg == 1:
+
             if return_cents or return_knots:
                 cents_per_bs = self.cents_per_knots[ind, :]
+
             if return_knots:
                 nmax_cents = np.sum(cents_per_bs >= 0, axis=1)
                 nmax = self.cents_per_knots.shape[1] + 3
@@ -288,10 +310,41 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
                     knots_per_bs[ii, 1:nu.size] = [nn for nn in nu if nn != i0]
 
         elif self.deg == 2:
+
+            # central mesh
+            ind_cbs = self.indices_bs[ind]
+
+            # direct knots
+            knots_per_bs_direct = self.indices[ind_cbs, :]
+
+            # direct mesh
+
+            # indirect knots
+
+            # indirect mesh
+
+            # cents_per_bs = np.concatenate(
+            #     (
+            #         ind_cbs,
+            #         ind_cbs_direct,
+            #         ind_cbs_indirect,
+            #     ),
+            #     axis=None,
+            # )
+
+            # knots_per_bs = np.concatenate(
+            #     (
+            #         knots_per_bs_direct,
+            #         knots_per_bs_inddirect,
+            #     ),
+            #     axis=None,
+            # )
+
             raise NotImplementedError()
 
         # ------
         # return
+        # ------
 
         if returnas == 'data':
 
@@ -381,12 +434,19 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
         indbs=None,
     ):
         # -----------
-        # check input
+        # check indbs
+        # -----------
+
+        # -------
+        # default
 
         if indbs is None:
             indbs = np.ones((self.nbs,), dtype=bool)
         else:
             indbs = np.atleast_1d(indbs).ravel()
+
+        # --------
+        # check
 
         c0 = (
             isinstance(indbs, np.ndarray)
@@ -402,8 +462,15 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
             )
             raise Exception(msg)
 
+        # -----------
+        # convert to int
+
         if 'bool' in indbs.dtype.name:
             indbs = indbs.nonzero()[0]
+
+        # -------------------
+        # get knots and cents
+        # -------------------
 
         # indbs => indcent : triangles which are ok
         knots_per_bs, cents_per_bs = self._get_knotscents_per_bs(
@@ -435,6 +502,7 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
 
         # -----------
         # generic
+        # -----------
 
         # parameters
         (
@@ -443,21 +511,30 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
 
         # -----------
         # compute
+        # -----------
 
         val = np.zeros(tuple(np.r_[x0.shape, nbs]))
         heights, ind = self.get_heights_per_centsknots_pts(x0, x1)
 
         indu = np.unique(ind[ind >= 0])
+
+        # ------------
+        # deg = 0
+
         if self.deg == 0:
             if indbs_tf is None:
                 for ii in np.intersect1d(indu, indcent):
                     indi = ind == ii
                     val[indi, ii] = 1.
+
             else:
                 for ii in np.intersect1d(indu, indcent):
                     indi = ind == ii
                     ibs = indbs_tf == ii
                     val[indi, ibs] = 1.
+
+        # ------------
+        # deg = 1
 
         elif self.deg == 1:
             if indbs_tf is None:
@@ -473,6 +550,7 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
                     )]
                     for jj, jbs in enumerate(ibs):
                         val[indi, jbs] = 1. - heights[indi, inum[jj]]
+
             else:
                 for ii in np.intersect1d(indu, indcent):
                     indi = ind == ii
@@ -490,6 +568,13 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
                     for jj, jbs in enumerate(ibs):
                         ij = indbs_tf == jbs
                         val[indi, ij] = 1. - heights[indi, inum[jj]]
+
+        # ------------
+        # deg = 2
+
+        elif self.deg == 2:
+            raise NotImplementedError()
+
         return val
 
     def __call__(
@@ -518,6 +603,7 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
 
         # -----------
         # generic
+        # -----------
 
         # parameters
         (
@@ -526,20 +612,29 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
 
         # -----------
         # prepare
+        # -----------
 
         val = np.zeros(shape_v)
         heights, ind = self.get_heights_per_centsknots_pts(x0, x1)
 
         # -----------
         # compute
+        # -----------
 
         indu = np.unique(ind[ind >= 0])
+
+        # -----------
+        # deg = 0
+
         if self.deg == 0:
 
             for ii in np.intersect1d(indu, indcent):
                 sli_v[axis_v[0]] = (ind == ii)
                 sli_c[axis[0]] = [ii]
                 val[tuple(sli_v)] += coefs[tuple(sli_c)]
+
+        # -----------
+        # deg = 1
 
         elif self.deg == 1:
             for ii in np.intersect1d(indu, indcent):
@@ -570,10 +665,20 @@ class BivariateSplineTri(scpinterp.BivariateSpline):
                         shape_height,
                     ) * coefs[tuple(sli_c)]
 
+        # -----------
+        # deg = 2
+
+        elif self.deg == 2:
+            raise NotImplementedError()
+
+        # -----------------
         # clean out-of-mesh
+        # -----------------
+
         if dref_com['ix'] is None and val_out is not False:
             slio = sli_o(ind == -1)
             val[slio] = val_out
+
         return val
 
     # TBC
