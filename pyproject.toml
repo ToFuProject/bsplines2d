@@ -1,8 +1,8 @@
 [project]
-name = "datastock"
+name = "bsplines2d"
 license = {file = "LICENSE"}
 dynamic = ["version"]
-description = "Generic handler for multiple heterogenous numpy arrays and subclasses"
+description = "Generic handler for multiple bsplines basis"
 readme = "README.md"
 requires-python = ">=3.6"
 authors = [
@@ -11,7 +11,7 @@ authors = [
 maintainers = [
   {name = "Didier VEZINET", email = "didier.vezinet@gmail.com"},
 ]
-keywords = ["data", "analysis", "interactive", "heterogeneous arrays", "numpy", "Collection"]
+keywords = ["data", "analysis", "interactive", "2d meshing", "Collection"]
 classifiers = [
   # How mature is this project? Common values are
   #   3 - Alpha
@@ -36,6 +36,8 @@ dependencies = [
     	"scipy",
     	"matplotlib",
     	"astropy",
+	"contourpy",
+	"datastock>=0.0.49",
 ]
 
 
@@ -43,7 +45,6 @@ dependencies = [
 requires = [
 	"setuptools>=40.8.0, <64",
 	"wheel",
-	"Cython>=0.26",
 	"numpy",
 ]
 
@@ -59,6 +60,3 @@ linting = [
 formatting = [
   'ruff'
 ]
-
-[project.entry-points."datastock"]
-datastock = "scripts.main:main"
