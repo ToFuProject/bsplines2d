@@ -1,57 +1,64 @@
+[build-system]
+requires = ["setuptools", "setuptools_scm"]
+build-backend = "setuptools.build_meta"
+
+
+#[tool.setuptools.packages.find]
+#where = ["datastock"]
+#include = ["datastock*"]
+#namespaces = false
+
+[tool.setuptools]
+packages = ["bsplines2d", "bsplines2d.tests", "bsplines2d.test.test_data"]
+
+
+[tool.setuptools_scm]
+version_file = "bsplines2d/_version.py"
+
+[tool.setuptools.package-data]
+mypkg = ["*.txt", "*.npz"]
+
+
+[tool.setuptools.dynamic]
+classifiers = {file = ["CLASSIFIERS.txt"]}
+
+
 [project]
 name = "bsplines2d"
-license = {file = "LICENSE"}
-dynamic = ["version"]
-description = "Generic handler for multiple bsplines basis"
 readme = "README.md"
-requires-python = ">=3.6"
+license = {text = "MIT"}
+dynamic = ["version", "classifiers"]
+description = "Generic handler for 1d and 1d bsplines meshes, uses datastock"
 authors = [
-  {name = "Didier VEZINET", email = "didier.vezinet@gmail.com"},
+    {name = "Didier VEZINET", email = "didier.vezinet@gmail.com"},
 ]
 maintainers = [
-  {name = "Didier VEZINET", email = "didier.vezinet@gmail.com"},
+    {name = "Didier VEZINET", email = "didier.vezinet@gmail.com"},
 ]
-keywords = ["data", "analysis", "interactive", "2d meshing", "Collection"]
-classifiers = [
-  # How mature is this project? Common values are
-  #   3 - Alpha
-  #   4 - Beta
-  #   5 - Production/Stable
-  "Development Status :: 5 - Production/Stable",
-
-  # Indicate who your project is intended for
-  "Intended Audience :: Science/Research",
-
-  # Specify the Python versions you support here.
-  "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.6",
-  "Programming Language :: Python :: 3.7",
-  "Programming Language :: Python :: 3.8",
-  "Programming Language :: Python :: 3.9",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
+keywords = [
+    "data", "analysis", "interactive", "bsplines", "Collection", "mesh",
 ]
+requires-python = ">=3.8"
 dependencies = [
-	"numpy",
-    	"scipy",
-    	"matplotlib",
-    	"astropy",
-	"contourpy",
-	"datastock>=0.0.49",
+        "contourpy",
+	'datastock>=0.0.54',
 ]
 
 
-[build-system]
-requires = [
-	"setuptools>=40.8.0, <64",
-	"wheel",
-	"numpy",
-]
+[project.urls]
+Homepage = "https://github.com/ToFuProject/bsplines2d"
+Issues = "https://github.com/ToFuProject/bsplines2d/issues"
+
+
+[project.entry-points."datastock"]
+datastock = "scripts.main:main"
+
 
 [dependency-groups]
 dev = [
 	"pytest",
 ]
+
 
 [project.optional-dependencies]
 linting = [
