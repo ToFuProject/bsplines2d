@@ -9,7 +9,7 @@ build-backend = "setuptools.build_meta"
 #namespaces = false
 
 [tool.setuptools]
-packages = ["bsplines2d", "bsplines2d.tests", "bsplines2d.test.test_data"]
+packages = ["bsplines2d", "bsplines2d.tests", "bsplines2d.tests.test_data"]
 
 
 [tool.setuptools_scm]
@@ -48,10 +48,6 @@ dependencies = [
 [project.urls]
 Homepage = "https://github.com/ToFuProject/bsplines2d"
 Issues = "https://github.com/ToFuProject/bsplines2d/issues"
-
-
-[project.entry-points."datastock"]
-datastock = "scripts.main:main"
 
 
 [dependency-groups]
