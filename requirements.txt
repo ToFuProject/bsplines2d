@@ -1,7 +1,0 @@
-####### Requirements without Version Specifiers #######
-numpy
-scipy
-matplotlib
-astropy
-contourpy
-datastock>=0.0.49
