@@ -1,3 +1,4 @@
-print('test import datastock')
-import datastock as ds
-print('import datastock ok')
+print('test import')
+import bsplines2d as dbs2
+print('test version')
+print(bs2.__version__)
