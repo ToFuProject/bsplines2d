@@ -1,22 +1,15 @@
+# ###############
+# __version__
+# ###############
 
 
-from .version import __version__
+from . import _version
+__version__ = _version.version
+__version_tuple__ = _version.version_tuple
 
-# #####################
-# Debugging unit tests - START
-# #####################
-
-# import sys
-# import os
-# _PATH_HERE = os.path.dirname(__file__)
-# _PATH_PROJ = os.path.dirname(os.path.dirname(_PATH_HERE))
-# _PATH_DS = os.path.join(_PATH_PROJ, 'datastock')
-# sys.path.insert(0, _PATH_DS)
-# import datastock as ds
-# sys.path.pop(0)
 
 # ######################
-# Debugging unit tests - END
+# sub-packages
 # ######################
 
 
