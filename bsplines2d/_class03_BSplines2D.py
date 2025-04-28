@@ -10,7 +10,7 @@ import numpy as np
 
 
 # local
-from ._class01_Mesh2D import Mesh2D as Previous
+from ._class02_Mesh3D import Mesh3D as Previous
 from . import _class01_select as _select
 from . import _class01_cropping as _cropping
 from . import _class03_checks as _checks

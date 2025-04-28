@@ -7,27 +7,16 @@ import datastock as ds
 
 # local
 from ._class01_Mesh2D import Mesh2D as Previous
-from . import _generic_mesh
-from . import _class01_checks_1d as _checks_1d
-from . import _class01_checks_2d_rect as _checks_2d_rect
-from . import _class01_checks_2d_tri as _checks_2d_tri
-# from . import _class01_checks_2d_polar as _checks_2d_polar
-
-
-from . import _class01_cropping as _cropping
-from . import _class01_select as _select
-from . import _class01_sample as _sample
-from . import _class01_outline as _outline
-from . import _class01_plot as _plot
+from . import _class02_checks as _checks
 
 
 __all__ = ['Mesh3D']
 
 
-# #############################################################################
-# #############################################################################
-#
-# #############################################################################
+# #############################################
+# #############################################
+#               Class
+# #############################################
 
 
 class Mesh3D(Previous):
@@ -41,13 +30,12 @@ class Mesh3D(Previous):
         self,
         key=None,
         key_mesh2d=None,
-        knots_phi=None,
+        key_mesh_angle=None,
         # direct addition of bsplines
         deg=None,
         # additional attributes
         **kwdargs,
     ):
-
         """ Add an 3d mesh by key
 
         The mesh is defined by:
@@ -60,29 +48,35 @@ class Mesh3D(Previous):
         --------
                 >>> import bsplines2d as bs2
                 >>> coll = bs2.Collection()
+                # add 1d angle mesh
+                >>> coll.add_mesh_1d(
+                    'm1dangle',
+                    knots=np.linspace(-np.pi, np.pi, 10),
+                    units='rad',
+                )
+                # add 2d mesh
                 >>> coll.add_mesh_2d_rect(
                     'm2d',
                     knots0=np.linspace(1, 2, 10),
                     knots1=np.linspace(-1, 1, 10),
                 )
+                # add 3d mesh
                 >>> coll.add_mesh_3d_cyl(
                     key='m3d',
                     key_mesh2d='m2d',
-                    knots_phi=np.linspace(-np.pi, np.pi, 6),
+                    key_mesh_angle='m1dangle',
                 )
-
         """
 
         # check input data and get input dicts
-        key, dref, ddata, dobj = _checks_1d.check(
+        key, dref, ddata, dobj = _checks.main(
             coll=self,
             # key
             key=key,
+            # mesh2d
+            key_mesh2d=key_mesh2d,
             # mesh knots
-            knots=knots,
-            uniform=uniform,
-            # defined from pre-existing bsplines
-            subkey=subkey,
+            knots_phi=knots_phi,
             # additional attributes
             **kwdargs,
         )

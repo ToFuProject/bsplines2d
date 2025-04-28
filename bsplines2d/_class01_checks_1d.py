@@ -146,12 +146,6 @@ def _knots_angle(
 
     # knots in ]-pi; pi]
     knots_temp = np.unique(np.arctan2(np.sin(knots), np.cos(knots)))
-    if not np.allclose(knots, knots_temp):
-        msg = (
-            "Angle knots must be in ]-pi; pi]!\n"
-            f"Provided: {knots}"
-        )
-        raise Exception(msg)
 
     # cents - handle discontinuity at -pi
     cents = 0.5*(knots[1:] + knots[:-1])
@@ -232,10 +226,10 @@ def _defined_from(
     return submesh, subbs, kwdargs
 
 
-# #############################################################################
-# #############################################################################
-#                           to_dict
-# #############################################################################
+# ######################################
+# ######################################
+#               to_dict
+# ######################################
 
 
 def _to_dict(
