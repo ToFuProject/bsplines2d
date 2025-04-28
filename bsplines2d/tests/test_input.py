@@ -578,6 +578,16 @@ def _plot_mesh(bsplines, nd=None, kind=None):
             plt.close('all')
 
 
+def _plot_mesh3d(coll, nd=None, kind=None):
+    lkm = _get_mesh3d(coll, nd=nd, kind=kind)
+
+    for km in lkm:
+        _ = coll.plot_mesh3d(
+            key=km,
+        )
+        plt.close('all')
+
+
 #######################################################
 #
 #     Add data on bsplines
@@ -1127,6 +1137,15 @@ def _get_mesh(coll, nd=None, kind=None):
         if nd in [None, v0['nd']]
         and kind in [None, v0['type']]
         and coll.ddata[v0['knots'][0]]['units'] != 'rad' # angle mesh
+    ]
+
+
+def _get_mesh3d(coll, nd=None, kind=None):
+    wm3d = coll._which_mesh3d
+    return [
+        k0 for k0, v0 in coll.dobj[wm3d].items()
+        if nd in [None, v0['nd']]
+        and kind in [None, v0['type']]
     ]
 
 
