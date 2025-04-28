@@ -96,3 +96,19 @@ class Mesh3D(Previous):
         if deg is not None:
             self.add_bsplines(key=key, deg=deg)
 
+    # -----------
+    # plot
+    # -----------
+
+    def plot_mesh(
+        self,
+    ):
+        """ Plot the selected 3d mesh
+        """
+
+        return _plot.main(
+            coll=self,
+        )
+
+
+
