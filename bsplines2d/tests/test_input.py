@@ -511,7 +511,11 @@ def _select_mesh_elements(bsplines, nd=None, kind=None):
                 return_neighbours=comb[4],
                 crop=comb[0],
             )
-            assert isinstance(out, tuple) and len(out) == 2
+            assert (
+                (isinstance(out, tuple) and len(out) == 2)
+                or (isinstance(out, np.ndarray))
+            )
+
     return
 
 
@@ -602,7 +606,10 @@ def _select_bsplines(bs, nd=None, kind=None):
                 return_knots=comb[2],
                 crop=comb[3],
             )
-            assert isinstance(out, tuple)
+            assert (
+                (isinstance(out, tuple) and len(out) in [2, 3])
+                or (isinstance(out, np.ndarray))
+            )
 
     return
 
