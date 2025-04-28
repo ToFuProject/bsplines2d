@@ -1,6 +1,6 @@
 
 
-from . import _generic_check
+import datastock as ds
 
 
 # #############################################
@@ -13,7 +13,7 @@ def main(
     coll=None,
     key=None,
     key_mesh2d=None,
-    knots_phi=None,
+    key_mesh1d_angle=None,
     # optional
     **kwdargs,
 ):
@@ -22,11 +22,11 @@ def main(
     # check inputs
     # --------------
 
-    key, key_mesh2d, knots_phi = _check(
+    key, key_mesh2d, key_mesh1d_angle = _check(
         coll=coll,
         key=key,
         key_mesh2d=key_mesh2d,
-        knots_phi=knots_phi,
+        key_mesh1d_angle=key_mesh1d_angle,
     )
 
     # --------------
@@ -37,7 +37,7 @@ def main(
         coll=coll,
         key=key,
         key_mesh2d=key_mesh2d,
-        key_mesh_angle=key_mesh_angle,
+        key_mesh1d_angle=key_mesh1d_angle,
         # attributes
         **kwdargs,
     )
@@ -55,14 +55,15 @@ def _check(
     coll=None,
     key=None,
     key_mesh2d=None,
-    knots_phi=None,
+    key_mesh1d_angle=None,
 ):
 
     # --------------
     # key
     # --------------
 
-    key = _generic_check._obj_key(
+    wm3d = coll._which_mesh3d
+    key = ds._generic_check._obj_key(
         d0=coll.dobj.get(wm3d, {}),
         short='m3d',
         key=key,
@@ -74,18 +75,34 @@ def _check(
     # --------------
 
     wm = coll._which_mesh
-    lok = list(coll.dobj.get(wm, {}).keys())
-    key = _generic_check._check_var(
+    lok = [
+        k0 for k0, v0 in coll.dobj.get(wm, {}).items()
+        if v0['nd'] == '2d'
+    ]
+    key_mesh2d = ds._generic_check._check_var(
         key_mesh2d, 'key_mesh2d',
         types=str,
         allowed=lok,
+        extra_msg="Must refer to a 2d mesh",
     )
 
-    # --------------
-    # knots_phi
-    # --------------
+    # ----------------
+    # key_mesh1d_angle
+    # ----------------
 
-    return key, key_mesh2d, knots_phi
+    lok = [
+        k0 for k0, v0 in coll.dobj.get(wm, {}).items()
+        if v0['nd'] == '1d'
+        and str(coll.ddata[v0['knots'][0]]['units']) == 'rad'
+    ]
+    key_mesh1d_angle = ds._generic_check._check_var(
+        key_mesh1d_angle, 'key_mesh1d_angle',
+        types=str,
+        allowed=lok,
+        extra_msg="Must refer to a 1d mesh with units='rad'",
+    )
+
+    return key, key_mesh2d, key_mesh1d_angle
 
 
 # ######################################
@@ -98,52 +115,30 @@ def _to_dict(
     coll=None,
     key=None,
     key_mesh2d=None,
-    key_mesh_angle=None,
+    key_mesh1d_angle=None,
     # attributes
     **kwdargs,
 ):
 
-    # ---------
-    # prepare
+    # -------------
+    # prepare data
 
-    # attributes
     latt = ['dim', 'quant', 'name', 'units']
-    dim, quant, name, units = [kwdargs.get(ss) for ss in latt]
+
+    wm = coll._which_mesh
+    mtype = (
+        coll.dobj[wm][key_mesh2d]['type'],
+        coll.dobj[wm][key_mesh1d_angle]['type'],
+    )
+
+    # -------------
+    # prepare dref, ddata
+
+    dref = None
+    ddata = None
 
     # -------------
     # prepare dict
-
-    # dref
-    dref = {
-        kkr: {
-            'size': knots.size,
-        },
-        kcr: {
-            'size': cents.size,
-        },
-    }
-
-    # ddata
-    ddata = {
-        kk: {
-            'data': knots,
-            'units': units,
-            # 'source': None,
-            'dim': dim,
-            'quant': quant,
-            'name': name,
-            'ref': kkr,
-        },
-        kc: {
-            'data': cents,
-            'units': units,
-            # 'source': None,
-            'dim': dim,
-            'quant': quant,
-            'name': name,
-            'ref': kcr,
-        },
-    }
 
     # dobj
     wm3d = coll._which_mesh3d
@@ -153,7 +148,7 @@ def _to_dict(
                 'nd': '3d',
                 'type': mtype,
                 'mesh2d': key_mesh2d,
-                'knots_phi': kphi
+                'mesh1d_angle': key_mesh1d_angle,
             },
         },
     }

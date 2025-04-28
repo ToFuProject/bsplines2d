@@ -25,12 +25,20 @@ class Mesh3D(Previous):
 
     _show_in_summary = 'all'
     _dshow = dict(ds.DataStock._dshow)
+    _dshow.update({
+        _which_mesh3d: [
+            'nd',
+            'type',
+            'mesh2d',
+            'mesh1d_angle',
+        ],
+    })
 
     def add_mesh_3d_cyl(
         self,
         key=None,
         key_mesh2d=None,
-        key_mesh_angle=None,
+        key_mesh1d_angle=None,
         # direct addition of bsplines
         deg=None,
         # additional attributes
@@ -40,7 +48,7 @@ class Mesh3D(Previous):
 
         The mesh is defined by:
             - key_mesh2d: a pre-existing 2d mesh (rect or tri)
-            - knots_phi: a vector of knots on angle phi (toroidal)
+            - key_mesh1d_angle: a pre-existing 1d angle mesh
 
         If deg is provided, immediately adds a bsplines
 
@@ -64,7 +72,7 @@ class Mesh3D(Previous):
                 >>> coll.add_mesh_3d_cyl(
                     key='m3d',
                     key_mesh2d='m2d',
-                    key_mesh_angle='m1dangle',
+                    key_mesh1d_angle='m1dangle',
                 )
         """
 
@@ -75,8 +83,8 @@ class Mesh3D(Previous):
             key=key,
             # mesh2d
             key_mesh2d=key_mesh2d,
-            # mesh knots
-            knots_phi=knots_phi,
+            # mesh angle
+            key_mesh1d_angle=key_mesh1d_angle,
             # additional attributes
             **kwdargs,
         )
