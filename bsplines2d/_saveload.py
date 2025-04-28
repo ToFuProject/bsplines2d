@@ -63,7 +63,7 @@ def load(
     # --------------------
     # use datastock.load()
 
-    from . import _class02_compute as _compute
+    from . import _class03_compute as _compute
 
     if cls is None:
         from ._class03_Bins import Bins
