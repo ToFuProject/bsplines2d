@@ -2,7 +2,6 @@
 
 
 # Common
-import numpy as np
 import datastock as ds
 
 
