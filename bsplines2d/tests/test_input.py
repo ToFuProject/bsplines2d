@@ -1120,11 +1120,13 @@ def _get_operators(bs, nd=None, kind=None, remove=None):
 #######################################################
 
 
-def _get_mesh(bsplines, nd=None, kind=None):
+def _get_mesh(coll, nd=None, kind=None):
+    wm = coll._which_mesh
     return [
-        k0 for k0, v0 in bsplines.dobj[bsplines._which_mesh].items()
+        k0 for k0, v0 in coll.dobj[wm].items()
         if nd in [None, v0['nd']]
         and kind in [None, v0['type']]
+        and coll.ddata[v0['knots'][0]]['units'] != 'rad' # angle mesh
     ]
 
 
