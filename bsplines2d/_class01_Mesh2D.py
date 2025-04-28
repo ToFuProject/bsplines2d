@@ -541,9 +541,12 @@ class Mesh2D(ds.DataStock):
     def plot_mesh(
         self,
         key=None,
+        # options for 2d mesh
         ind_knot=None,
         ind_cent=None,
         crop=None,
+        bck=None,
+        # options
         color=None,
         dax=None,
         dmargin=None,
@@ -555,9 +558,12 @@ class Mesh2D(ds.DataStock):
         return _plot.plot_mesh(
             coll=self,
             key=key,
+            # options for 2d mesh
             ind_knot=ind_knot,
             ind_cent=ind_cent,
             crop=crop,
+            bck=bck,
+            # options
             color=color,
             dax=dax,
             dmargin=dmargin,
