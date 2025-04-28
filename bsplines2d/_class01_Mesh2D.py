@@ -253,6 +253,19 @@ class Mesh2D(ds.DataStock):
         if deg is not None:
             self.add_bsplines(key=key, deg=deg)
 
+    # --------------
+    # 3d mesh
+    # -------------
+
+    def add_mesh_3d_cyl(
+        self,
+        key_mesh2d=None,
+        knots=None,
+    ):
+
+        return
+
+
     # def add_mesh_2d_polar(
         # self,
         # # polar mesh
