@@ -145,7 +145,9 @@ def _knots_angle(
 ):
 
     # knots in ]-pi; pi]
-    knots_temp = np.unique(np.arctan2(np.sin(knots), np.cos(knots)))
+    ang = np.arctan2(np.sin(knots), np.cos(knots))
+    ind = np.unique(np.round(ang, decimals=6), return_index=True)[1]
+    knots = ang[ind]
 
     # cents - handle discontinuity at -pi
     cents = 0.5*(knots[1:] + knots[:-1])
