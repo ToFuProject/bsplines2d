@@ -70,11 +70,21 @@ def _check(
         ndigits=2,
     )
 
+    # also not already in mesh
+    wm = coll._which_mesh
+    lout = list(coll.dobj.get(wm, {}).keys())
+    if key in lout:
+        msg = (
+            "Arg key cannot be the same as a pre-existing mesh1d or mesh2d!\n"
+            f"\t- Pre-existing meshes: {lout}\n"
+            f"\t- Provided: {key}\n"
+        )
+        raise Exception(msg)
+
     # --------------
     # key_mesh2d
     # --------------
 
-    wm = coll._which_mesh
     lok = [
         k0 for k0, v0 in coll.dobj.get(wm, {}).items()
         if v0['nd'] == '2d'
