@@ -8,8 +8,8 @@ import matplotlib.gridspec as gridspec
 import datastock as ds
 
 
-from . import _class02_interpolate_all as _interpolate_all
-from . import _class02_plot_as_profile2d as _plot_as_profile2d
+from . import _class03_interpolate_all as _interpolate_all
+from . import _class03_plot_as_profile2d as _plot_as_profile2d
 
 
 # ##############################################################

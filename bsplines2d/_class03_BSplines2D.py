@@ -12,16 +12,16 @@ import numpy as np
 # local
 from ._class01_Mesh2D import Mesh2D as Previous
 from . import _class01_select as _select
-from . import _class02_checks as _checks
-from . import _class02_compute as _compute
-from . import _class02_contours as _contours
 from . import _class01_cropping as _cropping
-from . import _class02_line_tracing as _line_tracing
-from . import _class02_interpolate as _interpolate
-from . import _class02_interpolate_all as _interpolate_all
-from . import _class02_operators as _operators
-from . import _class02_plot_as_profile2d as _plot_as_profile2d
-from . import _class02_plot_as_profile2d_compare as _plot_as_profile2d_compare
+from . import _class03_checks as _checks
+from . import _class03_compute as _compute
+from . import _class03_contours as _contours
+from . import _class03_line_tracing as _line_tracing
+from . import _class03_interpolate as _interpolate
+from . import _class03_interpolate_all as _interpolate_all
+from . import _class03_operators as _operators
+from . import _class03_plot_as_profile2d as _plot_as_profile2d
+from . import _class03_plot_as_profile2d_compare as _plot_as_profile2d_compare
 from . import _saveload
 
 

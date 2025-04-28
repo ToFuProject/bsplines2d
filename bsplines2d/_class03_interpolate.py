@@ -12,7 +12,6 @@ import datastock as ds
 
 
 # tofu
-# from . import _class02_checks as _checks
 from . import _utils_bsplines
 
 

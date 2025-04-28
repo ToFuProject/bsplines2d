@@ -10,7 +10,7 @@ import scipy.interpolate as scpinterp
 
 
 from . import _utils_bsplines
-from . import _class02_bsplines_operators_1d as _operators_1d
+from . import _class03_bsplines_operators_1d as _operators_1d
 
 
 # ################################################################

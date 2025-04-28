@@ -12,13 +12,9 @@ import datastock as ds
 
 
 # tofu
-from . import _utils_bsplines
-# from . import _class02_checks as _checks
-from . import _class02_bsplines_rect
-from . import _class02_bsplines_tri
-from . import _class02_bsplines_polar
-from . import _class02_bsplines_1d
-
+from . import _class03_bsplines_rect as _bsplines_rect
+from . import _class03_bsplines_tri as _bsplines_tri
+from . import _class03_bsplines_1d as _bsplines_1d
 
 
 # ##################################################################
@@ -118,7 +114,7 @@ def _mesh2DRect_bsplines(coll=None, keym=None, keybs=None, deg=None):
     (
         shapebs, Rbs_apex, Zbs_apex,
         knots_per_bs_R, knots_per_bs_Z,
-    ) = _class02_bsplines_rect.get_bs2d_x01(
+    ) = _bsplines_rect.get_bs2d_x01(
         deg=deg, knots0=knots0, knots1=knots1,
     )
     nbs = int(np.prod(shapebs))
@@ -275,13 +271,13 @@ def get_bs_class(
 ):
 
     if nd == '1d':
-        clas = _class02_bsplines_1d.get_bs_class(
+        clas = _bsplines_1d.get_bs_class(
             deg=deg,
             knots=knots0,
         )
 
     elif mtype == 'rect':
-        clas = _class02_bsplines_rect.get_bs_class(
+        clas = _bsplines_rect.get_bs_class(
             deg=deg,
             knots0=knots0,
             knots1=knots1,
@@ -289,7 +285,7 @@ def get_bs_class(
         )
 
     else:
-        clas = _class02_bsplines_tri.get_bs_class(
+        clas = _bsplines_tri.get_bs_class(
             deg=deg,
             knots0=knots0,
             knots1=knots1,
@@ -564,7 +560,7 @@ def _extract_refdata_from_dict(
     # if len(kknots) == 2:
         # angle = coll.ddata[kknots[1]]['data']
 
-    # clas = _class02_bsplines_polar.get_bs2d_func(
+    # clas = _bsplines_polar.get_bs2d_func(
         # deg=deg,
         # knotsr=knotsr,
         # angle=angle,
