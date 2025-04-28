@@ -14,7 +14,7 @@ import numpy as np
 # specific
 from . import test_input
 from .. import _class01_checks_2d_rect as _checks
-from .._class03_Bins import Bins as BSplines2D
+from .._class04_Bins import Bins as Collection
 from .. import _saveload
 
 
@@ -65,11 +65,11 @@ class Test00_check_routines():
 #######################################################
 
 
-class Test01_BSplines2D():
+class Test01_Collection():
 
     @classmethod
     def setup_class(cls):
-        cls.bs = BSplines2D()
+        cls.bs = Collection()
 
     @classmethod
     def setup_method(self):
@@ -392,7 +392,7 @@ class Test01_BSplines2D():
         pfe = self.bs.save(return_pfe=True)
 
         # load
-        coll = BSplines2D()
+        coll = Collection()
         coll = _saveload.load(pfe, coll=coll)
 
         # remove file
