@@ -58,19 +58,52 @@ def main(
         dleg=dleg,
     )
 
-    # ------------
-    # plot
-    # ------------
+    # ---------------
+    # prepare figure
+    # --------------
 
-    dax = _plot(
-        coll=coll,
-        key=key,
-        key_mesh2d=key_mesh2d,
-        key_mesh1d_angle=key_mesh1d_angle,
-        # plotting
-        color=color,
-        dleg=dleg,
-    )
+    if dax is None:
+        dax = _prepare_figure(
+            # keys
+            key=key,
+            key_mesh2d=key_mesh2d,
+            key_mesh1d_angle=key_mesh1d_angle,
+            # options
+            dmargin=dmargin,
+            fs=fs,
+        )
+
+    dax = _generic_check._check_dax(dax=dax, main='cross')
+
+    # ---------------
+    # plot 2d mesh
+    # --------------
+
+    kax = 'cross'
+    if dax.get(kax) is not None:
+        coll.plot_mesh(
+            key_mesh2d,
+            crop=crop,
+            color=color,
+            dax=dax,
+            dleg=dleg,
+        )
+
+    # ---------------
+    # plot angle mesh
+    # --------------
+
+    kax = 'hor'
+    if dax.get(kax) is not None:
+        _plot_mesh1d_angle(
+            coll=coll,
+            key=key,
+            key_mesh2d=key_mesh2d,
+            key_mesh1d_angle=key_mesh1d_angle,
+            # options
+            color=color,
+            dax=dax,
+        )
 
     return dax
 
@@ -125,11 +158,16 @@ def _check(
     # ----------
 
     # dleg
-    defdleg = {
-        'bbox_to_anchor': (1.1, 1.),
-        'loc': 'upper left',
-        'frameon': True,
-    }
+    if dleg is True:
+        defdleg = {
+            'bbox_to_anchor': (1.1, 1.),
+            'loc': 'upper left',
+            'frameon': True,
+        }
+        dleg = None
+    else:
+        defdleg = False
+
     dleg = ds._generic_check._check_var(
         dleg, 'dleg',
         default=defdleg,
@@ -148,26 +186,149 @@ def _check(
 # ###########################################
 
 
-def _plot_mesh_prepare_1d(
+def _plot_mesh1d_angle(
     coll=None,
     key=None,
-    **kwd,
+    key_mesh2d=None,
+    key_mesh1d_angle=None,
+    # plotting
+    color=None,
+    dax=None,
 ):
 
     # --------
     # prepare
+    # --------
 
-    kknots = coll.dobj[coll._which_mesh][key]['knots'][0]
-    knots = coll.ddata[kknots]['data']
+    wm = coll._which_mesh
+    phi = np.pi * np.linspace(-1, 1, 101)
+    cos = np.cos(phi)
+    sin = np.sin(phi)
 
-    xx = np.array([knots, knots, np.full(knots.shape, np.nan)]).T.ravel()
-    yy = np.array([
-        np.zeros(knots.shape),
-        np.ones(knots.shape),
-        np.ones(knots.shape),
-    ]).T.ravel()
+    # -----------
+    # mesh 2d
+    # -----------
 
-    return xx, yy
+    knots0 = coll.dobj[wm][key_mesh2d]['knots'][0]
+    knots0 = coll.ddata[knots0]['data']
+    knots0f = np.repeat(knots0[None, :], phi.size, axis=0)
+    knots0f_cos = knots0f * cos[:, None]
+    knots0f_sin = knots0f * sin[:, None]
+
+    # edges
+    xx_edges = np.r_[knots0f_cos[:, 0], np.nan, knots0f_cos[:, -1]]
+    yy_edges = np.r_[knots0f_sin[:, 0], np.nan, knots0f_sin[:, -1]]
+
+    # inside
+    nan = np.full(knots0f[0:1, 1:-1].shape, np.nan)
+    xx_in = np.concatenate((knots0f_cos[:, 1:-1], nan), axis=0).T.ravel()
+    yy_in = np.concatenate((knots0f_sin[:, 1:-1], nan), axis=0).T.ravel()
+
+    # -----------
+    # mesh 1d angles
+    # -----------
+
+    # angles
+    knots = coll.dobj[wm][key_mesh1d_angle]['knots'][0]
+    knots = coll.ddata[knots]['data']
+
+    R = np.r_[knots0[0], knots0[-1], np.nan]
+    xx_angles = (R[None, :] * np.cos(knots)[:, None]).ravel()
+    yy_angles = (R[None, :] * np.sin(knots)[:, None]).ravel()
+
+    # --------
+    # plot
+    # --------
+
+    ax = dax['hor']['handle']
+
+    # inner and outer edges
+    ax.plot(
+        xx_edges,
+        yy_edges,
+        ls='-',
+        lw=1.5,
+        c=color,
+    )
+
+    # inside
+    ax.plot(
+        xx_in,
+        yy_in,
+        ls='-',
+        lw=1.,
+        c=mcolors.to_rgb(color) + (0.5,),
+    )
+
+    # angles
+    ax.plot(
+        xx_angles,
+        yy_angles,
+        ls='-',
+        lw=1.5,
+        c=color,
+    )
+
+    return
+
+
+# ################################################
+# ################################################
+#               Prepare figure
+# ################################################
+
+
+def _prepare_figure(
+    # keys
+    key=None,
+    key_mesh2d=None,
+    key_mesh1d_angle=None,
+    # options
+    dmargin=None,
+    fs=None,
+):
+
+    # ----------
+    # figure
+    # ----------
+
+    if fs is None:
+        fs = (12, 8)
+
+    if dmargin is None:
+        dmargin = {
+            'left': 0.08, 'right': 0.95,
+            'bottom': 0.08, 'top': 0.9,
+            'hspace': 0.1, 'wspace': 0.15,
+        }
+
+    fig = plt.figure(figsize=fs)
+    gs = gridspec.GridSpec(ncols=2, nrows=1, **dmargin)
+    dax = {}
+
+    # ----------
+    # axes
+    # ----------
+
+    # cross
+    ax = fig.add_subplot(gs[:, 0], aspect='equal')
+    ax.set_xlabel('R (m)', size=12, fontweight='bold')
+    ax.set_ylabel('Z (m)', size=12, fontweight='bold')
+    tit = f"{key} - {key_mesh2d}"
+    ax.set_title(tit, size=12, fontweight='bold')
+
+    dax['cross'] = {'handle': ax}
+
+    # hor
+    ax = fig.add_subplot(gs[:, 1], aspect='equal')
+    ax.set_xlabel('X (m)', size=12, fontweight='bold')
+    ax.set_ylabel('Y (m)', size=12, fontweight='bold')
+    tit = f"{key} - {key_mesh1d_angle}"
+    ax.set_title(tit, size=12, fontweight='bold')
+
+    dax['hor'] = {'handle': ax}
+
+    return dax
 
 
 # #############################################################################

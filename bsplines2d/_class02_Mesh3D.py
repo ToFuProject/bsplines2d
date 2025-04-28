@@ -8,6 +8,7 @@ import datastock as ds
 # local
 from ._class01_Mesh2D import Mesh2D as Previous
 from . import _class02_checks as _checks
+from . import _class02_plot as _plot
 
 
 __all__ = ['Mesh3D']
@@ -100,14 +101,40 @@ class Mesh3D(Previous):
     # plot
     # -----------
 
-    def plot_mesh(
+    def plot_mesh3d(
         self,
+        key=None,
+        # options for 2d mesh
+        ind_knot=None,
+        ind_cent=None,
+        crop=None,
+        bck=None,
+        nmax=None,
+        # plotting options
+        color=None,
+        dax=None,
+        dmargin=None,
+        fs=None,
+        dleg=None,
     ):
         """ Plot the selected 3d mesh
         """
 
         return _plot.main(
             coll=self,
+            key=key,
+            # options for 2d mesh
+            ind_knot=None,
+            ind_cent=None,
+            crop=crop,
+            bck=bck,
+            nmax=nmax,
+            # plotting options
+            color=color,
+            dax=dax,
+            dmargin=dmargin,
+            fs=fs,
+            dleg=dleg,
         )
 
 
