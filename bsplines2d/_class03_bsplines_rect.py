@@ -13,7 +13,7 @@ import scipy.interpolate as scpinterp
 
 # specific
 from . import _utils_bsplines
-from . import _class02_bsplines_operators_rect
+from . import _class03_bsplines_operators_rect as _bsplines_operators_rect
 
 
 if hasattr(scpinterp._bspl, 'evaluate_spline'):
@@ -362,7 +362,7 @@ class BivariateSplineRect(scpinterp.BivariateSpline):
         returnas_element=None,
     ):
         """ Get desired operator """
-        return _class02_bsplines_operators_rect.get_mesh2dRect_operators(
+        return _bsplines_operators_rect.get_mesh2dRect_operators(
             deg=self.degrees[0],
             operator=operator,
             geometry=geometry,

@@ -8,297 +8,166 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+import matplotlib.colors as mcolors
 import datastock as ds
 
 # specific
 from . import _generic_check
-from . import _class01_checks as _checks
 
 
-# ################################################################
-# ################################################################
+# #############################################################################
+# #############################################################################
 #                     Main plotting
-# ################################################################
+# #############################################################################
 
 
-def plot_bspline(
-    # ressources
+def main(
     coll=None,
-    # inputs
     key=None,
-    indbs=None,
-    indt=None,
-    # parameters
-    knots=None,
-    cents=None,
-    res=None,
-    plot_mesh=None,
-    val_out=None,
-    nan0=None,
-    # plot-specific
-    cmap=None,
+    # options for 2d mesh
+    ind_knot=None,
+    ind_cent=None,
+    crop=None,
+    bck=None,
+    nmax=None,
+    # plotting options
+    color=None,
     dax=None,
     dmargin=None,
     fs=None,
     dleg=None,
 ):
+    """ Plot the desired 3d mesh
+
+    rect and tri meshes are constant
+    polar meshes can vary in time
+
+    """
 
     # --------------
-    # check input
+    # check inputs
+    # --------------
 
     (
-        key, keym0, keym, mtype0, mtype,
-        indbs, indt,
-        knots, cents, knotsi, centsi,
-        plot_mesh, cmap, dleg,
-    ) = _plot_bspline_check(
+        key, key_mesh2d, key_mesh1d_angle,
+        color, dleg,
+     ) = _check(
         coll=coll,
         key=key,
-        indbs=indbs,
-        indt=indt,
-        knots=knots,
-        cents=cents,
-        plot_mesh=plot_mesh,
-        cmap=cmap,
+        color=color,
         dleg=dleg,
     )
 
+    # ---------------
+    # prepare figure
     # --------------
-    #  Prepare data
-
-    bspline, extent, interp = _plot_bspline_prepare(
-        coll=coll,
-        key=key,
-        keym=keym,
-        mtype0=mtype0,
-        mtype=mtype,
-        indbs=indbs,
-        indt=indt,
-        knotsi=knotsi,
-        centsi=centsi,
-        res=res,
-        val_out=val_out,
-        nan0=nan0,
-    )
-
-    # --------------
-    # plot - prepare
 
     if dax is None:
-
-        if dmargin is None:
-            dmargin = {
-                'left': 0.1, 'right': 0.9,
-                'bottom': 0.1, 'top': 0.9,
-                'hspace': 0.1, 'wspace': 0.1,
-            }
-
-        fig = plt.figure(figsize=fs)
-        gs = gridspec.GridSpec(ncols=1, nrows=1, **dmargin)
-        ax0 = fig.add_subplot(gs[0, 0], aspect='equal')
-        ax0.set_xlabel(f'R (m)')
-        ax0.set_ylabel(f'Z (m)')
-
-        dax = {'cross': ax0}
+        dax = _prepare_figure(
+            # keys
+            key=key,
+            key_mesh2d=key_mesh2d,
+            key_mesh1d_angle=key_mesh1d_angle,
+            # options
+            dmargin=dmargin,
+            fs=fs,
+        )
 
     dax = _generic_check._check_dax(dax=dax, main='cross')
 
+    # ---------------
+    # plot 2d mesh
     # --------------
-    # plot
-
-    if plot_mesh is True:
-        keym = coll.dobj['bsplines'][key]['mesh']
-        if mtype0 == 'polar':
-            _ = coll.plot_mesh(key=keym, dleg=False)
-        else:
-            dax = coll.plot_mesh(key=keym, dax=dax, dleg=False)
 
     kax = 'cross'
     if dax.get(kax) is not None:
-        ax = dax[kax]['handle']
-
-        ax.imshow(
-            bspline,
-            extent=extent,
-            interpolation=interp,
-            origin='lower',
-            aspect='equal',
-            cmap=cmap,
-            vmin=0.,
-            vmax=1.,
+        coll.plot_mesh(
+            key_mesh2d,
+            crop=crop,
+            color=color,
+            dax=dax,
+            dleg=dleg,
         )
 
-        if mtype0 != 'polar':
-            if knots is not False:
-                ax.plot(
-                    knotsi[0].ravel(),
-                    knotsi[1].ravel(),
-                    marker='x',
-                    ms=6,
-                    ls='None',
-                    color='k',
-                )
+    # ---------------
+    # plot angle mesh
+    # --------------
 
-            if cents is not False:
-                ax.plot(
-                    centsi[0].ravel(),
-                    centsi[1].ravel(),
-                    marker='o',
-                    ms=6,
-                    ls='None',
-                    color='k',
-                )
-
-        ax.relim()
-        ax.autoscale()
-
-        # --------------
-        # dleg
-
-        if dleg is not False:
-            ax.legend(**dleg)
+    kax = 'hor'
+    if dax.get(kax) is not None:
+        _plot_mesh1d_angle(
+            coll=coll,
+            key=key,
+            key_mesh2d=key_mesh2d,
+            key_mesh1d_angle=key_mesh1d_angle,
+            # options
+            color=color,
+            dax=dax,
+        )
 
     return dax
 
-
-# ############################################################
-# ############################################################
-#                           plot bspline
-# ############################################################
-
-
-def _plot_bsplines_get_dRdZ(coll=None, km=None, meshtype=None):
-    # Get minimum distances
-
-    if meshtype == 'rect':
-        kR, kZ = coll.dobj['mesh'][km]['knots']
-        Rk = coll.ddata[kR]['data']
-        Zk = coll.ddata[kZ]['data']
-        dR = np.min(np.diff(Rk))
-        dZ = np.min(np.diff(Zk))
-
-    elif meshtype == 'tri':
-        indtri = coll.ddata[coll.dobj['mesh'][km]['ind']]['data']
-        kknots = coll.dobj['mesh'][km]['knots']
-        Rk = coll.ddata[kknots[0]]['data']
-        Zk = coll.ddata[kknots[1]]['data']
-        R = Rk[indtri]
-        Z = Zk[indtri]
-        dist = np.mean(np.array([
-            np.sqrt((R[:, 1] - R[:, 0])**2 + (Z[:, 1] - Z[:, 0])**2),
-            np.sqrt((R[:, 2] - R[:, 1])**2 + (Z[:, 2] - Z[:, 1])**2),
-            np.sqrt((R[:, 2] - R[:, 0])**2 + (Z[:, 2] - Z[:, 0])**2),
-        ]))
-        dR, dZ = dist, dist
-
-    else:
-        km2 = coll.dobj[coll._which_mesh][km]['submesh']
-        meshtype = coll.dobj[coll._which_mesh][km2]['type']
-        return _plot_bsplines_get_dRdZ(
-            coll=coll, km=km2, meshtype=meshtype,
-        )
-
-    Rminmax = [Rk.min(), Rk.max()]
-    Zminmax = [Zk.min(), Zk.max()]
-    return dR, dZ, Rminmax, Zminmax
+# ###############################################
+# ###############################################
+#                   checks inputs
+# ###############################################
 
 
-# ###############################################################
-# ###############################################################
-#                           checks
-# ###############################################################
-
-
-def _plot_bspline_check(
+def _check(
     coll=None,
     key=None,
-    indbs=None,
-    indt=None,
-    knots=None,
-    cents=None,
-    plot_mesh=None,
-    cmap=None,
+    ind_knot=None,
+    ind_cent=None,
+    crop=None,
+    bck=None,
+    color=None,
     dleg=None,
 ):
 
+    # ----------
     # key
-    (
-     which_mesh, which_bsplines, keym, key, cat,
-     ) = _checks._get_key_mesh_vs_bplines(
-        coll=coll,
-        key=key,
-        forcecat='bsplines',
+    # ----------
+
+    wm3d = coll._which_mesh3d
+    lok = list(coll.dobj.get(wm3d, {}).keys())
+    key = ds._generic_check._check_var(
+        key, 'key',
+        types=str,
+        allowed=lok,
     )
 
-    keym0 = coll.dobj[which_bsplines][key][which_mesh]
-    mtype0 = coll.dobj[which_mesh][keym0]['type']
-    if mtype0 == 'polar':
-        keym = coll.dobj[which_mesh][keym0]['submesh']
-        mtype = coll.dobj[which_mesh][keym]['type']
-    else:
-        keym = keym0
-        mtype = mtype0
+    key_mesh2d = coll.dobj[wm3d][key]['mesh2d']
+    key_mesh1d_angle = coll.dobj[wm3d][key]['mesh1d_angle']
 
-    # knots, cents
-    knots = ds._generic_check._check_var(
-        knots, 'knots', default=True, types=bool,
-    )
-    cents = ds._generic_check._check_var(
-        cents, 'cents', default=True, types=bool,
-    )
+    # ----------
+    # color
+    # ----------
 
-    # ind_bspline
-    if indbs is not None:
-        indbs = coll.select_bsplines(
-            key=key,
-            ind=indbs,
-            returnas='ind',
-            return_knots=False,
-            return_cents=False,
-            crop=False,
+    # color
+    if color is None:
+        color = 'k'
+    if not mcolors.is_color_like(color):
+        msg = (
+            "Arg color must be a valid matplotlib color identifier!\n"
+            f"Provided: {color}"
         )
+        raise Exception(msg)
 
-    _, knotsi, centsi = coll.select_bsplines(
-        key=key,
-        ind=indbs,
-        returnas='data',
-        return_knots=True,
-        return_cents=True,
-        crop=False,
-    )
-
-    # indt
-    nt = False
-    if mtype0 == 'polar':
-        radius2d = coll.dobj[which_mesh][keym0]['radius2d']
-        r2d_reft = coll.get_time(key=radius2d)[2]
-        if r2d_reft is not None:
-            nt = coll.dref[r2d_reft]['size']
-
-    if nt is False:
-        indt = None
-    else:
-        if indt is None:
-            indt = 0
-        indt = np.atleast_1d(indt).ravel()[0]
-
-    # plot_mesh
-    plot_mesh = ds._generic_check._check_var(
-        plot_mesh, 'plot_mesh',
-        default=True,
-        types=bool,
-    )
-
-    # cmap
-    if cmap is None:
-        cmap = 'viridis'
+    # ----------
+    # dleg
+    # ----------
 
     # dleg
-    defdleg = {
-        'bbox_to_anchor': (1.1, 1.),
-        'loc': 'upper left',
-        'frameon': True,
-    }
+    if dleg is True:
+        defdleg = {
+            'bbox_to_anchor': (1.1, 1.),
+            'loc': 'upper left',
+            'frameon': True,
+        }
+        dleg = None
+    else:
+        defdleg = False
+
     dleg = ds._generic_check._check_var(
         dleg, 'dleg',
         default=defdleg,
@@ -306,121 +175,157 @@ def _plot_bspline_check(
     )
 
     return (
-        key, keym0, keym, mtype0, mtype,
-        indbs, indt,
-        knots, cents, knotsi, centsi,
-        plot_mesh, cmap, dleg,
+        key, key_mesh2d, key_mesh1d_angle,
+        color, dleg,
     )
 
 
-# ###############################################################
-# ###############################################################
-#                           prepare
-# ###############################################################
+# ###########################################
+# ###########################################
+#                   prepare
+# ###########################################
 
 
-def _plot_bspline_prepare(
+def _plot_mesh1d_angle(
     coll=None,
-    # keys
     key=None,
-    keym0=None,
-    keym=None,
-    mtype0=None,
-    mtype=None,
-    # indices
-    indbs=None,
-    indt=None,
-    # options
-    res=None,
-    knotsi=None,
-    centsi=None,
-    val_out=None,
-    nan0=None,
+    key_mesh2d=None,
+    key_mesh1d_angle=None,
+    # plotting
+    color=None,
+    dax=None,
 ):
 
-    # check input
-    deg = coll.dobj['bsplines'][key]['deg']
+    # --------
+    # prepare
+    # --------
 
-    # get dR, dZ
-    dR, dZ, _, _ = _plot_bsplines_get_dRdZ(
-        coll=coll, km=keym, meshtype=mtype,
+    wm = coll._which_mesh
+    phi = np.pi * np.linspace(-1, 1, 101)
+    cos = np.cos(phi)
+    sin = np.sin(phi)
+
+    # -----------
+    # mesh 2d
+    # -----------
+
+    knots0 = coll.dobj[wm][key_mesh2d]['knots'][0]
+    knots0 = coll.ddata[knots0]['data']
+    knots0f = np.repeat(knots0[None, :], phi.size, axis=0)
+    knots0f_cos = knots0f * cos[:, None]
+    knots0f_sin = knots0f * sin[:, None]
+
+    # edges
+    xx_edges = np.r_[knots0f_cos[:, 0], np.nan, knots0f_cos[:, -1]]
+    yy_edges = np.r_[knots0f_sin[:, 0], np.nan, knots0f_sin[:, -1]]
+
+    # inside
+    nan = np.full(knots0f[0:1, 1:-1].shape, np.nan)
+    xx_in = np.concatenate((knots0f_cos[:, 1:-1], nan), axis=0).T.ravel()
+    yy_in = np.concatenate((knots0f_sin[:, 1:-1], nan), axis=0).T.ravel()
+
+    # -----------
+    # mesh 1d angles
+    # -----------
+
+    # angles
+    knots = coll.dobj[wm][key_mesh1d_angle]['knots'][0]
+    knots = coll.ddata[knots]['data']
+
+    R = np.r_[knots0[0], knots0[-1], np.nan]
+    xx_angles = (R[None, :] * np.cos(knots)[:, None]).ravel()
+    yy_angles = (R[None, :] * np.sin(knots)[:, None]).ravel()
+
+    # --------
+    # plot
+    # --------
+
+    ax = dax['hor']['handle']
+
+    # inner and outer edges
+    ax.plot(
+        xx_edges,
+        yy_edges,
+        ls='-',
+        lw=1.5,
+        c=color,
     )
 
-    # resolution of sampling
-    if res is None:
-        if mtype == 'rect':
-            res_coef = 0.05
-        else:
-            res_coef = 0.25
-        res = [res_coef*dR, res_coef*dZ]
-
-    # sampling domain
-    if mtype0 == 'polar':
-        DR = None
-        DZ = None
-    else:
-        knotsiR, knotsiZ = knotsi
-        DR = [np.nanmin(knotsiR) + dR*1.e-10, np.nanmax(knotsiR) - dR*1.e-10]
-        DZ = [np.nanmin(knotsiZ) + dZ*1.e-10, np.nanmax(knotsiZ) - dZ*1.e-10]
-
-    # sample
-    R, Z = coll.get_sample_mesh(
-        key=keym,
-        res=res,
-        DR=DR,
-        DZ=DZ,
-        mode='abs', grid=True, imshow=True,
+    # inside
+    ax.plot(
+        xx_in,
+        yy_in,
+        ls='-',
+        lw=1.,
+        c=mcolors.to_rgb(color) + (0.5,),
     )
 
-    # bspline
-    bspline = coll.interpolate_profile2d(
-        key=key,
-        R=R,
-        Z=Z,
-        # coefs=coefs,
-        indt=indt,
-        indbs=indbs,
-        details=indbs is not None,
-        grid=False,
-        nan0=nan0,
-        val_out=val_out,
-        return_params=False,
-    )[0]
+    # angles
+    ax.plot(
+        xx_angles,
+        yy_angles,
+        ls='-',
+        lw=1.5,
+        c=color,
+    )
 
-    if indbs is None:
-        if bspline.ndim == R.ndim + 1:
-            assert bspline.shape[1:] == R.shape
-            bspline = bspline[0, ...]
-    else:
-        if bspline.ndim == R.ndim + 1:
-            assert bspline.shape[:-1] == R.shape
-            bspline = np.nansum(bspline, axis=-1)
-        elif bspline.ndim == R.ndim + 2:
-            assert bspline.shape[1:-1] == R.shape
-            bspline = np.nansum(bspline[0, ...], axis=-1)
+    return
 
-    if bspline.shape != R.shape:
-        import pdb; pdb.set_trace() # DB
-        pass
 
-    # extent
-    if mtype0 == 'polar':
-        extent = (
-            R.min(), R.max(),
-            Z.min(), Z.max(),
-        )
-    else:
-        extent = (
-            DR[0], DR[1],
-            DZ[0], DZ[1],
-        )
+# ################################################
+# ################################################
+#               Prepare figure
+# ################################################
 
-    # interpolation
-    if deg == 0:
-        interp = 'nearest'
-    elif deg == 1:
-        interp = 'bilinear'
-    elif deg >= 2:
-        interp = 'bicubic'
 
-    return bspline, extent, interp
+def _prepare_figure(
+    # keys
+    key=None,
+    key_mesh2d=None,
+    key_mesh1d_angle=None,
+    # options
+    dmargin=None,
+    fs=None,
+):
+
+    # ----------
+    # figure
+    # ----------
+
+    if fs is None:
+        fs = (12, 8)
+
+    if dmargin is None:
+        dmargin = {
+            'left': 0.08, 'right': 0.95,
+            'bottom': 0.08, 'top': 0.9,
+            'hspace': 0.1, 'wspace': 0.15,
+        }
+
+    fig = plt.figure(figsize=fs)
+    gs = gridspec.GridSpec(ncols=2, nrows=1, **dmargin)
+    dax = {}
+
+    # ----------
+    # axes
+    # ----------
+
+    # cross
+    ax = fig.add_subplot(gs[:, 0], aspect='equal')
+    ax.set_xlabel('R (m)', size=12, fontweight='bold')
+    ax.set_ylabel('Z (m)', size=12, fontweight='bold')
+    tit = f"{key} - {key_mesh2d}"
+    ax.set_title(tit, size=12, fontweight='bold')
+
+    dax['cross'] = {'handle': ax}
+
+    # hor
+    ax = fig.add_subplot(gs[:, 1], aspect='equal')
+    ax.set_xlabel('X (m)', size=12, fontweight='bold')
+    ax.set_ylabel('Y (m)', size=12, fontweight='bold')
+    tit = f"{key} - {key_mesh1d_angle}"
+    ax.set_title(tit, size=12, fontweight='bold')
+
+    dax['hor'] = {'handle': ax}
+
+    return dax

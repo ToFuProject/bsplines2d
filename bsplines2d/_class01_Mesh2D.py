@@ -23,10 +23,10 @@ from . import _class01_plot as _plot
 __all__ = ['Mesh2D']
 
 
-# #############################################################################
-# #############################################################################
-#
-# #############################################################################
+# ########################################################
+# ########################################################
+#               Class
+# ########################################################
 
 
 class Mesh2D(ds.DataStock):
@@ -40,16 +40,15 @@ class Mesh2D(ds.DataStock):
         _which_mesh: [
             'nd',
             'type',
+            'period',
+            'subkey',
             'variable',
             'crop',
             'crop_thresh',
             'ntri',
-            'knots',
-            'cents',
             'shape_k',
             'shape_c',
             'ind',
-            'subkey',
             f'nb {_which_bsplines}',
         ],
     })
@@ -59,6 +58,7 @@ class Mesh2D(ds.DataStock):
         key=None,
         knots=None,
         uniform=None,
+        period=None,
         # defined from pre-existing bsplines
         subkey=None,
         # direct addition of bsplines
@@ -69,6 +69,8 @@ class Mesh2D(ds.DataStock):
 
         """ Add an 1d mesh by key
 
+        Angle mesh are indicated by providing units='rad'
+
         The mesh is defined by a strictly increasing vector of knots (edges)
         The knots can be defined from a pre-existing 2d bsplines.
 
@@ -76,9 +78,12 @@ class Mesh2D(ds.DataStock):
 
         Example:
         --------
-                >>> from bsplines2d import BSplines2D
-                >>> bs = BSplines2D()
-                >>> bs.add_mesh_1d(key='m0', knots=np.linspace(0, 10, 11))
+                >>> from bsplines2d import Collection
+                >>> bs = Collection()
+                >>> bs.add_mesh_1d(
+                    key='m0',
+                    knots=np.linspace(0, 10, 11),
+                )
 
         """
 
@@ -90,6 +95,7 @@ class Mesh2D(ds.DataStock):
             # mesh knots
             knots=knots,
             uniform=uniform,
+            period=period,
             # defined from pre-existing bsplines
             subkey=subkey,
             # additional attributes
@@ -538,9 +544,12 @@ class Mesh2D(ds.DataStock):
     def plot_mesh(
         self,
         key=None,
+        # options for 2d mesh
         ind_knot=None,
         ind_cent=None,
         crop=None,
+        bck=None,
+        # options
         color=None,
         dax=None,
         dmargin=None,
@@ -552,9 +561,12 @@ class Mesh2D(ds.DataStock):
         return _plot.plot_mesh(
             coll=self,
             key=key,
+            # options for 2d mesh
             ind_knot=ind_knot,
             ind_cent=ind_cent,
             crop=crop,
+            bck=bck,
+            # options
             color=color,
             dax=dax,
             dmargin=dmargin,

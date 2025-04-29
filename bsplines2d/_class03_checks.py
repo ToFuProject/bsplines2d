@@ -1,188 +1,235 @@
 # -*- coding: utf-8 -*-
 
 
+# Built-in
+import warnings
+
+
 # Common
 import numpy as np
 import datastock as ds
 
 
-# #############################################################################
-# #############################################################################
-#                          bins generic check
-# #############################################################################
-
-
-def check(
-    coll=None,
-    key=None,
-    edges=None,
-    # custom names
-    key_cents=None,
-    key_ref=None,
-    # additional attributes
-    **kwdargs,
-):
-
-    # --------
-    # keys
-
-    # key
-    key = ds._generic_check._obj_key(
-        d0=coll._dobj.get(coll._which_bins, {}),
-        short='b',
-        key=key,
-    )
-
-    # ------------
-    # edges
-
-    edges = ds._generic_check._check_flat1darray(
-        edges, 'edges',
-        dtype=float,
-        unique=True,
-        can_be_None=False,
-    )
-
-    nb = edges.size - 1
-    cents = 0.5*(edges[:-1] + edges[1:])
-
-    # --------------------
-    # safety check on keys
-
-    # key_ref
-    defk = f"{key}_nb"
-    lout = [k0 for k0, v0 in coll.dref.items() if v0['size'] != nb]
-    key_ref = ds._generic_check._check_var(
-        key_ref, 'key_ref',
-        types=str,
-        default=defk,
-        excluded=lout,
-    )
-
-    # key_cents
-    defk = f"{key}_c"
-    lout = [
-        k0 for k0, v0 in coll.ddata.items()
-        if not (
-            v0['shape'] == (nb,)
-            and key_ref in coll.dref.keys()
-            and v0['ref'] == (key_ref,)
-            and v0['monot'] == (True,)
-        )
-    ]
-    key_cents = ds._generic_check._check_var(
-        key_cents, 'key_cents',
-        types=str,
-        default=defk,
-        excluded=lout,
-    )
-
-    # --------------
-    # to dict
-
-    dref, ddata, dobj = _to_dict(
-        coll=coll,
-        key=key,
-        edges=edges,
-        nb=nb,
-        cents=cents,
-        # custom names
-        key_cents=key_cents,
-        key_ref=key_ref,
-        # attributes
-        **kwdargs,
-    )
-
-    return key, dref, ddata, dobj
-
-
-# ##############################################################
 # ###############################################################
-#                           to_dict
+# ###############################################################
+#                           Mesh2DRect - bsplines
 # ###############################################################
 
 
-def _to_dict(
+def main(
     coll=None,
     key=None,
-    edges=None,
-    nb=None,
-    cents=None,
-    # custom names
-    key_cents=None,
-    key_ref=None,
-    # additional attributes
-    **kwdargs,
+    deg=None,
 ):
-
-    # attributes
-    latt = ['dim', 'quant', 'name', 'units']
-    dim, quant, name, units = [kwdargs.get(ss) for ss in latt]
 
     # -------------
-    # prepare dict
+    # check inputs
+    # -------------
 
-    # dref
-    if key_ref not in coll.dref.keys():
-        dref = {
-            key_ref: {
-                'size': nb,
-            },
-        }
+    # options
+    wm = coll._which_mesh
+    wm3d = coll._which_mesh3d
+    lok = list(coll.dobj.get(wm, {}).keys())
+    lok3d = list(coll.dobj.get(wm3d, {}).keys())
+
+    # key
+    key = ds._generic_check._check_var(
+        key, 'key',
+        types=str,
+        allowed=lok + lok3d,
+    )
+
+    # -------------
+    # deg
+    # -------------
+
+    if key in lok:
+        deg = ds._generic_check._check_var(
+            deg, 'deg',
+            types=int,
+            default=1,
+            allowed=[0, 1, 2, 3],
+        )
+
+        # keybs
+        keybs = f'{key}_bs{deg}'
+
     else:
-        dref = None
+        if deg is None:
+            deg = 1
+        if not iterable(deg):
+            deg = [deg, deg]
 
-    # ddata
-    if key_cents not in coll.ddata.keys():
-        ddata = {
-            key_cents: {
-                'data': cents,
-                'units': units,
-                # 'source': None,
-                'dim': dim,
-                'quant': quant,
-                'name': name,
-                'ref': key_ref,
-            },
-        }
-    else:
-        ddata = None
+        deg = ds._generic_check._check_flat1darray(
+            deg, 'deg',
+            dtype=int,
+            sign=['>=0', '<=3'],
+            size=2,
+        )
 
-    # dobj
-    dobj = {
-        coll._which_bins: {
-            key: {
-                'nd': '1d',
-                'edges': edges,
-                'cents': (key_cents,),
-                'ref': (key_ref,),
-                'shape': (nb,),
-            },
-        },
-    }
+        key_mesh2d = coll.dobj[wm3d]['mesh2d']
+        key_mesh1d_angle = coll.dobj[wm3d]['mesh1d_angle']
 
-    # additional attributes
-    for k0, v0 in kwdargs.items():
-        if k0 not in latt:
-            dobj[coll._which_bins][key][k0] = v0
+        coll.add_bsplines(key_mesh2d, deg[0])
+        coll.add_bsplines(key_mesh1d_angle, deg[1])
+        keybs = None
 
-    return dref, ddata, dobj
+    return key, keybs, deg
 
 
-# ##############################################################
+# #####################################################
+# #####################################################
+#           add data on mesh / bsplines
+# ######################################################
+
+
+def add_data_meshbsplines_ref(
+    coll=None,
+    ref=None,
+    data=None,
+):
+
+    dmesh = coll._dobj.get(coll._which_mesh)
+    dbsplines = coll._dobj.get(coll._which_bsplines)
+
+    if dmesh is None or dbsplines is None:
+        return ref, data
+
+    # ref is str
+    if isinstance(ref, str):
+        ref = [ref]
+
+    # ref is tuple
+    if isinstance(ref, (tuple, list)):
+
+        # ref contains mesh
+        rm = [(ii, rr) for ii, rr in enumerate(ref) if rr in dmesh.keys()]
+        if len(rm) > 0:
+
+            ref = list(ref)
+            for (ki, km) in rm:
+                kbs = [
+                    k0 for k0, v0 in dbsplines.items()
+                    if v0[coll._which_mesh] == km
+                ]
+                if len(kbs) == 1:
+                    ref[ki] = kbs[0]
+                elif len(kbs) > 1:
+                    msg = (
+                        "ref contains reference to mesh with several bsplines!\n"
+                        f"\t- ref: {ref}\n"
+                        f"\t- mesh bsplines: {kbs}\n"
+                    )
+                    raise Exception(msg)
+
+        # ref contains bsplines
+        rbs = [(ii, rr) for ii, rr in enumerate(ref) if rr in dbsplines.keys()]
+        while len(rbs) > 0:
+
+            ii, kb = rbs[0]
+
+            ref = np.r_[
+                ref[:ii],
+                dbsplines[kb]['ref'],
+                ref[ii+1:],
+            ]
+
+            rbs = [(ii, rr) for ii, rr in enumerate(ref) if rr in dbsplines.keys()]
+
+            # repeat data if taken from ntri > 1
+            data = _repeat_data_ntri(
+                ref=ref,
+                rbs1=kb,
+                refbs=dbsplines[kb]['ref'],
+                data=data,
+                # mesh
+                km=dbsplines[kb][coll._which_mesh],
+                dmesh=dmesh,
+                dbsplines=dbsplines,
+            )
+
+        ref = tuple(ref)
+
+    return ref, data
+
+
+def _repeat_data_ntri(
+    ref=None,
+    rbs1=None,
+    refbs=None,
+    data=None,
+    # mesh
+    km=None,
+    dmesh=None,
+    dbsplines=None,
+):
+    """ If triangular mesh with ntri > 1 => repeat data """
+
+    c0 = (
+        dmesh[km]['type'] == 'tri'
+        and dmesh[km]['ntri'] > 1
+    )
+    if c0:
+        ntri = dmesh[km]['ntri']
+        indr = ref.tolist().index(refbs[0])
+        nbs = dbsplines[rbs1]['shape'][0]
+        ndata = data.shape[indr]
+        if ndata == nbs:
+            pass
+        elif ndata == nbs / ntri:
+            data = np.repeat(data, ntri, axis=indr)
+        else:
+            msg = (
+                "Mismatching data shape vs multi-triangular mesh:\n"
+                f"\t- data.shape[tribs] = {ndata}\n"
+                f"\t- expected {nbs} / {ntri} = {nbs / ntri}\n"
+            )
+            raise Exception(msg)
+
+    return data
+
+
+def _set_data_bsplines(coll=None):
+
+    if coll.dobj.get(coll._which_bsplines) is not None:
+
+        wbs = coll._which_bsplines
+        for k0, v0 in coll._ddata.items():
+
+            lbs = [
+                (v0['ref'].index(v1['ref'][0]), k1)
+                for k1, v1 in coll.dobj[wbs].items()
+                if v1['ref'] == tuple([
+                    rr for rr in v0['ref']
+                    if rr in v1['ref']
+                ])
+            ]
+
+            if len(lbs) == 0:
+                pass
+            else:
+                # re-order
+                ind = np.argsort([bb[0] for bb in lbs])
+                lbs = [lbs[ii][1] for ii in ind]
+
+                # store
+                coll._ddata[k0]['bsplines'] = tuple(lbs)
+
+
 # ###############################################################
-#                   remove bins
+# ###############################################################
+#                       Remove bsplines
 # ###############################################################
 
 
-def remove_bins(coll=None, key=None, propagate=None):
+def remove_bsplines(coll=None, key=None, propagate=None):
 
     # ----------
     # check
 
     # key
-    wbins = coll._which_bins
-    if wbins not in coll.dobj.keys():
+    wbs = coll._which_bsplines
+    if wbs not in coll.dobj.keys():
         return
 
     if isinstance(key, str):
@@ -191,7 +238,7 @@ def remove_bins(coll=None, key=None, propagate=None):
         key, 'key',
         types=(list, tuple),
         types_iter=str,
-        allowed=coll.dobj.get(wbins, {}).keys(),
+        allowed=coll.dobj.get(wbs, {}).keys(),
     )
 
     # propagate
@@ -207,14 +254,24 @@ def remove_bins(coll=None, key=None, propagate=None):
     for k0 in key:
 
         # specific data
-        kdata = list(coll.dobj[wbins][k0]['cents'])
-        coll.remove_data(kdata, propagate=propagate)
+        ldata = list(set((
+            list(coll.dobj[wbs][k0]['apex'])
+            + [
+                k1 for k1, v1 in coll.ddata.items()
+                if k0 in v1[wbs]
+            ]
+        )))
+        for dd in ldata:
+            coll.remove_data(dd, propagate=propagate)
 
         # specific ref
-        lref = list(coll.dobj[wbins][k0]['ref'])
+        lref = (
+            coll.dobj[wbs][k0]['ref']
+            + coll.dobj[wbs][k0]['ref_bs']
+        )
         for rr in lref:
             if rr in coll.dref.keys():
                 coll.remove_ref(rr, propagate=propagate)
 
         # obj
-        coll.remove_obj(which=wbins, key=k0, propagate=propagate)
+        coll.remove_obj(which=wbs, key=k0, propagate=propagate)

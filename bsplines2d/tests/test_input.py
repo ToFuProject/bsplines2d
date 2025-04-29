@@ -51,6 +51,12 @@ def _add_1d_knots_variable(bsplines, key=None):
     )
 
 
+def _add_1d_knots_angle(bsplines, key=None):
+    bsplines.add_mesh_1d(
+        key=key, knots=np.linspace(-np.pi, np.pi, 10), units='rad',
+    )
+
+
 def _add_rect_uniform(bsplines, key=None):
     # add uniform rect mesh
     bsplines.add_mesh_2d_rect(
@@ -172,6 +178,7 @@ def _get_mesh_outline_rect(coll):
 
     for km in lm:
         dout = coll.get_mesh_outline(key=km)
+        assert isinstance(dout, dict)
 
     return
 
@@ -200,6 +207,7 @@ def _get_mesh_outline_tri(coll):
 
     for km in lm:
         dout = coll.get_mesh_outline(key=km)
+        assert isinstance(dout, dict)
 
     return
 
@@ -379,6 +387,53 @@ def _add_polar2(bsplines, key=None):
 
 #######################################################
 #
+#     Add 3d mesh
+#
+#######################################################
+
+
+def _add_3d_cyl(
+    coll=None,
+):
+
+    # -----------
+    # mesh 2d
+    # -----------
+
+    wm = coll._which_mesh
+    l2d = [
+        k0 for k0, v0 in coll.dobj.get(wm, {}).items()
+        if v0['nd'] == '2d'
+    ]
+    if len(l2d) == 0:
+        _add_rect_uniform(coll)
+        _add_tri_ntri1(coll)
+
+    # -----------
+    # mesh 1d
+    # -----------
+
+    l1d = [
+        k0 for k0, v0 in coll.dobj.get(wm, {}).items()
+        if v0['nd'] == '1d'
+        and coll.ddata[v0['knots'][0]]['units'] == 'rad'
+    ]
+    if len(l1d) == 0:
+        _add_1d_knots_angle(coll)
+
+    # -----------
+    # mesh 3d
+    # -----------
+
+    for km2d in l2d:
+        for km1d in l1d:
+            coll.add_mesh_3d_cyl(key_mesh2d=km2d, ley_mesh1d_angle=km1d)
+
+    return
+
+
+#######################################################
+#
 #     Add bsplines
 #
 #######################################################
@@ -456,6 +511,12 @@ def _select_mesh_elements(bsplines, nd=None, kind=None):
                 return_neighbours=comb[4],
                 crop=comb[0],
             )
+            assert (
+                (isinstance(out, tuple) and len(out) == 2)
+                or (isinstance(out, np.ndarray))
+            )
+
+    return
 
 
 def _sample_mesh(bsplines, nd=None, kind=None):
@@ -481,7 +542,7 @@ def _sample_mesh(bsplines, nd=None, kind=None):
                     Dx0 = None
                     Dx1 = None
 
-            out = bsplines.get_sample_mesh(
+            dout = bsplines.get_sample_mesh(
                 key=km,
                 res=comb[0],
                 mode=comb[1],
@@ -491,6 +552,8 @@ def _sample_mesh(bsplines, nd=None, kind=None):
                 in_mesh=comb[2] and kind != 'tri',
                 imshow=comb[3]
             )
+            assert isinstance(dout, dict)
+    return
 
 
 def _plot_mesh(bsplines, nd=None, kind=None):
@@ -513,6 +576,16 @@ def _plot_mesh(bsplines, nd=None, kind=None):
                 crop=comb[2],
             )
             plt.close('all')
+
+
+def _plot_mesh3d(coll, nd=None, kind=None):
+    lkm = _get_mesh3d(coll, nd=nd, kind=kind)
+
+    for km in lkm:
+        _ = coll.plot_mesh3d(
+            key=km,
+        )
+        plt.close('all')
 
 
 #######################################################
@@ -543,6 +616,12 @@ def _select_bsplines(bs, nd=None, kind=None):
                 return_knots=comb[2],
                 crop=comb[3],
             )
+            assert (
+                (isinstance(out, tuple) and len(out) in [2, 3])
+                or (isinstance(out, np.ndarray))
+            )
+
+    return
 
 def _add_data_1bs_fix(bs, nd=None, kind=None, remove=None):
     lkb = _get_bs(bs, nd=nd, kind=kind)
@@ -972,13 +1051,13 @@ def _plot_as_profile2d_compare(bs,  nd=None, kind=None):
             continue
 
         # knots
-        if ii % 3 == 0:
-            knots = bs.dobj[wbs][v0['bs'][0]]['apex'][0]
-            knots = bs.ddata[knots]['data']
-            span = np.abs(knots[-1] - knots[0])
-            res = span / 3.
-        else:
-            res = None
+        # if ii % 3 == 0:
+            # knots = bs.dobj[wbs][v0['bs'][0]]['apex'][0]
+            # knots = bs.ddata[knots]['data']
+            # span = np.abs(knots[-1] - knots[0])
+            # res = span / 3.
+        # else:
+            # res = None
 
         lpassed.append(k0)
         if len(lpassed) == 1:
@@ -1051,9 +1130,20 @@ def _get_operators(bs, nd=None, kind=None, remove=None):
 #######################################################
 
 
-def _get_mesh(bsplines, nd=None, kind=None):
+def _get_mesh(coll, nd=None, kind=None):
+    wm = coll._which_mesh
     return [
-        k0 for k0, v0 in bsplines.dobj[bsplines._which_mesh].items()
+        k0 for k0, v0 in coll.dobj[wm].items()
+        if nd in [None, v0['nd']]
+        and kind in [None, v0['type']]
+        and coll.ddata[v0['knots'][0]]['units'] != 'rad' # angle mesh
+    ]
+
+
+def _get_mesh3d(coll, nd=None, kind=None):
+    wm3d = coll._which_mesh3d
+    return [
+        k0 for k0, v0 in coll.dobj[wm3d].items()
         if nd in [None, v0['nd']]
         and kind in [None, v0['type']]
     ]

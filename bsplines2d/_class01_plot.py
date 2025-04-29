@@ -24,11 +24,13 @@ from . import _generic_check
 def plot_mesh(
     coll=None,
     key=None,
+    # options for 2d mesh
     ind_knot=None,
     ind_cent=None,
     crop=None,
     bck=None,
     nmax=None,
+    # options
     color=None,
     dax=None,
     dmargin=None,

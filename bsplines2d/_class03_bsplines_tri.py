@@ -13,7 +13,6 @@ import datastock as ds
 
 # specific
 from . import _class01_checks_2d_tri as _checks
-# from . import _class02_bsplines_operators_tri
 
 
 # #############################################################################

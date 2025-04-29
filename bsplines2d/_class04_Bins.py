@@ -10,9 +10,9 @@ import numpy as np
 
 
 # local
-from ._class02_BSplines2D import BSplines2D as Previous
-from . import _class03_checks as _checks
-from . import _class03_binning as _binning
+from ._class03_BSplines2D import BSplines2D as Previous
+from . import _class04_checks as _checks
+from . import _class04_binning as _binning
 
 
 __all__ = ['Bins']

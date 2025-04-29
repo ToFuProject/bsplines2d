@@ -11,7 +11,7 @@ import datastock as ds
 
 
 from . import _utils_bsplines_operators as _operators
-from . import _class02_bsplines_operators_1d as _operators_1d
+from . import _class03_bsplines_operators_1d as _operators_1d
 
 
 _LOPERATORS_INT = [

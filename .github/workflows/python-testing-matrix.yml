@@ -38,4 +38,4 @@ jobs:
     # Run tests
     - name: Run tests
       # For example, using `pytest`
-      run: uv run pytest bsplines2d/tests
+      run: uv run pytest -v -x bsplines2d/tests
