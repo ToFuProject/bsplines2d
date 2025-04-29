@@ -40,6 +40,7 @@ class Mesh2D(ds.DataStock):
         _which_mesh: [
             'nd',
             'type',
+            'period',
             'subkey',
             'variable',
             'crop',
@@ -57,6 +58,7 @@ class Mesh2D(ds.DataStock):
         key=None,
         knots=None,
         uniform=None,
+        period=None,
         # defined from pre-existing bsplines
         subkey=None,
         # direct addition of bsplines
@@ -93,6 +95,7 @@ class Mesh2D(ds.DataStock):
             # mesh knots
             knots=knots,
             uniform=uniform,
+            period=period,
             # defined from pre-existing bsplines
             subkey=subkey,
             # additional attributes

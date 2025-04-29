@@ -22,6 +22,7 @@ def check(
     # knots
     knots=None,
     uniform=None,
+    period=None,
     # defined from pre-existing bsplines
     subkey=None,
     # additional attributes
@@ -52,10 +53,29 @@ def check(
 
     isangle = str(kwdargs.get('units')) == 'rad'
     if isangle:
-        knots, cents = _knots_angle(knots)
+        period = [-np.pi, np.pi]
+
+    # ----------------
+    # period
+
+    if period is None:
+        period = False
+
+    if period is False:
+        cents = 0.5*(knots[1:] + knots[:-1])
 
     else:
-        cents = 0.5*(knots[1:] + knots[:-1])
+        period = ds._generic_check._check_flat1darray(
+            period, 'period',
+            dtype=float,
+            size=2,
+            unique=True,
+        )
+
+        knots, cents = _knots_cents_period(
+            knots=knots,
+            period=period,
+        )
 
     # ------------------------
     # depend on other bsplines
@@ -76,6 +96,7 @@ def check(
         knots=knots,
         cents=cents,
         res=res,
+        period=period,
         # sub quantity
         subkey=subkey,
         subbs=subbs,
@@ -87,10 +108,10 @@ def check(
     return key, dref, ddata, dobj
 
 
-# ##################################################################
-# ##################################################################
+# ###############################################
+# ###############################################
 #                       knots
-# ##################################################################
+# ###############################################
 
 
 def _check_knots(
@@ -139,21 +160,36 @@ def _check_knots(
     return knots, res
 
 
-def _knots_angle(
+def _knots_cents_period(
     knots=None,
-    res=None,
+    period=None,
 ):
 
     # knots in ]-pi; pi]
-    ang = np.arctan2(np.sin(knots), np.cos(knots))
-    ind = np.unique(np.round(ang, decimals=6), return_index=True)[1]
-    knots = ang[ind]
+    DT = period[1] - period[0]
+    nnkk = (knots - period[0]) / DT
+    kk = nnkk - np.floor(nnkk)
+
+    # sfatey check
+    assert np.all((kk >= 0) & (kk <= 1.))
+
+    # remove duplicate start / end
+    d0 = np.abs(np.min(kk))
+    d1 = np.abs(np.max(kk)-1)
+    if d0 < 1e-9*DT and d1 < 1e-9*DT:
+        if d0 < d1:
+            kk = kk[:-1]
+        else:
+            kk = kk[1:]
+
+    # sort to be sure
+    ind = np.unique(kk, return_index=True)[1]
+    knots = period[0] + kk[ind] * DT
 
     # cents - handle discontinuity at -pi
     cents = 0.5*(knots[1:] + knots[:-1])
-    mid = 0.5*(knots[-1] + (2.*np.pi + knots[0]))
-    mid = np.arctan2(np.sin(mid), np.cos(mid))
-    if mid < cents[0]:
+    mid = 0.5*(knots[-1] + (DT + knots[0]))
+    if mid > cents[-1]:
         cents = np.r_[mid, cents]
     else:
         cents = np.r_[cents, mid]
@@ -161,10 +197,10 @@ def _knots_angle(
     return knots, cents
 
 
-# #############################################################################
-# #############################################################################
-#                        defined_from
-# #############################################################################
+# ###############################################
+# ###############################################
+#      defined_from
+# ###############################################
 
 
 def _defined_from(
@@ -240,6 +276,7 @@ def _to_dict(
     knots=None,
     cents=None,
     res=None,
+    period=None,
     # submesh
     subkey=None,
     subbs=None,
@@ -309,6 +346,7 @@ def _to_dict(
             key: {
                 'nd': '1d',
                 'type': None,
+                'period': period,
                 'knots': (kk,),
                 'cents': (kc,),
                 'shape_c': (cents.size,),
