@@ -30,8 +30,12 @@ def _mesh1d_bsplines(
     deg=None,
 ):
 
-    kknots = coll.dobj[coll._which_mesh][keym]['knots'][0]
+    wm = coll._which_mesh
+    kknots = coll.dobj[wm][keym]['knots'][0]
     knots = coll.ddata[kknots]['data']
+    kcents = coll.dobj[wm][keym]['cents'][0]
+    cents = coll.ddata[kcents]['data']
+    period = coll.dobj[wm][keym]['period']
 
     kbsn = f'{keybs}_nbs'
     kbsap = f'{keybs}_ap'
@@ -40,6 +44,8 @@ def _mesh1d_bsplines(
         nd='1d',
         deg=deg,
         knots0=knots,
+        cents0=cents,
+        period=period,
     )
 
     # ------------
@@ -266,14 +272,18 @@ def get_bs_class(
     deg=None,
     knots0=None,
     knots1=None,
+    cents0=None,
     shapebs=None,
     indices=None,
+    period=None,
 ):
 
     if nd == '1d':
         clas = _bsplines_1d.get_bs_class(
             deg=deg,
             knots=knots0,
+            cents=cents0,
+            period=period,
         )
 
     elif mtype == 'rect':

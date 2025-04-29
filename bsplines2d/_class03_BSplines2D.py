@@ -56,33 +56,46 @@ class BSplines2D(Previous):
         # --------------
         # check inputs
 
-        keym, keybs, deg = _checks._mesh_bsplines(
+        keym, keybs, deg = _checks.main(
+            coll=self,
             key=key,
-            lkeys=list(self.dobj[self._which_mesh].keys()),
             deg=deg,
         )
+
+        # --------------
+        # trivial
+
+        wbs = self._which_bsplines
+        if keybs in self.dobj.get(wbs, {}).keys():
+            return
 
         # ------------
         # get bsplines
 
-        nd = self.dobj[self._which_mesh][keym]['nd']
-        mtype = self.dobj[self._which_mesh][keym]['type']
+        wm = self._which_mesh
+        nd = self.dobj[wm][keym]['nd']
+        mtype = self.dobj[wm][keym]['type']
         if nd == '1d':
             dref, ddata, dobj = _compute._mesh1d_bsplines(
                 coll=self, keym=keym, keybs=keybs, deg=deg,
             )
-        elif mtype == 'rect':
-            dref, ddata, dobj = _compute._mesh2DRect_bsplines(
-                coll=self, keym=keym, keybs=keybs, deg=deg,
-            )
-        elif mtype == 'tri':
-            dref, ddata, dobj = _compute._mesh2DTri_bsplines(
-                coll=self, keym=keym, keybs=keybs, deg=deg,
-            )
+
+        elif nd == '2d':
+            if mtype == 'rect':
+                dref, ddata, dobj = _compute._mesh2DRect_bsplines(
+                    coll=self, keym=keym, keybs=keybs, deg=deg,
+                )
+            elif mtype == 'tri':
+                dref, ddata, dobj = _compute._mesh2DTri_bsplines(
+                    coll=self, keym=keym, keybs=keybs, deg=deg,
+                )
+            else:
+                dref, ddata, dobj = _compute._mesh2Dpolar_bsplines(
+                    coll=self, keym=keym, keybs=keybs, deg=deg, # angle=angle,
+                )
+
         else:
-            dref, ddata, dobj = _compute._mesh2Dpolar_bsplines(
-                coll=self, keym=keym, keybs=keybs, deg=deg, # angle=angle,
-            )
+            pass
 
         # --------------
         # update dict and crop if relevant
@@ -100,7 +113,12 @@ class BSplines2D(Previous):
     # ------------------
 
     def remove_bsplines(self, key=None, propagate=None):
-        return _checks.remove_bsplines(coll=self, key=key, propagate=propagate)
+        """ Remove selected bsplines """
+        return _checks.remove_bsplines(
+            coll=self,
+            key=key,
+            propagate=propagate,
+        )
 
     # -----------------
     # add_data

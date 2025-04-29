@@ -10,10 +10,77 @@ import numpy as np
 import datastock as ds
 
 
-# ##############################################################
-# ##############################################################
-#                          add data on mesh / bsplines
 # ###############################################################
+# ###############################################################
+#                           Mesh2DRect - bsplines
+# ###############################################################
+
+
+def main(
+    coll=None,
+    key=None,
+    deg=None,
+):
+
+    # -------------
+    # check inputs
+    # -------------
+
+    # options
+    wm = coll._which_mesh
+    wm3d = coll._which_mesh3d
+    lok = list(coll.dobj.get(wm, {}).keys())
+    lok3d = list(coll.dobj.get(wm3d, {}).keys())
+
+    # key
+    key = ds._generic_check._check_var(
+        key, 'key',
+        types=str,
+        allowed=lok + lok3d,
+    )
+
+    # -------------
+    # deg
+    # -------------
+
+    if key in lok:
+        deg = ds._generic_check._check_var(
+            deg, 'deg',
+            types=int,
+            default=1,
+            allowed=[0, 1, 2, 3],
+        )
+
+        # keybs
+        keybs = f'{key}_bs{deg}'
+
+    else:
+        if deg is None:
+            deg = 1
+        if not iterable(deg):
+            deg = [deg, deg]
+
+        deg = ds._generic_check._check_flat1darray(
+            deg, 'deg',
+            dtype=int,
+            sign=['>=0', '<=3'],
+            size=2,
+        )
+
+        key_mesh2d = coll.dobj[wm3d]['mesh2d']
+        key_mesh1d_angle = coll.dobj[wm3d]['mesh1d_angle']
+
+        coll.add_bsplines(key_mesh2d, deg[0])
+        coll.add_bsplines(key_mesh1d_angle, deg[1])
+        keybs = None
+
+    return key, keybs, deg
+
+
+# #####################################################
+# #####################################################
+#           add data on mesh / bsplines
+# ######################################################
 
 
 def add_data_meshbsplines_ref(
@@ -147,35 +214,6 @@ def _set_data_bsplines(coll=None):
 
                 # store
                 coll._ddata[k0]['bsplines'] = tuple(lbs)
-
-
-# ###############################################################
-# ###############################################################
-#                           Mesh2DRect - bsplines
-# ###############################################################
-
-
-def _mesh_bsplines(key=None, lkeys=None, deg=None):
-
-    # key
-    key = ds._generic_check._check_var(
-        key, 'key',
-        types=str,
-        allowed=lkeys,
-    )
-
-    # deg
-    deg = ds._generic_check._check_var(
-        deg, 'deg',
-        types=int,
-        default=2,
-        allowed=[0, 1, 2, 3],
-    )
-
-    # keybs
-    keybs = f'{key}_bs{deg}'
-
-    return key, keybs, deg
 
 
 # ###############################################################

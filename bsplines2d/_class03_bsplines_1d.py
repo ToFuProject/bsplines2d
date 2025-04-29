@@ -28,14 +28,16 @@ class UnivariateSpline():
     Used self.set_coefs() to update
     """
 
-    def __init__(self, knots=None, deg=None):
+    def __init__(self, knots=None, cents=None, deg=None, period=None):
 
         assert deg in [0, 1, 2, 3], deg
 
         # get knots pr bs
         self._get_knots_per_bs_for_basis_elements(
             knots=knots,
+            cents=cents,
             deg=deg,
+            period=period,
         )
 
         # get nbs
@@ -47,17 +49,19 @@ class UnivariateSpline():
     def _get_knots_per_bs_for_basis_elements(
         self,
         knots=None,
+        cents=None,
         deg=None,
+        period=None,
     ):
 
         # ------------------------------------
         # get knots per bs in radius direction
 
         knots_per_bs = _utils_bsplines._get_knots_per_bs(
-            knots, deg=deg, returnas='data',
+            knots, deg=deg, returnas='data', period=period,
         )
         knots_with_mult, nbs = _utils_bsplines._get_knots_per_bs(
-            knots, deg=deg, returnas='data', return_unique=True,
+            knots, deg=deg, returnas='data', period=period, return_unique=True,
         )
 
         if nbs != knots_per_bs.shape[1]:
@@ -65,22 +69,13 @@ class UnivariateSpline():
             raise Exception(msg)
 
         # ----------------
-        # Pre-compute bsplines basis elements
-
-        lbs = [
-            scpinterp.BSpline.basis_element(
-                knots_per_bs[:, ii],
-                extrapolate=False,
-            )
-            for ii in range(nbs)
-        ]
-
-        # ----------------
         # bsplines centers
 
         cents_per_bs = _utils_bsplines._get_cents_per_bs(
-            0.5*(knots[1:] + knots[:-1]),
+            cents,
+            knots=knots,
             deg=deg,
+            period=period,
             returnas='data',
         )
 
@@ -90,7 +85,9 @@ class UnivariateSpline():
         apex_per_bs = _utils_bsplines._get_apex_per_bs(
             knots=knots,
             knots_per_bs=knots_per_bs,
+            cents_per_bs=cents_per_bs,
             deg=deg,
+            period=period,
         )
 
         # ------
@@ -102,7 +99,19 @@ class UnivariateSpline():
         self.cents_per_bs = cents_per_bs
         self.apex_per_bs = apex_per_bs
         self.nbs = nbs
-        self.lbs = lbs
+
+        # ----------------
+        # Pre-compute bsplines basis elements
+
+        if period is False:
+            lbs = [
+                scpinterp.BSpline.basis_element(
+                    knots_per_bs[:, ii],
+                    extrapolate=False,
+                )
+                for ii in range(nbs)
+            ]
+            self.lbs = lbs
 
     def _check_coefs(self, coefs=None, axis=None):
         """ None for ev_details, (nt, shapebs) for sum """
@@ -449,12 +458,16 @@ def _get_overlap(
 def get_bs_class(
     deg=None,
     knots=None,
+    cents=None,
+    period=None,
 ):
 
     # ----------------
     # Define functions
 
     return UnivariateSpline(
-        knots=knots,
         deg=deg,
+        knots=knots,
+        cents=cents,
+        period=period,
     )
