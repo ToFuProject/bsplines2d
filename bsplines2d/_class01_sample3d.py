@@ -153,7 +153,9 @@ def _get_func_RZphi_from_ind(
     # -------------
 
     def func(
-        ind=None,
+        indr=None,
+        indz=None,
+        indphi=None,
         # resources
         x0u=x0u,
         x1u=x1u,
@@ -161,26 +163,66 @@ def _get_func_RZphi_from_ind(
     ):
 
         # ----------
+        # check
+        # ----------
+
+        if indphi is not None:
+            c0 = (indr is not None) and (indr.shape == indphi.shape)
+            if not c0:
+                indr_str = 'None' if indr is None else indr.shape
+                msg = (
+                    "Arg indr and indphi must be the same shape!\n"
+                    f"Provided:\n"
+                    f"\t- indr.shape = {indr_str}\n"
+                    f"\t- indphi.shape = {indphi.shape}\n"
+                )
+                raise Exception(msg)
+
+        # ----------
         # R, Z
         # ----------
 
-        R = x0u[ind[0, :]]
-        Z = x1u[ind[1, :]]
+        # R
+        if indr is not None:
+            R = x0u[indr]
+        else:
+            R = None
+
+        # Z
+        if indz is not None:
+            Z = x1u[indz]
+        else:
+            Z = None
+
+        # dS
         dS = (x0u[1] - x0u[0]) * (x1u[1] - x1u[0])
 
         # -------------
         # phi
         # -------------
 
-        phi = np.full((ind.shape[1],), np.nan)
-        dV = np.full((ind.shape[1],), np.nan)
-        iru = np.unique(ind[0, :])
-        for iri in iru:
-            phii = _get_phi_from_nphi(nphi[iri])
+        dV = None
+        phi = None
+        if indr is not None:
+            dV = np.full((indr.shape[1],), np.nan)
+            iru = np.unique(indr)
 
-            iok = ind[0, :] == iri
-            phi[iok] = phii[ind[2, iok]]
-            dV[iok] = dS * x0u[iri] * (phii[1] - phii[0])
+            if indphi is None:
+                for iri in iru:
+                    phii = _get_phi_from_nphi(nphi[iri])
+
+                    iok = indr == iri
+                    dV[iok] = dS * x0u[iri] * (phii[1] - phii[0])
+
+            else:
+                phi = np.full((indr.shape[1],), np.nan)
+                for iri in iru:
+                    phii = _get_phi_from_nphi(nphi[iri])
+
+                    iok = indr == iri
+                    dV[iok] = dS * x0u[iri] * (phii[1] - phii[0])
+                    phi[iok] = phii[indphi[iok]]
+
         return R, Z, phi, dV
 
     return func
@@ -387,7 +429,7 @@ def _get_func_ind_from_domain(
             ax0.plot(rr, zz, '.')
             ax1.plot(rr*np.cos(pp), rr*np.sin(pp), '.')
 
-        return ind
+        return ind[0, :], ind[1, :], ind[2, :]
 
     return func
 
