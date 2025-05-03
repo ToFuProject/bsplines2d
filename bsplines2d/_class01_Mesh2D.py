@@ -556,6 +556,12 @@ class Mesh2D(ds.DataStock):
         DR=None,
         DZ=None,
         Dphi=None,
+        # option
+        reshape_2d=None,
+        # plot
+        plot=None,
+        dax=None,
+        color=None,
     ):
         """ Return a dict continaing pts coordinates on a plane (slice)
 
@@ -578,6 +584,12 @@ class Mesh2D(ds.DataStock):
             DR=DR,
             DZ=DZ,
             Dphi=Dphi,
+            # option
+            reshape_2d=reshape_2d,
+            # plot
+            plot=plot,
+            dax=dax,
+            color=color,
         )
 
     # -----------------
