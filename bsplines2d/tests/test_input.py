@@ -526,7 +526,7 @@ def _sample_mesh_3d_func(coll, nd=None, kind=None):
                 Dphi=[-0.1, 0.1],
             )
 
-            rr, zz, pp = func_RZphi_from_ind(indr, indz, indphi)
+            rr, zz, pp, dV = func_RZphi_from_ind(indr, indz, indphi)
 
 #######################################################
 #
