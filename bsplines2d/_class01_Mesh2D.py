@@ -17,6 +17,7 @@ from . import _class01_cropping as _cropping
 from . import _class01_select as _select
 from . import _class01_sample as _sample
 from . import _class01_sample3d as _sample3d
+from . import _class01_slice3d as _slice3d
 from . import _class01_outline as _outline
 from . import _class01_plot as _plot
 
@@ -542,6 +543,41 @@ class Mesh2D(ds.DataStock):
             res_RZ=res_RZ,
             mode=mode,
             res_phi=res_phi,
+        )
+
+    def get_sample_mesh_3d_slice(
+        self,
+        key=None,
+        res=None,
+        # slice
+        phi=None,
+        Z=None,
+        # domain
+        DR=None,
+        DZ=None,
+        Dphi=None,
+    ):
+        """ Return a dict continaing pts coordinates on a plane (slice)
+
+        Slice can be either horizontal (Z) or poloidal (phi)
+
+        A subset of the mesh can be defined using:
+            - horizontal:   DR and Dphi
+            - poloidal:     DR and DZ
+
+        """
+
+        return _slice3d.main(
+            coll=self,
+            key=key,
+            res=res,
+            # slice
+            phi=phi,
+            Z=Z,
+            # domain
+            DR=DR,
+            DZ=DZ,
+            Dphi=Dphi,
         )
 
     # -----------------
