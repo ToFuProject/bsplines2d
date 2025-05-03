@@ -204,7 +204,7 @@ def _get_func_RZphi_from_ind(
         dV = None
         phi = None
         if indr is not None:
-            dV = np.full((indr.shape[1],), np.nan)
+            dV = np.full(indr.shape, np.nan)
             iru = np.unique(indr)
 
             if indphi is None:
@@ -215,7 +215,7 @@ def _get_func_RZphi_from_ind(
                     dV[iok] = dS * x0u[iri] * (phii[1] - phii[0])
 
             else:
-                phi = np.full((indr.shape[1],), np.nan)
+                phi = np.full(indr.shape, np.nan)
                 for iri in iru:
                     phii = _get_phi_from_nphi(nphi[iri])
 
