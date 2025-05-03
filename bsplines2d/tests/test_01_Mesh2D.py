@@ -162,6 +162,13 @@ class Test01_BSplines2D():
         test_input._sample_mesh(self.bs, nd='2d', kind='tri')
 
     # ##############
+    #  sample 3d
+    # ##############
+
+    def test19_sample_3d_func(self):
+        test_input._sample_mesh_3d_func(self.bs, nd='2d', kind='rect')
+
+    # ##############
     #  plot
     # ##############
 

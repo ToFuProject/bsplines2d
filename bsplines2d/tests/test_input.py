@@ -458,6 +458,13 @@ def _select_mesh_elements(bsplines, nd=None, kind=None):
             )
 
 
+#######################################################
+#
+#     Samplings
+#
+#######################################################
+
+
 def _sample_mesh(bsplines, nd=None, kind=None):
     lkm = _get_mesh(bsplines, nd=nd, kind=kind)
 
@@ -491,6 +498,41 @@ def _sample_mesh(bsplines, nd=None, kind=None):
                 in_mesh=comb[2] and kind != 'tri',
                 imshow=comb[3]
             )
+
+
+def _sample_mesh_3d_func(coll, nd=None, kind=None):
+    lkm = _get_mesh(coll, nd=nd, kind=kind)
+
+    lres = [0.1]
+    lmode = ['abs', 'rel']
+    lres_phi = [0.05]
+
+    for km in lkm:
+        for ii, comb in enumerate(itt.product(lres, lmode, lres_phi)):
+            (
+                func_RZphi_from_ind,
+                func_ind_from_domain,
+            ) = coll.get_sample_mesh_3d_func(
+                key=km,
+                res_RZ=comb[0],
+                mode=comb[1],
+                res_phi=comb[2],
+            )
+
+            # Call
+            indr, indz, indphi = func_ind_from_domain(
+                DR=[1, 2],
+                DZ=[-0.2, 0.2],
+                Dphi=[-0.1, 0.1],
+            )
+
+            rr, zz, pp = func_RZphi_from_ind(indr, indz, indphi)
+
+#######################################################
+#
+#     Plotting
+#
+#######################################################
 
 
 def _plot_mesh(bsplines, nd=None, kind=None):
