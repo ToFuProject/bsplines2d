@@ -21,7 +21,7 @@ from . import _generic_mesh
 def main(
     coll=None,
     key=None,
-    res=None,
+    res_RZ=None,
     mode=None,
     res_phi=None,
 ):
@@ -43,7 +43,7 @@ def main(
 
     dsamp = coll.get_sample_mesh(
         key=key,
-        res=res,
+        res=res_RZ,
         grid=False,
         mode=mode,
         x0=None,

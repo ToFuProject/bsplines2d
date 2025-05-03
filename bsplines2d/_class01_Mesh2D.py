@@ -517,7 +517,7 @@ class Mesh2D(ds.DataStock):
     def get_sample_mesh_3d_func(
         self,
         key=None,
-        res=None,
+        res_RZ=None,
         mode=None,
         res_phi=None,
     ):
@@ -539,7 +539,7 @@ class Mesh2D(ds.DataStock):
         return _sample3d.main(
             coll=self,
             key=key,
-            res=res,
+            res_RZ=res_RZ,
             mode=mode,
             res_phi=res_phi,
         )
