@@ -169,145 +169,152 @@ class Test01_BSplines2D():
         test_input._sample_mesh_3d_func(self.bs, nd='2d', kind='rect')
 
     # ##############
+    #  slice 3d
+    # ##############
+
+    def test20_slice_3d(self):
+        test_input._slice_mesh_3d(self.bs, nd='2d', kind='rect')
+
+    # ##############
     #  plot
     # ##############
 
-    def test20_plot_mesh_1d(self):
+    def test21_plot_mesh_1d(self):
         test_input._plot_mesh(self.bs, nd='1d', kind=None)
 
-    def test21_plot_mesh_rect(self):
+    def test22_plot_mesh_rect(self):
         test_input._plot_mesh(self.bs, nd='2d', kind='rect')
 
-    def test22_plot_mesh_tri(self):
+    def test23_plot_mesh_tri(self):
         test_input._plot_mesh(self.bs, nd='2d', kind='tri')
 
     # ##############
     #  add bsplines
     # ##############
 
-    def test23_add_bsplines_1d(self):
+    def test24_add_bsplines_1d(self):
         test_input._add_bsplines(self.bs, nd='1d')
 
-    def test24_add_bsplines_2d_rect(self):
+    def test25_add_bsplines_2d_rect(self):
         test_input._add_bsplines(self.bs, kind='rect')
 
-    def test25_add_bsplines_2d_tri(self):
+    def test26_add_bsplines_2d_tri(self):
         test_input._add_bsplines(self.bs, kind='tri')
 
     # ##############
     #  select bsplines
     # ##############
 
-    def test26_select_bsplines_1d(self):
+    def test27_select_bsplines_1d(self):
         test_input._select_bsplines(self.bs, nd='1d', kind=None)
 
-    def test27_select_bsplines_2d_rect(self):
+    def test28_select_bsplines_2d_rect(self):
         test_input._select_bsplines(self.bs, nd='2d', kind='rect')
 
-    def test28_select_bsplines_2d_tri(self):
+    def test29_select_bsplines_2d_tri(self):
         test_input._select_bsplines(self.bs, nd='2d', kind='tri')
 
     # ###############
     #  add data vs bs
     # ###############
 
-    def test29_add_data_1bs_fix_1d(self, remove=True):
+    def test30_add_data_1bs_fix_1d(self, remove=True):
         test_input._add_data_1bs_fix(self.bs, nd='1d', kind=None, remove=remove)
 
-    def test30_add_data_1bs_fix_2d_rect(self, remove=True):
+    def test31_add_data_1bs_fix_2d_rect(self, remove=True):
         test_input._add_data_1bs_fix(self.bs, nd='2d', kind='rect', remove=remove)
 
-    def test31_add_data_1bs_fix_2d_tri(self, remove=True):
+    def test32_add_data_1bs_fix_2d_tri(self, remove=True):
         test_input._add_data_1bs_fix(self.bs, nd='2d', kind='tri', remove=remove)
 
-    def test32_add_data_1bs_arrays_1d(self, remove=False):
+    def test33_add_data_1bs_arrays_1d(self, remove=False):
         test_input._add_data_1bs_arrays(self.bs, nd='1d', kind=None, remove=remove)
 
-    def test33_add_data_1bs_arrays_2d_rect(self, remove=False):
+    def test34_add_data_1bs_arrays_2d_rect(self, remove=False):
         test_input._add_data_1bs_arrays(self.bs, nd='2d', kind='rect', remove=remove)
 
-    def test34_add_data_1bs_arrays_2d_tri(self, remove=False):
+    def test35_add_data_1bs_arrays_2d_tri(self, remove=False):
         test_input._add_data_1bs_arrays(self.bs, nd='2d', kind='tri', remove=remove)
 
-    def test35_add_data_multibs_arrays(self, remove=False):
+    def test36_add_data_multibs_arrays(self, remove=False):
         test_input._add_data_multibs_arrays(self.bs, remove=remove)
 
     # ##############
     # interp bs
     # ##############
 
-    def test36_interpolate_bsplines_1d(self):
+    def test37_interpolate_bsplines_1d(self):
         test_input._interpolate(self.bs, nd='1d', kind=None, details=False)
 
-    def test37_interpolate_bsplines_1d_details(self):
+    def test38_interpolate_bsplines_1d_details(self):
         test_input._interpolate(self.bs, nd='1d', kind=None, details=True)
 
-    def test38_interpolate_bsplines_2d_rect(self):
+    def test39_interpolate_bsplines_2d_rect(self):
         test_input._interpolate(self.bs, nd='2d', kind='rect', details=False)
 
-    def test39_interpolate_bsplines_2d_rect_details(self):
+    def test40_interpolate_bsplines_2d_rect_details(self):
         test_input._interpolate(self.bs, nd='2d', kind='rect', details=True)
 
-    def test40_interpolate_bsplines_2d_tri(self):
+    def test41_interpolate_bsplines_2d_tri(self):
         test_input._interpolate(self.bs, nd='2d', kind='tri', details=False)
 
-    def test41_interpolate_bsplines_2d_tri_details(self):
+    def test42_interpolate_bsplines_2d_tri_details(self):
         test_input._interpolate(self.bs, nd='2d', kind='tri', details=True)
 
     # ##############
     # binning 1d
     # ##############
 
-    def test42_binning_1d(self):
+    def test43_binning_1d(self):
         test_input._bin_bs(self.bs, nd='1d', kind=None)
 
     # ##############
     # plot bsplines
     # ##############
 
-    def test43_plot_bsplines_1d(self):
+    def test44_plot_bsplines_1d(self):
         pass
 
-    def test44_plot_bsplines_2d_rect(self):
+    def test45_plot_bsplines_2d_rect(self):
         pass
 
-    def test45_plot_bsplines_2d_tri(self):
+    def test46_plot_bsplines_2d_tri(self):
         pass
 
     # ####################
     # add mesh with subkey
     # ####################
 
-    def test46_add_mesh_1d_subkey_1d(self):
+    def test47_add_mesh_1d_subkey_1d(self):
         test_input._add_mesh_1d_subkey(self.bs, nd='1d', kind=None)
 
-    def test47_add_mesh_1d_subkey_rect(self):
+    def test48_add_mesh_1d_subkey_rect(self):
         test_input._add_mesh_1d_subkey(self.bs, nd='2d', kind='rect')
 
-    def test48_add_mesh_1d_subkey_tri(self):
+    def test49_add_mesh_1d_subkey_tri(self):
         test_input._add_mesh_1d_subkey(self.bs, nd='2d', kind='tri')
 
-    def test49_add_mesh_2d_rect_subkey_rect(self):
+    def test50_add_mesh_2d_rect_subkey_rect(self):
         test_input._add_mesh_2d_rect_subkey(self.bs, nd='2d', kind='rect')
 
-    def test50_add_mesh_2d_rect_subkey_tri(self):
+    def test51_add_mesh_2d_rect_subkey_tri(self):
         test_input._add_mesh_2d_rect_subkey(self.bs, nd='2d', kind='tri')
 
-    def test51_add_mesh_2d_rect_var_subkey_rect(self):
+    def test52_add_mesh_2d_rect_var_subkey_rect(self):
         test_input._add_mesh_2d_rect_subkey(self.bs, nd='2d', kind='rect')
 
     # ################################
     # add bsplines on mesh with subkey
     # ################################
 
-    def test52_add_bsplines_subkey(self):
+    def test53_add_bsplines_subkey(self):
         test_input._add_bsplines(self.bs, subkey=True)
 
     # ################################
     # add data on bsplines with subkey
     # ################################
 
-    def test53_add_data_subkey(self):
+    def test54_add_data_subkey(self):
         test_input._add_data_multibs_arrays(
             self.bs,
             nd=None,
@@ -320,7 +327,7 @@ class Test01_BSplines2D():
     # interpolate data with subkey
     # ################################
 
-    def test54_interpolate_subkey_1d(self):
+    def test55_interpolate_subkey_1d(self):
         test_input._interpolate(
             self.bs,
             nd='1d',
@@ -337,14 +344,14 @@ class Test01_BSplines2D():
     # interpolate data with subkey
     # ################################
 
-    def test55_plot_as_profile2d(self):
+    def test56_plot_as_profile2d(self):
         test_input._plot_as_profile2d(
             self.bs,
             nd='2d',
             kind=None,
         )
 
-    def test56_plot_as_profile2d_compare(self):
+    def test57_plot_as_profile2d_compare(self):
         test_input._plot_as_profile2d_compare(
             self.bs,
             nd='2d',
@@ -355,31 +362,31 @@ class Test01_BSplines2D():
     # operators
     # ################################
 
-    def test57_operators_1d(self):
+    def test58_operators_1d(self):
         test_input._get_operators(
             self.bs,
             nd='1d',
             kind=None,
         )
 
-    def test58_operators_2d_rect(self):
+    def test59_operators_2d_rect(self):
         test_input._get_operators(
             self.bs,
             nd='2d',
             kind='rect',
         )
 
-    def test59_operators_2d_tri(self):
+    def test60_operators_2d_tri(self):
         pass
 
-    def test60_operators_1d_subkey(self):
+    def test61_operators_1d_subkey(self):
         pass
 
     # ################################
     # saving / loading
     # ################################
 
-    def test61_saveload_equal(self):
+    def test62_saveload_equal(self):
 
         # save
         pfe = self.bs.save(return_pfe=True)
@@ -393,7 +400,7 @@ class Test01_BSplines2D():
         # equal
         assert self.bs == out
 
-    def test62_saveload_coll(self):
+    def test63_saveload_coll(self):
 
         # save
         pfe = self.bs.save(return_pfe=True)

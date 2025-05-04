@@ -339,9 +339,8 @@ def _get_func_ind_from_domain(
                     )[0]
                 else:
                     iphi = np.nonzero(
-                        (phii >= Dphi[1]) | (phii <= Dphi[0])
+                        (phii >= Dphi[0]) | (phii <= Dphi[1])
                     )[0]
-
             elif phor0 is not None:
                 phii = np.pi*np.linspace(-1, 1, nphi[iri])
                 pts = np.array([
@@ -490,5 +489,9 @@ def _check_domain(
             size=2,
             dtype=float,
         )
+        Dphi = [
+            np.arctan2(np.sin(Dphi[0]), np.cos(Dphi[0])),
+            np.arctan2(np.sin(Dphi[1]), np.cos(Dphi[1])),
+        ]
 
     return DR, DZ, Dphi

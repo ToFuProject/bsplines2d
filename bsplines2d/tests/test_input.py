@@ -528,6 +528,37 @@ def _sample_mesh_3d_func(coll, nd=None, kind=None):
 
             rr, zz, pp, dV = func_RZphi_from_ind(indr, indz, indphi)
 
+
+def _slice_mesh_3d(coll, nd=None, kind=None):
+    lkm = _get_mesh(coll, nd=nd, kind=kind)
+
+    lres = [0.05, 0.05, 0.05, 0.05]
+    Z = [0, 0.5, None, None]
+    phi = [None, None, np.pi/4, 3*np.pi/4]
+    Dphi = [None, np.pi*np.r_[3/4, 5/4], None, None]
+    DZ = [None, None, [-0.5, 0.5], None]
+    lreshape_2d = [None, None, True, False]
+
+    lparam = [lres, Z, phi, Dphi, DZ, lreshape_2d]
+
+    for km in lkm:
+        for ii, comb in enumerate(zip(*lparam)):
+
+            dout = coll.get_sample_mesh_3d_slice(
+                key=km,
+                res=comb[0],
+                Z=comb[1],
+                phi=comb[2],
+                Dphi=comb[3],
+                DZ=comb[4],
+                reshape_2d=comb[5],
+                plot=True,
+            )
+            assert isinstance(dout, dict)
+
+        plt.close('all')
+
+
 #######################################################
 #
 #     Plotting
