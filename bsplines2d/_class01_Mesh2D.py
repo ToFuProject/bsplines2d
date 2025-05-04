@@ -16,6 +16,8 @@ from . import _class01_checks_2d_tri as _checks_2d_tri
 from . import _class01_cropping as _cropping
 from . import _class01_select as _select
 from . import _class01_sample as _sample
+from . import _class01_sample3d as _sample3d
+from . import _class01_slice3d as _slice3d
 from . import _class01_outline as _outline
 from . import _class01_plot as _plot
 
@@ -511,6 +513,83 @@ class Mesh2D(ds.DataStock):
             store=store,
             kx0=kx0,
             kx1=kx1,
+        )
+
+    def get_sample_mesh_3d_func(
+        self,
+        key=None,
+        res_RZ=None,
+        mode=None,
+        res_phi=None,
+    ):
+        """ Return 2 functions
+
+        Used for vos computation
+
+        func_RZphi_from_ind(ind)
+            where in = (3, npts) indices of a 3d sampled mesh
+            return R, Z, phi
+
+        func_ind_from_domain(DR, DZ, Dphi, pcross, phor)
+            where DR, DZ, Dphi define a rectangular domain (optional)
+            where (pcross0, pcross1) and (phor0, phor1) define ploygons
+            return ind  (to be used by func_RZphi_from_ind)
+
+        """
+
+        return _sample3d.main(
+            coll=self,
+            key=key,
+            res_RZ=res_RZ,
+            mode=mode,
+            res_phi=res_phi,
+        )
+
+    def get_sample_mesh_3d_slice(
+        self,
+        key=None,
+        res=None,
+        # slice
+        phi=None,
+        Z=None,
+        # domain
+        DR=None,
+        DZ=None,
+        Dphi=None,
+        # option
+        reshape_2d=None,
+        # plot
+        plot=None,
+        dax=None,
+        color=None,
+    ):
+        """ Return a dict continaing pts coordinates on a plane (slice)
+
+        Slice can be either horizontal (Z) or poloidal (phi)
+
+        A subset of the mesh can be defined using:
+            - horizontal:   DR and Dphi
+            - poloidal:     DR and DZ
+
+        """
+
+        return _slice3d.main(
+            coll=self,
+            key=key,
+            res=res,
+            # slice
+            phi=phi,
+            Z=Z,
+            # domain
+            DR=DR,
+            DZ=DZ,
+            Dphi=Dphi,
+            # option
+            reshape_2d=reshape_2d,
+            # plot
+            plot=plot,
+            dax=dax,
+            color=color,
         )
 
     # -----------------
