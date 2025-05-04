@@ -40,7 +40,7 @@ keywords = [
 ]
 requires-python = ">=3.8"
 dependencies = [
-        "contourpy",
+    "contourpy",
 	'datastock>=0.0.54',
 ]
 
