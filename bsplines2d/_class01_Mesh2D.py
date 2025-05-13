@@ -558,6 +558,7 @@ class Mesh2D(ds.DataStock):
         Dphi=None,
         # option
         reshape_2d=None,
+        adjust_phi=None,
         # plot
         plot=None,
         dax=None,
@@ -586,6 +587,7 @@ class Mesh2D(ds.DataStock):
             Dphi=Dphi,
             # option
             reshape_2d=reshape_2d,
+            adjust_phi=adjust_phi,
             # plot
             plot=plot,
             dax=dax,
