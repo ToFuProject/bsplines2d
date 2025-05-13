@@ -487,6 +487,7 @@ class Mesh2D(ds.DataStock):
         mode=None,
         x0=None,
         x1=None,
+        # options
         Dx0=None,
         Dx1=None,
         imshow=None,
@@ -505,6 +506,7 @@ class Mesh2D(ds.DataStock):
             mode=mode,
             x0=x0,
             x1=x1,
+            # options
             Dx0=Dx0,
             Dx1=Dx1,
             imshow=imshow,
