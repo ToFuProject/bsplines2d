@@ -277,6 +277,8 @@ def _check(
         types=bool,
         default=False,
     )
+    if phi is None:
+        adjust_phi = False
 
     # ---------
     # plot
