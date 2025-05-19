@@ -27,6 +27,7 @@ def main(
     Dphi=None,
     # option
     reshape_2d=None,
+    adjust_phi=None,
     # plot
     plot=None,
     dax=None,
@@ -38,7 +39,7 @@ def main(
     # --------------
 
     (
-        res, Z, phi, domain, reshape_2d, plot,
+        res, Z, phi, domain, reshape_2d, adjust_phi, plot,
     ) = _check(
         res=res,
         # slice
@@ -50,6 +51,7 @@ def main(
         Dphi=Dphi,
         # option
         reshape_2d=reshape_2d,
+        adjust_phi=adjust_phi,
         plot=plot,
     )
 
@@ -106,6 +108,13 @@ def main(
         indz=indz,
         indphi=indphi,
     )
+
+    # ------------
+    # adjust phi
+    # ------------
+
+    if adjust_phi is True:
+        pts_phi = phi
 
     # --------------
     # output
@@ -171,6 +180,7 @@ def _check(
     Dphi=None,
     # option
     reshape_2d=None,
+    adjust_phi=None,
     # plot
     plot=None,
     color=None,
@@ -259,6 +269,18 @@ def _check(
     )
 
     # ---------
+    # adjust_phi
+    # ---------
+
+    adjust_phi = ds._generic_check._check_var(
+        adjust_phi, 'adjust_phi',
+        types=bool,
+        default=False,
+    )
+    if phi is None:
+        adjust_phi = False
+
+    # ---------
     # plot
     # ---------
 
@@ -268,7 +290,7 @@ def _check(
         default=False,
     )
 
-    return res, Z, phi, domain, reshape_2d, plot
+    return res, Z, phi, domain, reshape_2d, adjust_phi, plot
 
 
 # ##############################################
@@ -337,7 +359,7 @@ def _poloidal_slice(
     # domain Z
     # -----------
 
-    dphi = np.pi/8
+    dphi = np.pi/12
     Dphi = (phi - dphi, phi + dphi)
 
     indr, indz, indphi = func_ind_from_domain(
@@ -370,9 +392,19 @@ def _poloidal_slice(
     # ---------
     # reshape
     # ---------
+
     ir = np.concatenate(indr_new)
     iz = np.concatenate(indz_new)
     iphi = np.concatenate(indphi_new)
+
+    # ------------
+    # safety check
+
+    assert np.unique([ir, iz], axis=1).shape[1] == ir.size
+
+    # ----------------
+    # optional reshape
+
     if reshape_2d is True:
         i0u = np.unique(ir)
         i1u = np.unique(iz)
@@ -386,7 +418,7 @@ def _poloidal_slice(
 
             indsz = np.argsort(iz[ind])
             iiz = np.searchsorted(i1u, np.sort(iz[ind]))
-            sli = (iri, iiz)
+            sli = (ii, iiz)
 
             indr[sli] = iri
             indz[sli] = iz[ind][indsz]

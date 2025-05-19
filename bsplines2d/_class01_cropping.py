@@ -14,10 +14,10 @@ import datastock as ds
 from . import _class01_select as _select
 
 
-# #############################################################################
-# #############################################################################
+# ##################################################################
+# ##################################################################
 #                          crop rect mesh
-# #############################################################################
+# ##################################################################
 
 
 def crop(
@@ -58,7 +58,10 @@ def crop(
     # ------------
 
     key, mtype, cropbool, thresh_in, remove_isolated = _crop_check(
-        coll=coll, key=key, crop=crop, thresh_in=thresh_in,
+        coll=coll,
+        key=key,
+        crop=crop,
+        thresh_in=thresh_in,
         remove_isolated=remove_isolated,
     )
 
@@ -206,21 +209,18 @@ def _crop_check(
 
     cropbool = crop.dtype == np.bool_
 
+    # --------------------
     # thresh_in and maxth
-    if thresh_in is None:
-        thresh_in = 3
+    # --------------------
+
     maxth = 5 if coll.dobj[wm][key]['type'] == 'rect' else 4
 
-    c0 = (
-        isinstance(thresh_in, (int, np.integer))
-        and (1 <= thresh_in <= maxth)
-    )
-    if not c0:
-        msg = (
-            f"Arg thresh_in must be a int in 1 <= thresh_in <= {maxth}\n"
-            f"Provided: {thresh_in}"
-        )
-        raise Exception(msg)
+    thresh_in = int(ds._generic_check._check_var(
+        thresh_in, 'thresh_in',
+        default=3,
+        types=(int, float),
+        sign=['>=1', f"<={maxth}"],
+    ))
 
     # ----------------
     # remove_isolated

@@ -457,8 +457,8 @@ def _get_res(
         )
         if not c0:
             msg = (
-                f"Arg res must be a list of 2 positive floats!\n"
-                "Provided: {res}"
+                "Arg res must be a list of 2 positive floats!\n"
+                f"Provided: {res}"
             )
             raise Exception(msg)
 
@@ -525,9 +525,13 @@ def _sample_2d(
 
     # --------
     # compute
+    # --------
 
     min0, max0 = knots0.min(), knots0.max()
     min1, max1 = knots1.min(), knots1.max()
+
+    # --------
+    # absolute
 
     if mode == 'abs':
         if x0 is None:
@@ -536,6 +540,10 @@ def _sample_2d(
         if x1 is None:
             n1 = int(np.ceil((max1 - min1) / res[1]))
             x1 = np.linspace(min1, max1, n1)
+
+    # --------
+    # relative
+
     else:
         if x0 is None:
             n0 = int(np.ceil(1./res[0]))
@@ -552,6 +560,9 @@ def _sample_2d(
                 knots1[-1:],
             ))
 
+    # --------
+    # scalar
+
     if np.isscalar(x0):
         x0 = np.full(x1.shape, x0)
     if np.isscalar(x1):
@@ -559,6 +570,7 @@ def _sample_2d(
 
     # -----------
     # prepare ind
+    # -----------
 
     # x0, x1
     if grid or in_mesh or Dx0 is not None:
@@ -687,7 +699,6 @@ def _store_2d(
     kx0=None,
     kx1=None,
 ):
-
 
     # -----------
     # check key
