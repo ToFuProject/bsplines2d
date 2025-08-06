@@ -533,20 +533,12 @@ def apply_operator(
 
     if operator == 'D0N1':
         ind = [-1]
-        if cropbs is None:
-            for k0 in key:
-                ddata[k0]['data'][...] = np.tensordot(
-                    integ_op['M']['data'],
-                    coll.ddata[k0]['data'],
-                    (ind, daxis[k0]['axis']),
-                )
-        else:
-            for k0 in key:
-                ddata[k0]['data'][...] = np.tensordot(
-                    integ_op['M']['data'],
-                    coll.ddata[k0]['data'][daxis[k0]['slice']],
-                    (ind, daxis[k0]['axis']),
-                )
+        for k0 in key:
+            ddata[k0]['data'][...] = np.tensordot(
+                integ_op['M']['data'],
+                coll.ddata[k0]['data'][daxis[k0]['slice']],
+                (ind, daxis[k0]['axis'][0]),
+            )
     else:
         raise NotImplementedError()
 
@@ -759,7 +751,7 @@ def _apply_operator_prepare(
         else:
             raise NotImplementedError()
 
-         # populate
+        # populate
         ddata[k0] = {
             'data': np.full(shape, np.nan),
             'ref': ref,
@@ -768,14 +760,14 @@ def _apply_operator_prepare(
 
         # slicing
         if cropbs is None:
-            sli = None
-        else:
-            sli = tuple([
-                cropbs if ii == axis[0]
-                else slice(None)
-                for ii in range(len(shape0))
-                if ii not in axisf[1:]
-            ])
+            shcrop = tuple([shape0[ii] for ii in axis])
+            cropbs = np.ones(shcrop, dtype=bool)
+        sli = tuple([
+            cropbs if ii == axis[0]
+            else slice(None)
+            for ii in range(len(shape0))
+            if ii not in axisf[1:]
+        ])
 
         daxis[k0] = {
             'slice': sli,
