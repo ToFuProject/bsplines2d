@@ -289,7 +289,7 @@ def _dout(
     elif operator in ['D1N2']:
         kmat = [f'tMM{ii}' for ii in range(nnd)]
     elif operator in ['D2N2']:
-        lcomb = [] if nd == '1d' else [(0,1)]
+        lcomb = [] if nd == '1d' else [(0, 1)]
         kmat = (
             [f'tMM{ii}{ii}' for ii in range(nnd)]
             + [f'tMM{ii}{jj}' for ii, jj in lcomb]
@@ -434,7 +434,7 @@ def _units(u0=None, operator=None, geometry=None):
         if geometry == 'linear':
             units = u0
         else:
-            units = u0**2
+            units = u0**2 / asunits.Unit('rad')
 
     elif operator == 'D0N2':
         if geometry == 'linear':
@@ -533,20 +533,12 @@ def apply_operator(
 
     if operator == 'D0N1':
         ind = [-1]
-        if cropbs is None:
-            for k0 in key:
-                ddata[k0]['data'][...] = np.tensordot(
-                    integ_op['M']['data'],
-                    coll.ddata[k0]['data'],
-                    (ind, daxis[k0]['axis']),
-                )
-        else:
-            for k0 in key:
-                ddata[k0]['data'][...] = np.tensordot(
-                    integ_op['M']['data'],
-                    coll.ddata[k0]['data'][daxis[k0]['slice']],
-                    (ind, daxis[k0]['axis']),
-                )
+        for k0 in key:
+            ddata[k0]['data'][...] = np.tensordot(
+                integ_op['M']['data'],
+                coll.ddata[k0]['data'][daxis[k0]['slice']],
+                (ind, daxis[k0]['axis'][0]),
+            )
     else:
         raise NotImplementedError()
 
@@ -759,7 +751,7 @@ def _apply_operator_prepare(
         else:
             raise NotImplementedError()
 
-         # populate
+        # populate
         ddata[k0] = {
             'data': np.full(shape, np.nan),
             'ref': ref,
@@ -768,14 +760,14 @@ def _apply_operator_prepare(
 
         # slicing
         if cropbs is None:
-            sli = None
-        else:
-            sli = tuple([
-                cropbs if ii == axis[0]
-                else slice(None)
-                for ii in range(len(shape0))
-                if ii not in axisf[1:]
-            ])
+            shcrop = tuple([shape0[ii] for ii in axis])
+            cropbs = np.ones(shcrop, dtype=bool)
+        sli = tuple([
+            cropbs if ii == axis[0]
+            else slice(None)
+            for ii in range(len(shape0))
+            if ii not in axisf[1:]
+        ])
 
         daxis[k0] = {
             'slice': sli,
