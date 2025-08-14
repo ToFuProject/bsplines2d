@@ -289,7 +289,7 @@ def _dout(
     elif operator in ['D1N2']:
         kmat = [f'tMM{ii}' for ii in range(nnd)]
     elif operator in ['D2N2']:
-        lcomb = [] if nd == '1d' else [(0,1)]
+        lcomb = [] if nd == '1d' else [(0, 1)]
         kmat = (
             [f'tMM{ii}{ii}' for ii in range(nnd)]
             + [f'tMM{ii}{jj}' for ii, jj in lcomb]
@@ -434,7 +434,7 @@ def _units(u0=None, operator=None, geometry=None):
         if geometry == 'linear':
             units = u0
         else:
-            units = u0**2
+            units = u0**2 / asunits.Unit('rad')
 
     elif operator == 'D0N2':
         if geometry == 'linear':
