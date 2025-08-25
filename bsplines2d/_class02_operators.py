@@ -525,6 +525,7 @@ def apply_operator(
         keybs=keybs,
         # for units
         operator=operator,
+        integ_op=integ_op,
     )
 
     # -----------------
@@ -691,6 +692,7 @@ def _apply_operator_prepare(
     key=None,
     keybs=None,
     operator=None,
+    integ_op=None,
 ):
 
     # ----------
@@ -707,14 +709,6 @@ def _apply_operator_prepare(
     # refbs
 
     refbs = coll.dobj[wbs][keybs]['ref']
-
-    # ----------
-    # unitsbs
-
-    unitsbs = [
-        coll.ddata[k0]['units']
-        for k0 in coll.dobj[wbs][keybs]['apex']
-    ]
 
     # --------------
     # fill dict
@@ -745,9 +739,7 @@ def _apply_operator_prepare(
         # units
         units0 = asunits.Unit(coll.ddata[k0]['units'])
         if operator == 'D0N1':
-            units = units0
-            for uu in unitsbs:
-                units = units * uu
+            units = units0 * integ_op['M']['units']
         else:
             raise NotImplementedError()
 
