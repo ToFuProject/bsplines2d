@@ -394,20 +394,20 @@ def _get_overlap(
 ):
     # nb of overlapping, inc. itself in 1d
     nbs0, nbs1 = shapebs
-    ind00 = np.tile(np.arange(0, nbs0), nbs1)
-    ind10 = np.repeat(np.arange(0, nbs1), nbs0)
+    ind00 = np.repeat(np.arange(0, nbs0), nbs1)
+    ind10 = np.tile(np.arange(0, nbs1), nbs0)
 
     # complete
     ntot = 2*deg + 1
 
-    add0= np.tile(np.arange(-deg, deg+1), ntot)
-    add1 = np.repeat(np.arange(-deg, deg+1), ntot)
+    add0 = np.repeat(np.arange(-deg, deg+1), ntot)
+    add1 = np.tile(np.arange(-deg, deg+1), ntot)
 
     inter0 = ind00[None, :] + add0[:, None]
     inter1 = ind10[None, :] + add1[:, None]
 
     # purge
-    inter = inter0 + inter1*nbs0
+    inter = inter1 + inter0*nbs1
     indneg = (
         (inter0 < 0) | (inter0 >= nbs0) | (inter1 < 0) | (inter1 >= nbs1)
     )

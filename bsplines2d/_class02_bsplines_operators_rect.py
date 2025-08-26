@@ -7,7 +7,6 @@
 # Common
 import numpy as np
 import scipy.sparse as scpsp
-import datastock as ds
 
 
 from . import _utils_bsplines_operators as _operators
@@ -67,8 +66,8 @@ def get_mesh2dRect_operators(
     # prepare
 
     nx, ny = knotsx_per_bs.shape[1], knotsy_per_bs.shape[1]
-    kR = np.tile(knotsx_per_bs, ny)
-    kZ = np.repeat(knotsy_per_bs, nx, axis=1)
+    kR = np.repeat(knotsx_per_bs, ny, axis=1)
+    kZ = np.tile(knotsy_per_bs, nx)
     nbs = nx*ny
 
     if cropbs_flat is None:
@@ -219,7 +218,8 @@ def get_mesh2dRect_operators(
         for ir in range(nx):
             for iz in range(ny):
 
-                iflat = ir + iz*nx
+                # iflat = ir + iz*nx
+                iflat = iz + ir*ny
                 if cropbs_flat is not False and not cropbs_flat[iflat]:
                     continue
 
@@ -238,8 +238,8 @@ def get_mesh2dRect_operators(
                     if cropbs_flat is not False and not cropbs_flat[jflat]:
                         continue
 
-                    jr = jflat % nx
-                    jz = jflat // nx
+                    jr = jflat // ny
+                    jz = jflat % ny
 
                     # store (i, j) and (j, i) (symmetric matrix)
                     if jr >= ir:
@@ -277,17 +277,12 @@ def get_mesh2dRect_operators(
             )
 
             # surface elements
-            dZ = np.repeat(knotsy_mult[1:] - knotsy_mult[:-1], nx)
+            dZ = np.tile(knotsy_mult[1:] - knotsy_mult[:-1], nx)
             if geometry == 'linear':
-                dR = np.tile(
-                    knotsx_mult[1:] - knotsx_mult[:-1],
-                    ny,
-                )
+                dR = knotsx_mult[1:] - knotsx_mult[:-1]
             else:
-                dR = np.tile(
-                    0.5*(knotsx_mult[1:]**2 - knotsx_mult[:-1]**2),
-                    ny,
-                )
+                dR = 0.5*(knotsx_mult[1:]**2 - knotsx_mult[:-1]**2)
+            dR = np.repeat(dR, ny)
 
             dS = dR*dZ
             if cropbs_flat is not False:
@@ -328,7 +323,7 @@ def get_mesh2dRect_operators(
             for ir in range(nx):
                 for iz in range(ny):
 
-                    iflat = ir + iz*nx
+                    iflat = iz + ir*ny
                     if cropbs_flat is not False and not cropbs_flat[iflat]:
                         continue
 
@@ -348,8 +343,8 @@ def get_mesh2dRect_operators(
                         if cropbs_flat is not False and not cropbs_flat[jflat]:
                             continue
 
-                        jr = jflat % nx
-                        jz = jflat // nx
+                        jr = jflat // ny
+                        jz = jflat % ny
 
                         # store (i, j) and (j, i) (symmetric matrix)
                         if jr >= ir:
@@ -401,7 +396,7 @@ def get_mesh2dRect_operators(
         for ir in range(nx):
             for iz in range(ny):
 
-                iflat = ir + iz*nx
+                iflat = iz + ir*ny
                 if cropbs_flat is not False and not cropbs_flat[iflat]:
                     continue
 
@@ -422,8 +417,8 @@ def get_mesh2dRect_operators(
                     if cropbs_flat is not False and not cropbs_flat[jflat]:
                         continue
 
-                    jr = jflat % nx
-                    jz = jflat // nx
+                    jr = jflat // ny
+                    jz = jflat % ny
 
                     # store (i, j) and (j, i) (symmetric matrix)
                     if jr >= ir:

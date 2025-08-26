@@ -164,7 +164,7 @@ def _check(
     cropbs = coll.dobj['bsplines'][key]['crop']
     keycropped = coll.dobj['bsplines'][key]['ref_bs'][0]
     if cropbs not in [None, False] and crop is True:
-        cropbs_flat = coll.ddata[cropbs]['data'].ravel(order='F')
+        cropbs_flat = coll.ddata[cropbs]['data'].ravel()
         if coll.dobj['bsplines'][key]['deg'] == 0:
             cropbs = coll.ddata[cropbs]['data']
         keycropped = f"{keycropped}-crop"
