@@ -763,6 +763,7 @@ def _mesh2DRect_bsplines_knotscents(
             knots_per_bs_Z = knots_per_bs_Z[:, ind[1]]
 
         nknots = knots_per_bs_R.shape[0]
+        # TBC: reverse repeat and tile ?
         knots_per_bs_R = np.tile(knots_per_bs_R, (nknots, 1))
         knots_per_bs_Z = np.repeat(knots_per_bs_Z, nknots, axis=0)
 
@@ -779,6 +780,7 @@ def _mesh2DRect_bsplines_knotscents(
             cents_per_bs_Z = cents_per_bs_Z[:, ind[1]]
 
         ncents = cents_per_bs_R.shape[0]
+        # TBC: reverse repeat and tile ?
         cents_per_bs_R = np.tile(cents_per_bs_R, (ncents, 1))
         cents_per_bs_Z = np.repeat(cents_per_bs_Z, ncents, axis=0)
 
@@ -787,7 +789,8 @@ def _mesh2DRect_bsplines_knotscents(
 
     if return_knots is True and return_cents is True:
         out = (
-            (knots_per_bs_R, knots_per_bs_Z), (cents_per_bs_R, cents_per_bs_Z)
+            (knots_per_bs_R, knots_per_bs_Z),
+            (cents_per_bs_R, cents_per_bs_Z)
         )
     elif return_knots is True:
         out = (knots_per_bs_R, knots_per_bs_Z)
