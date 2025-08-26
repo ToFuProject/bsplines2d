@@ -12,14 +12,14 @@ import datastock as ds
 
 
 def _D0N1_Deg0(kn, geom='linear'):
-    if geom  == 'linear':
+    if geom == 'linear':
         return kn[1, :] - kn[0, :]
     else:
         return 0.5 * (kn[1, :]**2 - kn[0, :]**2)
 
 
 def _D0N1_Deg1(kn, geom='linear'):
-    if geom  == 'linear':
+    if geom == 'linear':
         return 0.5 * (kn[2, :] - kn[0, :])
     else:
         return (
