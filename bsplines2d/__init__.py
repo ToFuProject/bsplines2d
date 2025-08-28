@@ -16,3 +16,4 @@ __version_tuple__ = _version.version_tuple
 from ._class03_Bins import Bins as BSplines2D
 from ._saveload import load
 from . import tests
+from . import tutorials
