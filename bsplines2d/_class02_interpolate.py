@@ -564,7 +564,7 @@ def _check_keys(
 
                 if not (hasref and hasvect):
                     msg = (
-                        f"Provided ref_key[{ii}] not a valid ref or ref vector!\n"
+                        f"Provided ref_key[{ii}] invalid ref or ref vector!\n"
                         f"Provided: {rr}"
                     )
                     raise Exception(msg)
@@ -773,6 +773,8 @@ def _check_params_bsplines(
             nbs = indbs_tf_new[0].size
         else:
             nbs = indbs_tf_new.size
+    else:
+        indbs_tf_new = indbs_tf
 
     # ---------
     # submesh
