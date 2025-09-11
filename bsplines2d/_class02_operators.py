@@ -164,7 +164,7 @@ def _check(
     cropbs = coll.dobj['bsplines'][key]['crop']
     keycropped = coll.dobj['bsplines'][key]['ref_bs'][0]
     if cropbs not in [None, False] and crop is True:
-        cropbs_flat = coll.ddata[cropbs]['data'].ravel(order='F')
+        cropbs_flat = coll.ddata[cropbs]['data'].ravel()
         if coll.dobj['bsplines'][key]['deg'] == 0:
             cropbs = coll.ddata[cropbs]['data']
         keycropped = f"{keycropped}-crop"
@@ -289,7 +289,7 @@ def _dout(
     elif operator in ['D1N2']:
         kmat = [f'tMM{ii}' for ii in range(nnd)]
     elif operator in ['D2N2']:
-        lcomb = [] if nd == '1d' else [(0,1)]
+        lcomb = [] if nd == '1d' else [(0, 1)]
         kmat = (
             [f'tMM{ii}{ii}' for ii in range(nnd)]
             + [f'tMM{ii}{jj}' for ii, jj in lcomb]
@@ -434,7 +434,7 @@ def _units(u0=None, operator=None, geometry=None):
         if geometry == 'linear':
             units = u0
         else:
-            units = u0**2
+            units = u0**2 / asunits.Unit('rad')
 
     elif operator == 'D0N2':
         if geometry == 'linear':
@@ -525,6 +525,7 @@ def apply_operator(
         keybs=keybs,
         # for units
         operator=operator,
+        integ_op=integ_op,
     )
 
     # -----------------
@@ -533,20 +534,12 @@ def apply_operator(
 
     if operator == 'D0N1':
         ind = [-1]
-        if cropbs is None:
-            for k0 in key:
-                ddata[k0]['data'][...] = np.tensordot(
-                    integ_op['M']['data'],
-                    coll.ddata[k0]['data'],
-                    (ind, daxis[k0]['axis']),
-                )
-        else:
-            for k0 in key:
-                ddata[k0]['data'][...] = np.tensordot(
-                    integ_op['M']['data'],
-                    coll.ddata[k0]['data'][daxis[k0]['slice']],
-                    (ind, daxis[k0]['axis']),
-                )
+        for k0 in key:
+            ddata[k0]['data'][...] = np.tensordot(
+                integ_op['M']['data'],
+                coll.ddata[k0]['data'][daxis[k0]['slice']],
+                (ind, daxis[k0]['axis'][0]),
+            )
     else:
         raise NotImplementedError()
 
@@ -699,6 +692,7 @@ def _apply_operator_prepare(
     key=None,
     keybs=None,
     operator=None,
+    integ_op=None,
 ):
 
     # ----------
@@ -715,14 +709,6 @@ def _apply_operator_prepare(
     # refbs
 
     refbs = coll.dobj[wbs][keybs]['ref']
-
-    # ----------
-    # unitsbs
-
-    unitsbs = [
-        coll.ddata[k0]['units']
-        for k0 in coll.dobj[wbs][keybs]['apex']
-    ]
 
     # --------------
     # fill dict
@@ -753,13 +739,11 @@ def _apply_operator_prepare(
         # units
         units0 = asunits.Unit(coll.ddata[k0]['units'])
         if operator == 'D0N1':
-            units = units0
-            for uu in unitsbs:
-                units = units * uu
+            units = units0 * integ_op['M']['units']
         else:
             raise NotImplementedError()
 
-         # populate
+        # populate
         ddata[k0] = {
             'data': np.full(shape, np.nan),
             'ref': ref,
@@ -768,14 +752,14 @@ def _apply_operator_prepare(
 
         # slicing
         if cropbs is None:
-            sli = None
-        else:
-            sli = tuple([
-                cropbs if ii == axis[0]
-                else slice(None)
-                for ii in range(len(shape0))
-                if ii not in axisf[1:]
-            ])
+            shcrop = tuple([shape0[ii] for ii in axis])
+            cropbs = np.ones(shcrop, dtype=bool)
+        sli = tuple([
+            cropbs if ii == axis[0]
+            else slice(None)
+            for ii in range(len(shape0))
+            if ii not in axisf[1:]
+        ])
 
         daxis[k0] = {
             'slice': sli,
