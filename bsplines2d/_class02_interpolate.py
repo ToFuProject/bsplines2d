@@ -564,7 +564,7 @@ def _check_keys(
 
                 if not (hasref and hasvect):
                     msg = (
-                        f"Provided ref_key[{ii}] not a valid ref or ref vector!\n"
+                        f"Provided ref_key[{ii}] invalid ref or ref vector!\n"
                         f"Provided: {rr}"
                     )
                     raise Exception(msg)
@@ -762,17 +762,19 @@ def _check_params_bsplines(
             returnas = int
 
         # compute validated indbs array with appropriate form
-        indbs_tf = coll.select_ind(
+        indbs_tf_new = coll.select_ind(
             key=keybs,
             returnas=returnas,
             ind=indbs_tf,
             crop=crop,
         )
 
-        if isinstance(indbs_tf, tuple):
-            nbs = indbs_tf[0].size
+        if isinstance(indbs_tf_new, tuple):
+            nbs = indbs_tf_new[0].size
         else:
-            nbs = indbs_tf.size
+            nbs = indbs_tf_new.size
+    else:
+        indbs_tf_new = indbs_tf
 
     # ---------
     # submesh
@@ -785,7 +787,7 @@ def _check_params_bsplines(
     if coll.dobj[coll._which_mesh][keym]['subkey'] is None:
         submesh = False
 
-    return val_out, crop, cropbs, indbs_tf, nbs, submesh
+    return val_out, crop, cropbs, indbs_tf_new, nbs, submesh
 
 
 # ################################################################

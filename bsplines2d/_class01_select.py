@@ -133,8 +133,7 @@ def _select_ind(
                         f"Provided: {ind.shape}"
                     )
                     raise Exception(msg)
-                # make sure R varies first
-                ind_tup = ind.T.nonzero()[::-1]
+                ind_tup = ind.nonzero()
                 ind_bool = ind
 
             else:
@@ -197,18 +196,18 @@ def _select_ind(
                 ind_bool = ind_bool & cropiknots
 
                 # ind_tup is not 2d anymore
-                ind_tup = ind_bool.T.nonzero()[::-1]  # R varies first
+                ind_tup = ind_bool.nonzero()
                 # warnings.warn("ind is not 2d anymore!")
 
             elif ind_tup[0].shape == cropi.shape:
                 ind_bool = ind_bool & cropi
                 # ind_tup is not 2d anymore
-                ind_tup = ind_bool.T.nonzero()[::-1]  # R varies first
+                ind_tup = ind_bool.nonzero()
                 # warnings.warn("ind is not 2d anymore!")
 
             else:
                 ind_bool = ind_bool & cropi
-                ind_tup = ind_bool.T.nonzero()[::-1]
+                ind_tup = ind_bool.nonzero()
         else:
             ind_bool &= cropi
 
@@ -222,13 +221,14 @@ def _select_ind(
     elif returnas is tuple:
         out = ind_tup
     elif returnas == 'tuple-flat':
-        # make sure R is varying first
-        out = (ind_tup[0].T.ravel(), ind_tup[1].T.ravel())
+        # make sure R is varying first => no!
+        out = (ind_tup[0].ravel(), ind_tup[1].ravel())
     elif returnas is np.ndarray:
-        out = ind_tup[0] + ind_tup[1]*nR
+        # make sure R is varying first => no!
+        out = ind_tup[0]*nZ + ind_tup[1]
     elif returnas == 'array-flat':
-        # make sure R is varying first
-        out = (ind_tup[0] + ind_tup[1]*nR).T.ravel()
+        # make sure R is varying first => no!
+        out = (ind_tup[0]*nZ + ind_tup[1]).ravel()
     else:
         out = ind_bool
 
