@@ -20,6 +20,7 @@ from . import _class02_line_tracing as _line_tracing
 from . import _class02_interpolate as _interpolate
 from . import _class02_interpolate_all as _interpolate_all
 from . import _class02_operators as _operators
+from . import _class02_plot_operators as _plot_operators
 from . import _class02_plot_as_profile2d as _plot_as_profile2d
 from . import _class02_plot_as_profile2d_compare as _plot_as_profile2d_compare
 from . import _saveload
@@ -81,7 +82,7 @@ class BSplines2D(Previous):
             )
         else:
             dref, ddata, dobj = _compute._mesh2Dpolar_bsplines(
-                coll=self, keym=keym, keybs=keybs, deg=deg, # angle=angle,
+                coll=self, keym=keym, keybs=keybs, deg=deg,     # angle=angle,
             )
 
         # --------------
@@ -384,7 +385,6 @@ class BSplines2D(Previous):
             dsolver=dsolver,
         )
 
-
     # -----------------
     # Integration operators
     # ------------------
@@ -475,6 +475,47 @@ class BSplines2D(Previous):
             key_store=key_store,
             # returnas
             returnas=returnas,
+        )
+
+    def plot_bsplines_operator(
+        self,
+        key=None,
+        operator=None,
+        geometry=None,
+        crop=None,
+        # store vs return
+        return_param=None,
+        # specific to deg = 0
+        centered=None,
+        # to return gradR, gradZ, for D1N2 deg 0, for tomotok
+        returnas_element=None,
+        # plotting
+        dax=None,
+        fs=None,
+        dmargin=None,
+        fontsize=None,
+    ):
+        """ Plot desired operator, without adding to the Collection
+
+        Return dax
+        """
+
+        return _plot_operators.main(
+            coll=self,
+            key=key,
+            operator=operator,
+            geometry=geometry,
+            crop=crop,
+            return_param=return_param,
+            # specific to deg = 0
+            centered=centered,
+            # to return gradR, gradZ, for D1N2 deg 0, for tomotok
+            returnas_element=returnas_element,
+            # plotting
+            dax=dax,
+            fs=fs,
+            dmargin=dmargin,
+            fontsize=fontsize,
         )
 
     # -----------------
