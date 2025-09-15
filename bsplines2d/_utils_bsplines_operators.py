@@ -501,15 +501,15 @@ def _D1_Deg0_2d(
 
         # iterate on each type of point in R
         for ir, iz in zip(*n2R.nonzero()):
-            iflat = ir + iz*nx
+            iflat = iz + ir*ny
             dRi = 1./(centsR[ir + 1] - centsR[ir - 1])
-            datadR[iflat, iflat - 1] = -dRi
-            datadR[iflat, iflat + 1] = dRi
+            datadR[iflat, iflat - ny] = -dRi
+            datadR[iflat, iflat + ny] = dRi
         for ir, iz in zip(*n2Z.nonzero()):
-            iflat = ir + iz*nx
+            iflat = iz + ir*ny
             dZi = 1./(centsZ[iz + 1] - centsZ[iz - 1])
-            datadZ[iflat, iflat - nx] = -dZi
-            datadZ[iflat, iflat + nx] = dZi
+            datadZ[iflat, iflat - 1] = -dZi
+            datadZ[iflat, iflat + 1] = dZi
     else:
         # points with a neighbours at higher R
         npR = np.copy(cropbs)
@@ -531,26 +531,26 @@ def _D1_Deg0_2d(
 
     # iterate on each type of point in R
     for ir, iz in zip(*npR.nonzero()):
-        iflat = ir + iz*nx
+        iflat = iz + ir*ny
         dRi = 1./(centsR[ir + 1] - centsR[ir])
         datadR[iflat, iflat] = -dRi
-        datadR[iflat, iflat + 1] = dRi
+        datadR[iflat, iflat + ny] = dRi
     for ir, iz in zip(*nmR.nonzero()):
-        iflat = ir + iz*nx
+        iflat = iz + ir*ny
         dRi = 1./(centsR[ir] - centsR[ir-1])
-        datadR[iflat, iflat - 1] = -dRi
+        datadR[iflat, iflat - ny] = -dRi
         datadR[iflat, iflat] = dRi
 
     # iterate on each type of point in Z
     for ir, iz in zip(*npZ.nonzero()):
-        iflat = ir + iz*nx
+        iflat = iz + ir*ny
         dZi = 1./(centsZ[iz + 1] - centsZ[iz])
         datadZ[iflat, iflat] = -dZi
-        datadZ[iflat, iflat + nx] = dZi
+        datadZ[iflat, iflat + 1] = dZi
     for ir, iz in zip(*nmZ.nonzero()):
-        iflat = ir + iz*nx
+        iflat = iz + ir*ny
         dZi = 1./(centsZ[iz] - centsZ[iz - 1])
-        datadZ[iflat, iflat - nx] = -dZi
+        datadZ[iflat, iflat - 1] = -dZi
         datadZ[iflat, iflat] = dZi
 
     # crop and return
@@ -582,7 +582,7 @@ def _D1_Deg2(
     knots_mult=None,
     nbs=None,
 ):
-    grad = np.zeros((nbs-1, nbs), dtype=float)
+    # grad = np.zeros((nbs-1, nbs), dtype=float)
 
     raise NotImplementedError()
 

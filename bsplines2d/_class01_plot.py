@@ -69,7 +69,7 @@ def plot_mesh(
             key=key,
             ind_knot=ind_knot,
             ind_cent=ind_cent,
-            #units=units,
+            # units=units,
             return_neighbours=return_neighbours,
             nmax=nmax,
             color=color,
@@ -102,15 +102,15 @@ def plot_mesh(
         # possibly time-varying mesh
         raise NotImplementedError()
         # return _plot_mesh_2d_polar(
-            # coll=coll,
-            # key=key,
-            # nmax=nmax,
-            # color=color,
-            # dax=dax,
-            # fs=fs,
-            # dmargin=dmargin,
-            # dleg=dleg,
-            # connect=connect,
+        # coll=coll,
+        # key=key,
+        # nmax=nmax,
+        # color=color,
+        # dax=dax,
+        # fs=fs,
+        # dmargin=dmargin,
+        # dleg=dleg,
+        # connect=connect,
         # )
 
 
@@ -131,20 +131,45 @@ def _plot_mesh_check(
     dleg=None,
 ):
 
+    # ----------
+    # key
+    # ----------
+
+    # which
+    wm = coll._which_mesh
+    wbs = coll._which_bsplines
+
+    # lok
+    lok_mesh = list(coll.dobj.get(wm, {}).keys())
+    lok_bs = list(coll.dobj.get(wbs, {}).keys())
+
     # key
     key = ds._generic_check._check_var(
         key, 'key',
         default=None,
         types=str,
-        allowed=list(coll.dobj.get(coll._which_mesh, {}).keys()),
+        allowed=lok_mesh + lok_bs,
     )
 
+    # bs => mesh
+    if key in lok_bs:
+        key = coll.dobj[wbs][key]['mesh']
+
+    # derive
     nd = coll.dobj[coll._which_mesh][key]['nd']
     mtype = coll.dobj[coll._which_mesh][key]['type']
+
+    # ----------
+    # crop, bck
+    # ----------
 
     # crop, bck
     crop = ds._generic_check._check_var(crop, 'crop', default=True, types=bool)
     bck = ds._generic_check._check_var(bck, 'bck', default=True, types=bool)
+
+    # ----------
+    # return_neighbours, cents, knots
+    # ----------
 
     if mtype in ['rect', 'tri']:
         return_neighbours = True
@@ -168,6 +193,10 @@ def _plot_mesh_check(
         )
         if return_neighbours is False:
             ind_cent = [ind_cent]
+
+    # ----------
+    # other parameters
+    # ----------
 
     # color
     if color is None:
