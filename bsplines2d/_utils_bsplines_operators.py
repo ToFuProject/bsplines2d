@@ -543,12 +543,12 @@ def _D1_Deg0_2d(
 
     # iterate on each type of point in Z
     for ir, iz in zip(*npZ.nonzero()):
-        iflat = ir + iz*nx
+        iflat = iz + ir*ny
         dZi = 1./(centsZ[iz + 1] - centsZ[iz])
         datadZ[iflat, iflat] = -dZi
         datadZ[iflat, iflat + 1] = dZi
     for ir, iz in zip(*nmZ.nonzero()):
-        iflat = ir + iz*nx
+        iflat = iz + ir*ny
         dZi = 1./(centsZ[iz] - centsZ[iz - 1])
         datadZ[iflat, iflat - 1] = -dZi
         datadZ[iflat, iflat] = dZi
@@ -582,7 +582,7 @@ def _D1_Deg2(
     knots_mult=None,
     nbs=None,
 ):
-    grad = np.zeros((nbs-1, nbs), dtype=float)
+    # grad = np.zeros((nbs-1, nbs), dtype=float)
 
     raise NotImplementedError()
 
