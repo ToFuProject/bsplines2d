@@ -142,6 +142,7 @@ def plot_as_profile2d(
                 keybs=v0['keybs'],
                 # ref vector
                 dref_vector=dref_vectorZ,
+                dref_vector_name='dref_vectorZ',
                 ref_vector_strategy=ref_vector_strategy,
                 uniform=uniform,
                 # details
@@ -563,16 +564,18 @@ def _get_dkey(
     if ndim >= 3:
         keyZ = coll2.get_ref_vector(
             ref=lr1d[0],
+            dref_vector_name='dref_vectorZ',
             **dref_vectorZ,
         )[3]
         # uniform = ds._plot_as_array._check_uniform_lin(
-            # k0=keyZ, ddata=coll2.ddata,
+        # k0=keyZ, ddata=coll2.ddata,
         # )
         # if not uniform:
-            # keyZ = None
+        # keyZ = None
         if ndim == 4:
             keyU = coll2.get_ref_vector(
                 ref=lr1d[1],
+                dref_vector_name='dref_vectorU',
                 **dref_vectorU,
             )[3]
 
@@ -580,8 +583,14 @@ def _get_dkey(
         'deg': deg,
         'interp': interp,
         'key': kdata,
-        'keyX': coll2.get_ref_vector(ref=rX)[3],
-        'keyY': coll2.get_ref_vector(ref=rY)[3],
+        'keyX': coll2.get_ref_vector(
+            ref=rX,
+            dref_vector_name='rX (bspline2d)',
+        )[3],
+        'keyY': coll2.get_ref_vector(
+            ref=rY,
+            dref_vector_name='rY(bspline2d)',
+        )[3],
         'keyZ': keyZ,
         'keyU': keyU,
     }
@@ -782,6 +791,7 @@ def _plot_submesh(
     keybs=None,
     # ref vetcor
     dref_vector=None,
+    dref_vector_name=None,
     ref_vector_strategy=None,
     uniform=None,
     # plot_details
@@ -850,6 +860,7 @@ def _plot_submesh(
         keybs=keybs,
         collax=collax,
         dref_vector=dref_vector,
+        dref_vector_name=dref_vector_name,
         ref_vector_strategy=ref_vector_strategy,
         plot_details=plot_details,
     )
@@ -947,7 +958,7 @@ def _plot_submesh(
 
         if dvminmax.get('data', {}).get('min') is not None:
             ax.set_ylim(bottom=dvminmax['data']['min'])
-        if  dvminmax.get('data', {}).get('min') is not None:
+        if dvminmax.get('data', {}).get('min') is not None:
             ax.set_ylim(top=dvminmax['data']['max'])
 
     return collax, dgroup
@@ -961,6 +972,7 @@ def _plot_profile2d_polar_add_radial(
     collax=None,
     # ref_vector
     dref_vector=None,
+    dref_vector_name=None,
     ref_vector_strategy=None,
     # details
     plot_details=None,
@@ -1019,7 +1031,10 @@ def _plot_profile2d_polar_add_radial(
     # ----
     # reft
 
-    refc = [rr for rr in coll.ddata[key]['ref'] if rr in coll.ddata[kr2d]['ref']]
+    refc = [
+        rr for rr in coll.ddata[key]['ref']
+        if rr in coll.ddata[kr2d]['ref']
+    ]
     if len(refc) == 1:
         refc = refc[0]
     else:
@@ -1030,6 +1045,7 @@ def _plot_profile2d_polar_add_radial(
         keys=[key, kr2d],
         ref=refc,
         strategy=ref_vector_strategy,
+        dref_vector_name=dref_vector_name,
         **dref_vector,
     )[1:]
 
