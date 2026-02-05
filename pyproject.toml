@@ -38,10 +38,11 @@ maintainers = [
 keywords = [
     "data", "analysis", "interactive", "bsplines", "Collection", "mesh",
 ]
-requires-python = ">=3.8"
+# for datastock >= 0.0.56 + end of life of 3.9
+requires-python = ">=3.10"
 dependencies = [
     "contourpy",
-    'datastock>=0.0.55',
+    'datastock>=0.0.56',
 ]
 
 
