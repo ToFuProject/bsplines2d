@@ -39,7 +39,8 @@ keywords = [
     "data", "analysis", "interactive", "bsplines", "Collection", "mesh",
 ]
 # for datastock >= 0.0.56 + end of life of 3.9
-requires-python = ">=3.10"
+# scipy 1.15.3 and 1.16.0 have no wheel for python 3.14
+requires-python = ">=3.10,<3.14"
 dependencies = [
     "scipy<1.16.0",    # until https://github.com/ToFuProject/bsplines2d/issues/126 solved
     "contourpy",
