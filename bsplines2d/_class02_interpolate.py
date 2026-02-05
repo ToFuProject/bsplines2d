@@ -227,6 +227,7 @@ def interpolate(
                 coll=coll,
                 kd0=kd0,
                 keys=keys,
+                refbs=coll.dobj[wbs][kbs0]['ref'],
                 ref_com=ref_com,
                 # coordinates
                 x0=x0,
@@ -800,6 +801,7 @@ def _submesh_ref_com(
     coll=None,
     kd0=None,
     keys=None,
+    refbs=None,
     ref_com=None,
     # coordinates
     x0=None,
@@ -809,23 +811,21 @@ def _submesh_ref_com(
     # find possible matches
 
     ref0 = coll.ddata[kd0[0]]['ref']
-    lrcom = [
-        (rr, ref0.index(rr))
-        for ii, rr in enumerate(ref0)
-        if rr in list(itt.chain.from_iterable([
-            coll.ddata[kk]['ref'] for kk in keys
-        ]))
-        and ii in [0, len(ref0) - 1]
-    ]
+    lref = list(set([
+        rr for kk in keys
+        for rr in coll.ddata[kk]['ref']
+        if rr not in refbs
+        and rr in ref0
+    ]))
 
     # ----------
     # unused options
 
     if ref_com is None:
-        if len(lrcom) > 0:
+        if len(lref) > 0:
             msg = (
                 f"\nPossible common ref for data {keys} and subkey '{kd0}':\n"
-                + "\n".join([f"\t- {rr}" for rr in lrcom])
+                + "\n".join([f"\t- {rr}" for rr in lref])
                 + "\nIf you wish to use one, specify with ref_com=..."
             )
             warnings.warn(msg)
@@ -834,11 +834,10 @@ def _submesh_ref_com(
         # --------------
         # if ref_com
 
-        lok = [rr[0] for rr in lrcom]
         ref_com = ds._generic_check._check_var(
             ref_com, 'ref_com',
             types=str,
-            allowed=lok,
+            allowed=lref,
         )
 
         # -----------
