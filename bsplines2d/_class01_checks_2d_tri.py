@@ -160,7 +160,6 @@ def check(
     subbs = subbs0
     submesh = submesh0
 
-
     # --------------
     # to dict
 
@@ -312,7 +311,7 @@ def _check_knotscents(
         assert isinstance(out, np.ndarray)
     except Exception as err:
         msg = str(err) + (
-            "\nArg trifind must return an array of indices when fed with arrays "
+            "\nArg trifind must return an array of indices when fed an arrays "
             "of (R, Z) coordinates!\n"
             f"\ttrifind(np.r_[0], np.r_[0.]) = {out}\n"
             f"\t- ntri = {ntri}\n"
@@ -406,7 +405,7 @@ def _mesh2DTri_conformity(knots=None, indices=None, key=None):
     c0 = np.all(indu >= 0) and indu.size == nknots
 
     # unused knots
-    ino = (~np.in1d(
+    ino = (~np.isin(
         range(0, nknots),
         indu,
         assume_unique=False,
@@ -448,7 +447,7 @@ def _remove_unused_knots(knots, indices, keep):
     indu = np.unique(indices[keep, :])
 
     # cumulated differences in indices
-    keep_pts = np.in1d(np.arange(knots.shape[0]), indu)
+    keep_pts = np.isin(np.arange(knots.shape[0]), indu)
     icum = np.cumsum(~keep_pts)
 
     # update
