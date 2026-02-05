@@ -33,7 +33,7 @@ jobs:
 
     # Install library
     - name: Install the project
-      run: uv sync --all-extras --dev --no-build
+      run: uv sync --all-extras --dev --no-build-package scipy
 
     # Run tests
     - name: Run tests
