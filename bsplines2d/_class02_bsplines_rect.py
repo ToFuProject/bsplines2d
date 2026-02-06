@@ -17,7 +17,26 @@ from . import _utils_bsplines
 from . import _class02_bsplines_operators_rect
 
 
-if hasattr(scpinterp, '_bspl'):
+# Should work for scipy >= 1.15.0
+# see https://github.com/ToFuProject/bsplines2d/pull/147
+if (
+    hasattr(scpinterp, '_bsplines')
+    and hasattr(scpinterp._bsplines, '_dierckx')
+    and hasattr(scpinterp._bsplines._dierckx, 'evaluate_spline')
+):
+
+    def evaluate_spline(t, c, k, xp, nu, extrapolate, out):
+        out[...] = scpinterp._bsplines._dierckx.evaluate_spline(
+            t,     # 1d contiguous array of floats
+            c,     # 2d contiguous array of floats
+            k,     # int
+            xp,    # 1d contiguous array of floats
+            nu,    # int
+            extrapolate,   # bool
+        )
+        return
+
+elif hasattr(scpinterp, '_bspl'):
 
     if hasattr(scpinterp._bspl, 'evaluate_spline'):
         evaluate_spline = scpinterp._bspl.evaluate_spline
@@ -54,23 +73,6 @@ if hasattr(scpinterp, '_bspl'):
                 indices_k1d,
                 out,
             )
-
-# Should work for scipy >= 1.16.0
-elif (
-    hasattr(scpinterp, '_bsplines')
-    and hasattr(scpinterp._bsplines, '_dierckx')
-    and hasattr(scpinterp._bsplines._dierckx, 'evaluate_spline')
-):
-
-    def evaluate_spline(t, c, k, xp, nu, extrapolate, out):
-        out[:, 0] = scpinterp._bsplines._dierckx.evaluate_spline(
-            t,     # 1d contiguous array of floats
-            c,     # 2d contiguous array of floats
-            k,     # int
-            nu,    # int
-            extrapolate,   # bool
-        )
-        return
 
 else:
     msg = f"scipy {scp.__version__} has no evaluate_spline"
