@@ -38,10 +38,13 @@ maintainers = [
 keywords = [
     "data", "analysis", "interactive", "bsplines", "Collection", "mesh",
 ]
-requires-python = ">=3.8"
+# for datastock >= 0.0.56 + end of life of 3.9
+# scipy 1.15.3 and 1.16.0 have no wheel for python 3.14
+requires-python = ">=3.10,<3.14"
 dependencies = [
+    "scipy",    # see https://github.com/ToFuProject/bsplines2d/pull/147
     "contourpy",
-    'datastock>=0.0.55',
+    'datastock>=0.0.56',
 ]
 
 

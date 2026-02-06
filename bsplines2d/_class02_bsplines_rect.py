@@ -8,6 +8,7 @@ import warnings
 
 # Common
 import numpy as np
+import scipy as scp
 import scipy.interpolate as scpinterp
 
 
@@ -16,41 +17,69 @@ from . import _utils_bsplines
 from . import _class02_bsplines_operators_rect
 
 
-if hasattr(scpinterp._bspl, 'evaluate_spline'):
-    evaluate_spline = scpinterp._bspl.evaluate_spline
+# Should work for scipy >= 1.15.0
+# see https://github.com/ToFuProject/bsplines2d/pull/147
+if (
+    hasattr(scpinterp, '_bsplines')
+    and hasattr(scpinterp._bsplines, '_dierckx')
+    and hasattr(scpinterp._bsplines._dierckx, 'evaluate_spline')
+):
+
+    if scp.__version__.startswith('1.15'):
+        evaluate_spline = scpinterp._bsplines._dierckx.evaluate_spline
+    else:
+        def evaluate_spline(t, c, k, xp, nu, extrapolate, out):
+            out[...] = scpinterp._bsplines._dierckx.evaluate_spline(
+                t,     # 1d contiguous array of floats
+                c,     # 2d contiguous array of floats
+                k,     # int
+                xp,    # 1d contiguous array of floats
+                nu,    # int
+                extrapolate,   # bool
+            )
+            return
+
+elif hasattr(scpinterp, '_bspl'):
+
+    if hasattr(scpinterp._bspl, 'evaluate_spline'):
+        evaluate_spline = scpinterp._bspl.evaluate_spline
+
+    else:
+        msg = (
+            "\n\n"
+            "bsplines2d using a new version of scipy"
+            " with no scpinterp._bspl.evaluate_spline()\n"
+            "Instead using scpinterp._bspl.evaluate_ndspline()\n"
+            "Prototypal and not thoroughly tested!\n"
+        )
+        warnings.warn(msg)
+
+        def evaluate_spline(t, c, k, xp, nu, extrapolate, out):
+            ndim = 1
+            c1 = c.reshape(c.shape[:ndim] + (-1,))
+            num_c_tr = c1.shape[-1]
+            strides_c1 = [stride // c.dtype.itemsize for stride in c.strides]
+            indices_k1d = np.unravel_index(
+                np.arange((k+1)**ndim),
+                (k+1,)*ndim,
+            )[0][:, None]
+            return scpinterp._bspl.evaluate_ndbspline(
+                xp[:, None],
+                t[None, :],
+                np.array([t.size], dtype=np.int32),
+                np.array([k], dtype=np.int32),
+                np.array([nu], dtype=np.int32),
+                extrapolate,
+                c.ravel(),
+                num_c_tr,
+                np.array(strides_c1, dtype=np.intp),
+                indices_k1d,
+                out,
+            )
 
 else:
-    msg = (
-        "\n\n"
-        "bsplines2d using a new version of scipy"
-        " with no scpinterp._bspl.evaluate_spline()\n"
-        "Instead using scpinterp._bspl.evaluate_ndspline()\n"
-        "Prototypal and not thoroughly tested!\n"
-    )
-    warnings.warn(msg)
-
-    def evaluate_spline(t, c, k, xp, nu, extrapolate, out):
-        ndim = 1
-        c1 = c.reshape(c.shape[:ndim] + (-1,))
-        num_c_tr = c1.shape[-1]
-        strides_c1 = [stride // c.dtype.itemsize for stride in c.strides]
-        indices_k1d = np.unravel_index(
-            np.arange((k+1)**ndim),
-            (k+1,)*ndim,
-        )[0][:, None]
-        return scpinterp._bspl.evaluate_ndbspline(
-            xp[:, None],
-            t[None, :],
-            np.array([t.size], dtype=np.int32),
-            np.array([k], dtype=np.int32),
-            np.array([nu], dtype=np.int32),
-            extrapolate,
-            c.ravel(),
-            num_c_tr,
-            np.array(strides_c1, dtype=np.intp),
-            indices_k1d,
-            out,
-        )
+    msg = f"scipy {scp.__version__} has no evaluate_spline"
+    raise Exception(msg)
 
 
 # ################################################################

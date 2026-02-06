@@ -370,7 +370,11 @@ def _get_func_ind_from_domain(
         if debug is True:
 
             # coordinates
-            rr, zz, pp, dV = func_RZphi_from_ind(ind)
+            rr, zz, pp, dV = func_RZphi_from_ind(
+                indr=ind[0, :],
+                indz=ind[1, :],
+                indphi=ind[2, :],
+            )
 
             # title
             tit = (
@@ -425,8 +429,12 @@ def _get_func_ind_from_domain(
                 ax1.fill(phor0, phor1, fc=(0.5, 0.5, 0.5, 0.5))
 
             # points
-            ax0.plot(rr, zz, '.')
-            ax1.plot(rr*np.cos(pp), rr*np.sin(pp), '.')
+            if rr.size == 0:
+                msg = f"\n\t- ind.size = {ind.size}\n\t- rr.size = rr.size\n"
+                print(msg)
+            else:
+                ax0.plot(rr, zz, '.')
+                ax1.plot(rr*np.cos(pp), rr*np.sin(pp), '.')
 
         return ind[0, :], ind[1, :], ind[2, :]
 
