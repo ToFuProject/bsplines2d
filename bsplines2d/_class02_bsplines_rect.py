@@ -25,16 +25,19 @@ if (
     and hasattr(scpinterp._bsplines._dierckx, 'evaluate_spline')
 ):
 
-    def evaluate_spline(t, c, k, xp, nu, extrapolate, out):
-        out[...] = scpinterp._bsplines._dierckx.evaluate_spline(
-            t,     # 1d contiguous array of floats
-            c,     # 2d contiguous array of floats
-            k,     # int
-            xp,    # 1d contiguous array of floats
-            nu,    # int
-            extrapolate,   # bool
-        )
-        return
+    if scp.__version__.startswith('1.15'):
+        evaluate_spline = scpinterp._bsplines._dierckx.evaluate_spline
+    else:
+        def evaluate_spline(t, c, k, xp, nu, extrapolate, out):
+            out[...] = scpinterp._bsplines._dierckx.evaluate_spline(
+                t,     # 1d contiguous array of floats
+                c,     # 2d contiguous array of floats
+                k,     # int
+                xp,    # 1d contiguous array of floats
+                nu,    # int
+                extrapolate,   # bool
+            )
+            return
 
 elif hasattr(scpinterp, '_bspl'):
 
