@@ -360,8 +360,17 @@ def extract(
     # trivial
     # ---------------
 
+    return_keys = ds._generic_check._check_var(
+        return_keys, 'return_keys',
+        types=bool,
+        default=False,
+    )
+
     if len(lmesh) == 0:
-        return coll2, keys
+        if return_keys is True:
+            return coll2, keys
+        else:
+            return coll2
 
     # ---------------
     # add mesh
